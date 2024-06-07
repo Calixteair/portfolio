@@ -1,0 +1,21 @@
+
+9
+	README.md,8\e\8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
+B
+scr/HTML/test.html,7\0\7003588a68a1d75f325c28d281bdfd388c3bca32
+S
+#.idea/sonarlint/issuestore/index.pb,9\f\9fe84ebb15faf917b7def6236dba604453cc61e0
+J
+scr/Style/CSS/navStyle.css,4\c\4c6edcd5ef56572ceb29d98427ebc5509fa4dc22
+J
+scr/Script/swiperScript.js,1\0\105b271adc43d9d0a30f0690925eb476c58c5579
+]
+-.idea/sonarlint/securityhotspotstore/index.pb,8\8\88a9255124c95bdc913197c120a8d560edc59c8e
+G
+scr/Style/CSS/style.css,0\3\035281ea4de2c4aa7ef58a66825563d6394836db
+Å
+Q.idea/sonarlint/securityhotspotstore/8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d,1\0\10a03f31c4dce92cb371e761ce9429428bb6c176
+w
+G.idea/sonarlint/issuestore/8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d,b\4\b4a0b63ce8560bbc5de0f9995c20cc861dc2adb3
+B
+scr/HTML/home.html,a\0\a0162a052e5fb52e2e59fa1151be9479f875f9ff

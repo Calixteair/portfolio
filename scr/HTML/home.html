@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Mon Portfolio</title>
+   <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css"/>
+   <link rel="stylesheet" href="../Style/CSS/style.css"/>
+   <link rel="stylesheet" href="../Style/CSS/navStyle.css"/>
+
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="title">Calixte Reymond</div>
+        <hr class="separator">
+        <div class="nav-links">
+          <div class="swiper-button-prev prev-main">Accueil</div>
+          <div class="swiper-button-next next-main">A propos</div>
+          
+        </div>
+      </nav>
+
+
+
+<div class="swiper main-swiper">
+   <!-- Wrapper for slides -->
+   <div class="swiper-wrapper">
+       <!-- Slide 1: Compétences -->
+       <div class="swiper-slide main-slide">
+            <div class="competence">
+                <h3>Mes compétences durant mon stage</h3>
+
+                <div class="stage">
+                    <div class="context">
+                        <h2>Contexte :</h2>
+                        <div>
+                J'ai eu l'occasion de réaliser a partir du 8 Avril 2024 un stage de deux mois en tant que développeur à la DSI de la BRED à Paris dans l'équipe banque de détail.
+                Ma mission était de migrer une application struts qui appellais de flux cobole a une application Angular/Spring qui a fais applel a des Buisness Service
+                Ce staage ma permis de consolider mes compétences de développeur et partuculier les deux suivante : Réaliser un développement d'application, Collaborer au sein d'une équipe informatique
+                Et je vais vous expliquer pourquoi
+                        </div>
+                    </div>
+                
+                    <div class="realiserApp">
+                        <h3>1 : Réaliser un développement d'application</h3>
+                        <div class="analyse">
+                            Comme ma mission était de migrer une application j'ai commencé par utiliser l'application struts pour me permettre de mieux comprendre et intergrer
+                            les fonctionnalité que j'aurais a créer.
+                            <div class="image-container imgRight">
+                                <img src="../Style/Images/RTMSTRUTS/Search/SearchNotaireClean.PNG" alt="Application Struts">
+                            </div>
+                        </div>
+                        <hr class="separator20">
+                
+                        <div class="maquette">
+                            J'ai ensuite pu donc commencé en local créer des maquette avec les page principale de mon application Angular et à les montrer au reste de l'équipe pour avoir des retours
+                            Grace à ces maquettes j'ai pu modiffier l'ihm (supressions d'informations inutiles, ajouts de fonctionnalité (input de recherche dans le tableau,message d'erreur plus explicite, modifications des enchainements d'écrans)
+                            <div class="image-container imgLeft">
+                                <img src="../Style/Images/RTMSTRUTS/Search/SearchNotaireClean.PNG" alt="Application Struts">
+                            </div>
+                        </div>
+                        <hr class="separator20">
+                
+                        <div class="sonar">         
+                            J'ai ensuite pu creer réellement les fonctionnalité de l'application grace a l'appelle des Buisness Service par le coté java Spring de mon application.
+                            J'ai réaliser les tests unitaire sur la partie java afin de remplire les criteres de sonarQube qui fais partie des Jobs jenkins.
+                            <div class="combiImage">
+                                <img src="../Style/Images/RTMAngular/Tests/CoverageGraph.PNG" alt="Coverage de l'application">
+                                <img src="../Style/Images/RTMAngular/Tests/Overview.PNG" alt="Overview SonarQube">
+                                <img src="../Style/Images/RTMAngular/Tests/DuplicationGraph.PNG" alt="Duplication des ligne sur l'application">
+                            </div>
+                        </div>
+                
+                        <div class="deploy">
+                            Grace a la complétions des criteres sonarQube j'ai pu déployer mon application dans l'environement de developpement et de recette.
+                    J'ai ensuite réaliser des story pour tester les fonctionnalité de mon application avant de la présenter a l'équipe UX.
+                    L'équipe UX m'a apres ma présentation donné des piste pour ammélioré mon applications (ammélioration que j'ai réaliser)
+                    J'ai ensuite pu demander le recettage de mon application par la testeuse de ma squad.
+                    Une fois les retours du recettage corriger j'ai pu réaliser une demande de mise en production.
+                        </div>
+                        <hr class="separator20">
+                        <div class="othertasks">
+                            Pendant les temps de retour sur mon application (équipe UX, Recettage) j'ai pu prendre en charge des ticket sur jira.
+                            Et donc réaliser des correction de bug et des amélioration d'application comme ( une erreur qui passe un try catch sans remonter a cause d'un mauvais type,
+                            la non mise a jour d'élément dans le dom apres l'upload d'un fichier, la mise en place de message en toast pour les erreur, passage de la connection d'une application en oauth2...)
+                
+                        </div>
+                    </div>
+                </div>
+                <div class="swiper comparator-swiper">
+                    <div class="swiper-wrapper">
+                        <div class="swiper-slide comparator-slide">
+                            <div class="comparator">
+                                <div class="imgStruts">
+                                    <img src="../Style/Images/RTMSTRUTS/Search/SearchNotaire25300.PNG" ></img>
+                                </div>
+                                <div class="imgAngular">
+                                    <img src="../Style/Images/RTMAngular/Search/SearchNotaire25300.PNG" ></img>
+                                </div>
+                            </div>
+   
+
+                        </div>
+                        <div class="swiper-slide comparator-slide">
+                            <div class="comparator">
+                                <div class="imgStruts">
+                                    <img src="../Style/Images/RTMSTRUTS/Search/SearchNotaireNoZIP.PNG" ></img>
+                                </div>
+                                <div class="imgAngular">
+                                    <img src="../Style/Images/RTMAngular/Search/SearchNotaireNoZIP.PNG" ></img>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="swiper-slide comparator-slide">
+                            <div class="comparator">
+                                <div class="imgStruts">
+                                    <img src="../Style/Images/RTMSTRUTS/Search/SearchNotaireEmpty.PNG" ></img>
+                                </div>
+                                <div class="imgAngular">
+                                    <img src="../Style/Images/RTMAngular/Search/SearchNotaireEmpty.PNG" ></img>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="swiper-button-next next-comparator"></div>
+                    <div class="swiper-button-prev prev-comparator"></div>
+                    <div class="swiper-pagination pagi-comparator"></div>
+                </div>
+            </div>
+       </div>
+       <!-- Slide 2: À propos de moi -->
+       <div class="swiper-slide main-slide">
+           <h2>À propos de moi</h2>
+           <p>Parlez un peu de vous ici...</p>
+       </div>
+   </div>
+</div>
+<footer>
+    
+</footer>
+
+<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+<script src="../Script/swiperScript.js"></script>
+</body>
+</html>
+

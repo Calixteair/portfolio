@@ -1,0 +1,154 @@
+body, html {
+   height: 100%;
+   width: 100%;
+   margin: 0;
+   font-family: Arial, sans-serif;
+   background: url(../Images/bg_star.webp);
+   background-size: 120%;
+}
+
+footer{
+   height: 130px;
+}
+
+img{
+   width: 100%;
+   height: auto;
+}
+
+.imgStruts{
+   width: 40vw;
+
+}
+
+.imgAngular{
+   width: 40vw;
+}
+
+.portfolio-container{
+   font-size: 18px;
+   color: #fdeda9;
+}
+.stage{
+   margin-left: 9%;
+   width: 82%;
+   font-size: 18px;
+   color: #fdeda9;
+}
+
+.main-swiper {
+   width: 100%;
+}
+
+.main-slide {
+   text-align: center;
+   font-size: 18px;
+   color: #fdeda9;
+
+   /* Center slide text vertically */
+   display: -webkit-box;
+   display: -ms-flexbox;
+   display: -webkit-flex;
+   display: flex;
+   -webkit-box-pack: center;
+   -ms-flex-pack: center;
+   -webkit-justify-content: center;
+   justify-content: center;
+   -webkit-box-align: center;
+   -ms-flex-align: center;
+   -webkit-align-items: center;
+   align-items: center;
+}
+
+.comparator-swiper {
+   width: 70%;
+}
+
+.comparator-slide {
+   text-align: center;
+   font-size: 18px;
+   color: #fdeda9;
+   width: 100% !important;
+
+   /* Center slide text vertically */
+   display: -webkit-box;
+   display: -ms-flexbox;
+   display: -webkit-flex;
+   display: flex;
+   -webkit-box-pack: center;
+   -ms-flex-pack: center;
+   -webkit-justify-content: center;
+   justify-content: center;
+   -webkit-box-align: center;
+   -ms-flex-align: center;
+   -webkit-align-items: center;
+   align-items: center;
+}
+
+
+.next-main{ 
+   width: fit-content;
+   position: relative;
+}
+
+.next-main::after{
+   content: none;
+ }
+
+.prev-main { 
+   width: fit-content;
+   position: relative;
+}
+
+.prev-main::after {
+   content: none;
+ }
+
+ .competence {
+   display: flex;
+   flex-direction: column;
+ }
+ 
+
+
+.separator20{
+   width: 20%;
+   color: #fdeda9;
+   border-color: #fdeda9;
+   margin-bottom: 30px;
+}
+
+.stage{
+   margin-bottom: 30px;
+   width: 70%;
+   margin-left: 15%;
+}
+.analyse{
+   display: flex;
+   flex-direction: row;
+   justify-content: space-between;
+}
+.maquette{
+   display: flex;
+   flex-direction: row-reverse;
+   justify-content: space-between;
+}
+.sonar{
+   display: flex;
+   flex-direction: column;
+}
+.imgRight{
+   width: 30%;
+   height: auto;
+}
+.imgLeft{
+   width: 30%;
+   height: auto;
+}
+.combiImage{
+   display: flex;
+   width: 100%;
+   justify-content: space-evenly;
+}
+
+

@@ -17,12 +17,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Build and push Docker image
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build Docker image
         run: |
           DOCKER_TAG="calixteair/calixteairdocker:portfolio"
           docker buildx create --use
-          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-          docker buildx build --platform linux/amd64 -t $DOCKER_TAG --push .
+          docker buildx build --platform linux/amd64 -t $DOCKER_TAG .
+
+      - name: Push Docker image
+        run: |
+          DOCKER_TAG="calixteair/calixteairdocker:portfolio"
+          docker push $DOCKER_TAG
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

@@ -117,7 +117,23 @@ img{
    border-color: #fdeda9;
    margin-bottom: 30px;
 }
+.separator90{
+    width: 90%;
+    color: #fdeda9;
+    border-color: #fdeda9;
+   background-color: #fdeda9;
+    height: 3px;
+    margin: 60px;
+}
 
+.textearea{
+   margin-top: 15px;
+   margin-bottom: 15px;
+   text-align: justify;
+}
+.textborder{
+   width: 50%;
+}
 .stage{
    margin-bottom: 30px;
    width: 70%;

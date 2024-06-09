@@ -47,3 +47,23 @@ const swiperComparator = new Swiper('.comparator-swiper', {
  
     
  });
+
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    const text = document.getElementById("typingContent").innerText;
+    let i = 0;
+    const speed = 20; // Adjust the speed of typing here
+
+    function typeWriter() {
+        if (i < text.length) {
+            document.getElementById("typingContent").innerText = text.substring(0, i + 1);
+            i++;
+            setTimeout(typeWriter, speed);
+        }
+    }
+
+    // Clear the content and start the typing effect
+    document.getElementById("typingContent").innerText = "";
+    typeWriter();
+});

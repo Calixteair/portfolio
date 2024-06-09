@@ -5,21 +5,24 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    color: #fdeda9;
+    color: #fae7ca;
     padding: 20px;
     box-sizing: border-box;
+    height: 25vh;
   }
   
   .title {
-    font-size: 34px;
-    color: #fdeda9;
+    font-size: 130px;
+    color: #fae7ca;
     font-weight: bold;
+      /* no wrap */
+    white-space: nowrap;
   }
   
   .separator {
-    color: #fdeda9;
+    color: #fae7ca;
     width: 100%;
-    border: 1px solid #fdeda9;
+    border: 1px solid #fae7ca;
     margin: 10px 0;
     margin-bottom: 15px;
   }
@@ -33,7 +36,7 @@
   }
   
   .nav-links div {
-    color: #fdeda9;
+    color: #fae7ca;
     text-decoration: none;
     margin-right: 20px;
   }

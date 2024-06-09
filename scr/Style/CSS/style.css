@@ -146,8 +146,8 @@ img{
    width: 50%;
 }
 .textcenter{
-   width: 50%;
-   margin-left: 25%;
+   width: 60%;
+   margin-left: 20%;
 }
 
 .analyse{
@@ -167,6 +167,7 @@ img{
    justify-content: space-between;
 }
 .sonar{
+   width: 100%;
    display: flex;
    flex-direction: column;
 }
@@ -181,8 +182,9 @@ img{
 }
 .combiImage{
    display: flex;
-   transform: translateX(-18%);
-   width: 150%;
+   height: auto;
+   width: 100%;
+   max-width: 100%;
    justify-content: space-evenly;
    margin-bottom: 120px;
    margin-top: 120px;
@@ -197,7 +199,7 @@ img{
 
 .typing-content {
    margin-top: 30vh;
-   width: 50%;
+   width: 60%;
    white-space: pre-wrap; /* Preserve whitespace */
    overflow: hidden; /* Hide overflow */
    /* justifier le texte */

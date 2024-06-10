@@ -10,6 +10,7 @@
 
     <link rel="stylesheet" href="../Style/CSS/style.css"/>
    <link rel="stylesheet" href="../Style/CSS/navStyle.css"/>
+    <link rel="stylesheet" href="../Style/CSS/tableStyle.css"/>
 
 
 </head>
@@ -32,7 +33,7 @@
        <!-- Slide 1: Compétences -->
        <div class="swiper-slide main-slide">
 
-            <div class="competence">
+            <div class="competence" id="competence-section">
                 <div class="context" id="table">
                         <div class="textearea textcenter typing-demo">
                             <div class="typing-content" id="typingContent">J'ai eu l'occasion de réaliser a partir du 8 Avril 2024 un stage de deux mois en tant que développeur à la DSI de la BRED à Paris dans l'équipe banque de détail. Ma mission était de migrer une application struts qui appellais de flux cobole a une application Angular/Spring qui a fais applel a des Buisness Service. Ce staage ma permis de consolider mes compétences de développeur et partuculier les deux suivante : Réaliser un développement d'application, Collaborer au sein d'une équipe informatique. Et je vais vous expliquer pourquoi</div>
@@ -192,8 +193,24 @@
        </div>
        <!-- Slide 2: À propos de moi -->
        <div class="swiper-slide main-slide">
-           <h2>À propos de moi</h2>
-           <p>Parlez un peu de vous ici...</p>
+           <div class="about " id="about-section">
+               <h2>À propos de moi</h2>
+               <div class="textearea textcenter apropos">
+                   Je suis Calixte Reymond, étudiant de 21 ans. Ma passion pour l'informatique a débuté très jeune, en commençant par les jeux vidéo. Mon père, qui travaille dans la cybersécurité, m'a initié au développement. J'ai donc commencé par de petits programmes en Python et des scripts pour améliorer mon expérience de jeu.
+
+                   Après le bac, j'ai décidé de m'orienter vers l'informatique en intégrant la CPGE MPII du lycée Carnot à Dijon, où j'ai appris le C, l'OCaml et un peu d'assembleur. Je me suis ensuite orienté vers un BUT informatique pour étudier l'informatique de manière plus concrète. J'y ai appris le Java et le C++, ainsi que le développement web (HTML, CSS, JavaScript) et les frameworks Flask et VueJS.
+
+                   En parallèle, j'ai mis en place mon propre VPS afin d'héberger mes projets, ce qui m'a permis d'acquérir des compétences en réseau et en Docker. Dernièrement, j'ai eu l'occasion d'apprendre Angular en autodidacte afin de trouver mon stage.
+
+                   J'aimerais continuer mes études après mon BUT en intégrant une école d'ingénieur en informatique pour me spécialiser dans le développement de logicel ou la cybersécurité.
+               </div>
+               <hr class="separator90">
+               <h1>Mes Projets</h1>
+               <div id="projects-container">
+                   <!-- Les sections de projets seront insérées ici via JavaScript -->
+               </div>
+
+
        </div>
    </div>
 </div>
@@ -203,6 +220,7 @@
 
 <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 <script src="../Script/swiperScript.js"></script>
+<script src="../Script/tableScript.js"></script>
 </body>
 </html>
 

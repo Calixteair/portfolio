@@ -8,11 +8,12 @@
     color: #fae7ca;
     padding: 20px;
     box-sizing: border-box;
-    height: 25vh;
+    min-height: 25vh;
+    height: auto;
   }
   
   .title {
-    font-size: 130px;
+    font-size: 5.5em;
     color: #fae7ca;
     font-weight: bold;
       /* no wrap */

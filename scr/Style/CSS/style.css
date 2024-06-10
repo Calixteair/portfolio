@@ -157,7 +157,8 @@ img{
 }
 .context{
    background-color: #001f33;
-   height: 75vh;
+   min-height: 75vh;
+   height: auto;
    width: 100%;
 }
 
@@ -198,7 +199,8 @@ img{
 
 
 .typing-content {
-   margin-top: 30vh;
+   margin-top: 25vh;
+   margin-bottom: 25vh;
    width: 60%;
    white-space: pre-wrap; /* Preserve whitespace */
    overflow: hidden; /* Hide overflow */

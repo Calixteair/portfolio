@@ -62,6 +62,10 @@ function wirttenEffect() {
     let i = 0;
     const speed = 20; // Adjust the speed of typing here
 
+    //faire grossir la div de facon fluid en fonction de la taille du texte
+
+
+
     function typeWriter() {
         if (i < text.length) {
             document.getElementById("typingContent").innerText = text.substring(0, i + 1);
@@ -104,3 +108,5 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+

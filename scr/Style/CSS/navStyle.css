@@ -41,4 +41,25 @@
     text-decoration: none;
     margin-right: 20px;
   }
+
+  /* responsive */
+
+    @media screen and (max-width: 1024px) {
+        .navbar {
+        width: 90%;
+        margin-left: 5%;
+        }
+
+        .title {
+        font-size: 4em;
+        }
+
+        .nav-links {
+        width: 90%;
+        }
+
+        .nav-links div {
+        margin-right: 10px;
+        }
+    }
   

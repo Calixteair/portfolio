@@ -30,3 +30,15 @@ a {
 a:hover {
     text-decoration: underline;
 }
+
+/* responsive table */
+@media screen and (max-width: 1024px) {
+    table {
+        width: 90%;
+        margin-left: 5%;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+}

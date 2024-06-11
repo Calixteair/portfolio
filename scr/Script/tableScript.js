@@ -117,6 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const gitLink = document.createElement('a');
             gitLink.href = project.gitLink;
             gitLink.textContent = 'GitHub';
+            gitLink.onclick = (e) => {
+                e.preventDefault();
+                //ouvrir le lien dans un nouvel onglet
+                window.open(project.gitLink, '_blank');
+            }
             gitLinkCell.appendChild(gitLink);
             row.appendChild(gitLinkCell);
 
@@ -124,6 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const liveLink = document.createElement('a');
             liveLink.href = project.liveLink;
             liveLink.textContent = 'Voir le projet';
+            liveLink.onclick = (e) => {
+                e.preventDefault();
+                //ouvrir le lien dans un nouvel onglet
+                window.open(project.liveLink, '_blank');
+            }
             if(!project.liveLink) {
                 liveLink.textContent = 'Non disponible';
                 liveLink.style.color = 'grey';

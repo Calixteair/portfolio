@@ -1,29 +1,4 @@
-const swiper = new Swiper('.main-swiper', {
-   // Optional parameters
-   direction: 'horizontal',
-   loop: false,
-   allowTouchMove: false,
 
-
-
-   // If we need pagination
-   pagination: {
-       el: '.pagi-main',
-   },
-
-   // Navigation arrows
-   navigation: {
-       nextEl: '.next-main',
-       prevEl: '.prev-main',
-   },
-
-   /*
-   // And if we need scrollbar
-   scrollbar: {
-       el: '.swiper-scrollbar',
-   },
-   */
-});
 var inwrittenEffect = false;
 
 const swiperComparator = new Swiper('.comparator-swiper', {
@@ -84,6 +59,9 @@ function wirttenEffect() {
 document.addEventListener("DOMContentLoaded", function() {
     // Initialize Swiper
     const swiper = new Swiper('.main-swiper', {
+        direction: 'horizontal',
+        loop: false,
+        allowTouchMove: false,
         // Your swiper settings
         navigation: {
             nextEl: '.next-main',

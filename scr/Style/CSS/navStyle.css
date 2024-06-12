@@ -67,6 +67,7 @@
     @media screen and (max-width: 600px) {
         .title{
             white-space: normal;
+            text-align: center;
         }
     }
   

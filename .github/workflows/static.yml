@@ -34,7 +34,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: LS
-        run: ls -la -R
+        run: ls -la
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

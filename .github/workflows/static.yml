@@ -15,19 +15,16 @@ jobs:
 
    - name: List files for debugging
      run: ls -la
-     shell: /usr/bin/bash -e {0}
 
    - name: Copy HTML, CSS, and JS files to src
      run: |
        mkdir -p src
-       cp -r src/HTML/* src/
-       cp -r src/Style/* src/
-       cp -r src/Script/* src/
-     shell: /usr/bin/bash -e {0}
+       cp -r src/HTML/ src/
+       cp -r src/Style/ src/
+       cp -r src/Script/ src/
 
    - name: List files in src for debugging
      run: ls -la src
-     shell: /usr/bin/bash -e {0}
 
    - name: Upload artifact
      uses: actions/upload-pages-artifact@v3
@@ -49,7 +46,6 @@ jobs:
          --exclude=.github \
          .
        echo ::endgroup::
-     shell: /usr/bin/sh -e {0}
      env:
        GITHUB_PAGES: true
        INPUT_PATH: src

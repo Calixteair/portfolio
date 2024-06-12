@@ -62,4 +62,11 @@
         margin-right: 10px;
         }
     }
+
+    /* si sur telephone */
+    @media screen and (max-width: 600px) {
+        .title{
+            white-space: normal;
+        }
+    }
   

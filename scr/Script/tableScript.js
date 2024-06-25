@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: 'Belforaine',
                 description: 'Application web en Vue.js pour gerer l\'organisation d\'une fête foraine (fictive) réaliser en groupe de 5.',
                 gitLink: 'https://github.com/Calixteair/Belforaine',
-                liveLink: 'https://codeky.fr'
+                liveLink: 'https://belforaine.calixteair.fr'
             },
             {
                 date: '2024',

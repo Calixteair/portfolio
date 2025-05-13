@@ -1,0 +1,26 @@
+<header class="navbar">
+  <div class="left">
+    <div class="burger" (click)="toggleMenu()">
+      <lucide-icon class="burger" name="menu"></lucide-icon>
+    </div>
+  </div>
+
+  <div class="right">
+    <span class="brand">Calixteair</span>
+    <button class="theme-toggle" (click)="toggleTheme()">
+      <i class="fas" [ngClass]="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+    </button>
+
+  </div>
+
+  <div class="menu-overlay" [class.active]="menuOpen">
+    <button class="close" (click)="toggleMenu()">
+      <i class="fas fa-times"></i>
+    </button>
+    <nav>
+      <a  [routerLink]="['/']" (click)="closeMenu()">Accueil</a>
+      <a [routerLink]="['/' + ROUTES.ABOUT]" (click)="closeMenu()">À propos</a>
+      <a [routerLink]="['/' + ROUTES.PROJECTS]" (click)="closeMenu()">Projets</a>
+    </nav>
+  </div>
+</header>

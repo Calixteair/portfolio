@@ -1,0 +1,22 @@
+<div class="project-card" (mouseenter)="hover = true" (mouseleave)="hover = false">
+  <!-- Partie gauche -->
+  <div *ngIf="project">
+    <div class="left" [class.blurred]="hover">
+      <h2>{{ project.title }}</h2>
+      <div class="details-overlay" *ngIf="hover">
+        <span>Détails</span>
+      </div>
+    </div>
+
+    <!-- Partie droite -->
+    <div class="right">
+      <div class="cloud" *ngIf="hover"></div>
+
+      <div class="infos" [class.revealed]="hover">
+        <p><strong>Technologies :</strong> {{ project.technos.join(', ') }}</p>
+        <p><strong>Date :</strong> {{ project.date }}</p>
+        <p><strong>Contexte :</strong> {{ project.context }}</p>
+      </div>
+    </div>
+  </div>
+</div>

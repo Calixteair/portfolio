@@ -1,0 +1,99 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 2rem;
+  background: var(--bg-color);
+  color: var(--text-color);
+  position: fixed;
+  width: 97%;
+  z-index: 1000;
+
+  .left {
+    .logo {
+      font-weight: bold;
+      font-size: 1.3rem;
+    }
+  }
+
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .brand {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .theme-toggle,
+    .burger {
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      color: var(--text-color);
+      cursor: pointer;
+      padding: 0.4rem;
+      border-radius: 6px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .burger:hover,
+    .theme-toggle:hover {
+      background: var(--text-color);
+      color: var(--bg-color);
+    }
+  }
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  height: 100vh;
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+
+  &.active {
+    display: flex;
+  }
+
+  .close {
+    position: absolute;
+    top: 1.5rem;
+    right: 2rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-color);
+    cursor: pointer;
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    a {
+      text-decoration: none;
+      color: var(--text-color);
+      font-size: 2rem;
+      font-weight: bold;
+
+      &:hover {
+        color: red;
+      }
+    }
+  }
+
+
+
+
+
+}

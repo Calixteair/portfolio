@@ -1,0 +1,79 @@
+.project-card {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  transition: 0.3s;
+  height: 250px;
+
+  .left, .right {
+    flex: 1;
+    padding: 1.5rem;
+    position: relative;
+    transition: filter 0.3s ease;
+  }
+
+  .left {
+    background-color: #1e1e1e;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+
+    &.blurred {
+      filter: blur(4px);
+    }
+
+    .details-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+  }
+
+  .right {
+    background-color: #f4f4f4;
+    overflow: hidden;
+
+    .cloud {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 150%;
+      height: 100%;
+      background: radial-gradient(circle at 0% 50%, rgba(255, 255, 255, 0.8), transparent 70%);
+      animation: cloud-move 0.6s ease-out forwards;
+      z-index: 0;
+    }
+
+    .infos {
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+
+      &.revealed {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  }
+}
+
+@keyframes cloud-move {
+  to {
+    left: 0;
+  }
+}

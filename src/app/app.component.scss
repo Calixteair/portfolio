@@ -1,0 +1,8 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;    // centre horizontalement
+  justify-content: center;
+  min-height: 100vh;      // pour occuper toute la hauteur de la page
+  width: 100%;
+}

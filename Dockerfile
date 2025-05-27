@@ -19,7 +19,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copier les fichiers buildés d’Angular dans Nginx
-COPY --from=builder /app/dist/* /usr/share/nginx/html
+COPY --from=builder /app/dist/portfolio/browser /usr/share/nginx/html
 
 # (optionnel) Droits corrects
 RUN chown -R nginx:nginx /usr/share/nginx/html

@@ -3,4 +3,6 @@ export interface Project {
   technos: string[];
   date: string;
   context: string;
+  logos: string[];
+
 }

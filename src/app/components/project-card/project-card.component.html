@@ -1,5 +1,9 @@
 <div class="project-card" (mouseenter)="hover = true" (mouseleave)="hover = false">
   <ng-container *ngIf="project as p">
+
+    <!-- Masque central unique -->
+    <div class="mask-animation" *ngIf="hover"></div>
+
     <!-- Partie gauche -->
     <div class="left">
       <div class="left-content" [class.blurred]="hover">
@@ -12,12 +16,20 @@
 
     <!-- Partie droite -->
     <div class="right">
-      <div class="mask-animation" *ngIf="hover"></div>
+      <!-- Logos toujours visibles (masqués au hover si nécessaire via classe CSS) -->
+      <div class="logos">
+        <ng-container *ngFor="let logo of p.logos">
+          <img [src]="logo" alt="logo" />
+        </ng-container>
+      </div>
+
+      <!-- Infos visibles au hover -->
       <div class="infos" [class.revealed]="hover">
         <p><strong>Technologies :</strong> {{ p.technos.join(', ') }}</p>
         <p><strong>Date :</strong> {{ p.date }}</p>
         <p><strong>Contexte :</strong> {{ p.context }}</p>
       </div>
     </div>
+
   </ng-container>
 </div>

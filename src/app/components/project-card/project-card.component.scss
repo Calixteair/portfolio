@@ -121,6 +121,17 @@
   }
 }
 
+.card-overlay-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  text-decoration: none;
+  color: inherit;
+}
+
 @keyframes mask-hover {
   from {
     -webkit-mask-position: 100% 0;

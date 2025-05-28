@@ -26,7 +26,7 @@
       font-size: 1.1rem;
     }
 
-    .theme-toggle,
+    .theme-toggle,.cursor-toggle,
     .burger {
       background: none;
       border: none;
@@ -38,7 +38,7 @@
       transition: background 0.3s, color 0.3s;
     }
 
-    .burger:hover,
+    .burger:hover,.cursor-toggle,
     .theme-toggle:hover {
       background: var(--text-color);
       color: var(--bg-color);

@@ -14,3 +14,13 @@ body {
   background: var(--bg-color);
   color: var(--text-color);
 }
+
+body.cursor-disabled {
+  .cursor {
+    display: none !important;
+  }
+}
+
+body.cursor-enabled * {
+  cursor: none !important;
+}

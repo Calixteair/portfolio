@@ -19,21 +19,24 @@ export class ProjectsComponent {
       technos: ['Java', 'Angular'],
       date: '2024',
       context: 'Alternance',
-      logos: ['angular.png']
+      logos: ['angular.png', 'spring-boot.png'],
+      idTrace: "1"
     },
     {
       title: 'OCPP',
       technos: ['Java', 'Angular'],
       date: '2025',
       context: 'Alternance',
-      logos: ['angular.png']
+      logos: ['angular.png'],
+      idTrace: "1"
     },
     {
       title: 'Batch purge RGPD',
       technos: ['Java'],
       date: '2024',
       context: 'Alternance',
-      logos: ['angular.png']
+      logos: ['angular.png', 'spring-boot.png'],
+      idTrace: "1"
     }
   ];
 

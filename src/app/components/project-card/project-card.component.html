@@ -1,35 +1,39 @@
-<div class="project-card" (mouseenter)="hover = true" (mouseleave)="hover = false">
-  <ng-container *ngIf="project as p">
+<div class="project-card hoverable" (mouseenter)="hover = true" (mouseleave)="hover = false">
+    <ng-container *ngIf="project as p">
 
-    <!-- Masque central unique -->
-    <div class="mask-animation" *ngIf="hover"></div>
+        <a [routerLink]="'/' + getTraceRoute()"
+           class="card-overlay-link"
+           aria-label="Voir les détails"
+           (click)="$event.stopPropagation()"></a>
 
-    <!-- Partie gauche -->
-    <div class="left">
-      <div class="left-content" [class.blurred]="hover">
-        <h2>{{ p.title }}</h2>
-      </div>
-      <div class="details-overlay" *ngIf="hover">
-        <span>Détails</span>
-      </div>
-    </div>
+        <!-- Masque central unique -->
+        <div class="mask-animation" *ngIf="hover"></div>
 
-    <!-- Partie droite -->
-    <div class="right">
-      <!-- Logos toujours visibles (masqués au hover si nécessaire via classe CSS) -->
-      <div class="logos">
-        <ng-container *ngFor="let logo of p.logos">
-          <img [src]="logo" alt="logo" />
-        </ng-container>
-      </div>
+        <!-- Partie gauche -->
+        <div class="left">
+            <div class="left-content" [class.blurred]="hover">
+                <h2>{{ p.title }}</h2>
+            </div>
+            <div class="details-overlay" *ngIf="hover">
+                <span>Détails</span>
+            </div>
+        </div>
 
-      <!-- Infos visibles au hover -->
-      <div class="infos" [class.revealed]="hover">
-        <p><strong>Technologies :</strong> {{ p.technos.join(', ') }}</p>
-        <p><strong>Date :</strong> {{ p.date }}</p>
-        <p><strong>Contexte :</strong> {{ p.context }}</p>
-      </div>
-    </div>
+        <!-- Partie droite -->
+        <div class="right">
+            <!-- Logos toujours visibles (masqués au hover si nécessaire via classe CSS) -->
+            <div class="logos">
+                <ng-container *ngFor="let logo of p.logos">
+                    <img [src]="logo" alt="logo"/>
+                </ng-container>
+            </div>
 
-  </ng-container>
+            <!-- Infos visibles au hover -->
+            <div class="infos" [class.revealed]="hover">
+                <p><strong>Technologies :</strong> {{ p.technos.join(', ') }}</p>
+                <p><strong>Date :</strong> {{ p.date }}</p>
+                <p><strong>Contexte :</strong> {{ p.context }}</p>
+            </div>
+        </div>
+    </ng-container>
 </div>

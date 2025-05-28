@@ -4,5 +4,6 @@ export interface Project {
   date: string;
   context: string;
   logos: string[];
+  idTrace: string;
 
 }

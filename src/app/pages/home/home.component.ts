@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import {ROUTES} from '../../paths';
-import {RouterLink} from '@angular/router';
 import { Router } from '@angular/router';
 
 @Component({
@@ -18,6 +17,7 @@ export class HomeComponent {
 
 
   goToProjects() {
+
       this.router.navigate(['/'+ ROUTES.PROJECTS]);
   }
 

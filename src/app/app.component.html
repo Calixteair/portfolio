@@ -1,5 +1,18 @@
 <app-navbar></app-navbar>
 <app-social-icons></app-social-icons>
+<div class="cursor">
+  <div #bigBall class="cursor__ball cursor__ball--big">
+    <svg height="30" width="30">
+      <circle cx="15" cy="15" r="12" stroke-width="0"></circle>
+    </svg>
+  </div>
+
+  <div #smallBall class="cursor__ball cursor__ball--small">
+    <svg height="10" width="10">
+      <circle cx="5" cy="5" r="4" stroke-width="0"></circle>
+    </svg>
+  </div>
+</div>
 <div class="app-container">
 
   <router-outlet></router-outlet>

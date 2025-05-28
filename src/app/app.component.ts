@@ -83,13 +83,11 @@ export class AppComponent {
 
   onMouseMove(e: MouseEvent): void {
     if (!this.bigBall?.nativeElement || !this.smallBall?.nativeElement) return;
-
     gsap.to(this.bigBall.nativeElement, {
       duration: 0.4,
       x: e.pageX - 15,
       y: e.pageY - 15
     });
-
     gsap.to(this.smallBall.nativeElement, {
       duration: 0.1,
       x: e.pageX - 5,
@@ -98,11 +96,16 @@ export class AppComponent {
   }
 
   onMouseHover(): void {
+    gsap.killTweensOf(this.bigBall.nativeElement);
     gsap.to(this.bigBall.nativeElement, {duration: 0.3, scale: 4});
+    gsap.to(this.smallBall.nativeElement, {duration: 0.3, scale: 2});
+
   }
 
   onMouseHoverOut(): void {
+    gsap.killTweensOf(this.bigBall.nativeElement);
     gsap.to(this.bigBall.nativeElement, {duration: 0.3, scale: 1});
+    gsap.to(this.smallBall.nativeElement, {duration: 0.3, scale: 1});
   }
 
   ngOnDestroy(): void {

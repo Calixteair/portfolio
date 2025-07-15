@@ -1,5 +1,5 @@
-<div class="project-card hoverable" (mouseenter)="hover = true" (mouseleave)="hover = false">
-    <ng-container *ngIf="project as p">
+<div class="competence-card hoverable" (mouseenter)="hover = true" (mouseleave)="hover = false">
+    <ng-container *ngIf="competence as c">
 
         <a [routerLink]="'/' + getTraceRoute()"
            class="card-overlay-link"
@@ -12,7 +12,7 @@
         <!-- Partie gauche -->
         <div class="left">
             <div class="left-content" [class.blurred]="hover">
-                <h2>{{ p.title }}</h2>
+                <h2>{{ c.title }}</h2>
             </div>
             <div class="details-overlay" *ngIf="hover">
                 <span>Détails</span>
@@ -23,16 +23,16 @@
         <div class="right">
             <!-- Logos toujours visibles (masqués au hover si nécessaire via classe CSS) -->
             <div class="logos">
-                <ng-container *ngFor="let logo of p.logos">
+                <ng-container *ngFor="let logo of c.logos">
                     <img [src]="logo" alt="logo"/>
                 </ng-container>
             </div>
 
             <!-- Infos visibles au hover -->
             <div class="infos" [class.revealed]="hover">
-                <p><strong>Technologies :</strong> {{ p.technos.join(', ') }}</p>
-                <p><strong>Date :</strong> {{ p.date }}</p>
-                <p><strong>Contexte :</strong> {{ p.context }}</p>
+                <p><strong>Technologies :</strong> {{ c.technos.join(', ') }}</p>
+                <p><strong>Date :</strong> {{ c.date }}</p>
+                <p><strong>Contexte :</strong> {{ c.context }}</p>
             </div>
         </div>
     </ng-container>

@@ -1,19 +1,19 @@
 import { Component } from '@angular/core';
 import {RouterLink, RouterLinkActive} from '@angular/router';
-import {ProjectCardComponent} from '../../components/project-card/project-card.component';
-import {Project} from '../../models/project.model';
+import {CompetenceCardComponent} from '../../components/competence-card/competence-card.component';
+import {Competence} from '../../models/competence.model';
 import {CommonModule} from '@angular/common';
 
 @Component({
-  selector: 'app-projects',
-  imports: [ProjectCardComponent, CommonModule],
+  selector: 'app-competences',
+  imports: [CompetenceCardComponent, CommonModule],
   standalone: true,
-  templateUrl: './projects.component.html',
-  styleUrl: './projects.component.scss'
+  templateUrl: './competences.component.html',
+  styleUrl: './competences.component.scss'
 })
-export class ProjectsComponent {
+export class CompetencesComponent {
 
-  projects: Project[] = [
+  competences: Competence[] = [
     {
       title: 'OCPM',
       technos: ['Java', 'Angular'],

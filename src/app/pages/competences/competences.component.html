@@ -1,0 +1,31 @@
+<div class="competences-container">
+  <h1>Mes Compétences</h1>
+
+  <div class="competence-frame">
+    <!-- Angles du cadre -->
+    <div class="corner-top-left"></div>
+    <div class="corner-top-right"></div>
+    <div class="corner-bottom-left"></div>
+    <div class="corner-bottom-right"></div>
+
+    <!-- Décorations des bordures verticales -->
+    <div class="border-decoration-left">
+      <div class="decoration-line"></div>
+      <div class="decoration-dot"></div>
+      <div class="decoration-line"></div>
+    </div>
+    <div class="border-decoration-right">
+      <div class="decoration-line"></div>
+      <div class="decoration-dot"></div>
+      <div class="decoration-line"></div>
+    </div>
+
+    <!-- Liste des compétences -->
+    <div class="competence-list">
+      <app-competence-card
+        *ngFor="let c of competences"
+        [competence]="c">
+      </app-competence-card>
+    </div>
+  </div>
+</div>

@@ -14,11 +14,8 @@ export class HomeComponent {
 
   constructor(private router: Router) {}
 
-
-
-  goToProjects() {
-
-      this.router.navigate(['/'+ ROUTES.PROJECTS]);
+  goToCompetences() {
+      this.router.navigate(['/'+ ROUTES.COMPETENCES]);
   }
 
   protected readonly ROUTES = ROUTES;

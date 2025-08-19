@@ -34,7 +34,7 @@ export class CompetencesComponent {
     },
     {
       title: 'Collaborer au sein d\'une équipe informatique',
-      technos: ['Java'],
+      technos: ['communication'],
       date: '2024 2025',
       context: 'SAE',
       logos: ['jira.png', 'agile.png'],

@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+            "poll": 2000,
             "outputPath": "dist/portfolio",
             "index": "src/index.html",
             "browser": "src/main.ts",

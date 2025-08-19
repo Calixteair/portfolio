@@ -1,1 +1,177 @@
-<p>trace1 works!</p>
+<div class="trace-container">
+  <!-- Header avec titre et animation -->
+  <div class="trace-header">
+    <h1 class="trace-title">
+      <span class="highlight">Batch</span> de Clôture RGPD
+    </h1>
+    <div class="subtitle">Mission en apprentissage - Développement Java</div>
+  </div>
+
+  <!-- Section contexte -->
+  <section class="trace-section context-section">
+    <div class="section-decoration">
+      <div class="decoration-line"></div>
+      <div class="decoration-dot"></div>
+      <div class="decoration-line"></div>
+    </div>
+
+    <div class="content-wrapper">
+      <h2>Contexte de la mission</h2>
+      <p class="intro-text">
+        Il m'a été demandé lors de mon année en apprentissage de faire un batch permettant de clôturer des espaces ouverture compte suivant certains critères définis à l'avance.
+      </p>
+      <p>
+        La demande est donc de créer de zéro un batch en Java capable d'aller chercher dans une table PostgreSQL un nombre important d'informations et avec ces informations changer l'état d'une colonne dans une table. Le traitement doit être efficace pour ne pas prendre trop de temps et l'application finale qui a pour but d'être déployée en production doit être fiable et maintenable.
+      </p>
+    </div>
+  </section>
+
+  <!-- Section analyse -->
+  <section class="trace-section analysis-section">
+    <div class="content-wrapper">
+      <h2>Analyse et critères</h2>
+      <p>
+        J'ai donc commencé par analyser la demande et les critères de clôture d'espace.
+        Les critères étaient les suivants :
+      </p>
+      <div class="criteria-cards">
+        <div class="criteria-card hoverable">
+          <div class="criteria-number">60</div>
+          <div class="criteria-unit">jours</div>
+          <div class="criteria-desc">Clôture si pas d'activité liée (pas de demande en cours ou de RDV prévu)</div>
+        </div>
+        <div class="criteria-card hoverable">
+          <div class="criteria-number">180</div>
+          <div class="criteria-unit">jours</div>
+          <div class="criteria-desc">Clôture automatique dans tous les cas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section technique -->
+  <section class="trace-section technical-section">
+    <div class="content-wrapper">
+      <h2>Solution technique</h2>
+      <p>
+        Pour ce genre de traitement, la BRED utilise des batch Java avec <span class="tech-highlight">SpringBoot/SpringBatch</span>.
+      </p>
+
+      <!-- Trace 1 Image -->
+      <div class="trace-image-container hoverable">
+        <img src="codebatch.PNG" alt="Code du batch Spring - Structure Read, Process, Write" class="trace-image">
+        <div class="image-caption">Trace n°1 : Extrait du code du batch</div>
+      </div>
+
+      <div class="technical-details">
+        <p>
+          Comme on peut le voir dans la trace numéro 1 qui est un extrait du code du batch que j'ai réalisé, j'ai un batch en trois étapes : <strong>Read, Process, Write</strong> qui est l'implémentation classique d'un Spring Batch.
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <i class="fas fa-bolt"></i>
+            <div>
+              <strong>Optimisation par chunks :</strong> Pour une meilleure optimisation, j'ai paramétré les batch en "chunk based batch" qui permet de prendre des paquets de données et de faire les étapes sur ces paquets au lieu de faire donnée par donnée.
+            </div>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-shield-alt"></i>
+            <div>
+              <strong>Gestion des erreurs :</strong> On peut aussi voir lignes 47, 48, 49 et 50 que j'ai mis en place une gestion des erreurs pour une meilleure robustesse du code et une meilleure maintenabilité. En effet, le batch a des logs d'information et d'erreur codifiés qui remontent dans Splunk.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section monitoring -->
+  <section class="trace-section monitoring-section">
+    <div class="content-wrapper">
+      <h2>Monitoring et suivi</h2>
+
+      <!-- Trace 2 Image -->
+      <div class="trace-image-container hoverable">
+        <img src="batcprodnoerr.PNG" alt="Tableau de bord Splunk pour le monitoring du batch" class="trace-image">
+        <div class="image-caption">Trace n°2 : Dashboard Splunk de monitoring</div>
+      </div>
+
+      <p>
+        Sur la trace numéro 2, on peut voir un tableau de recherche Splunk que j'ai créé afin de pouvoir observer les traitements du batch. On y voit 6 colonnes :
+      </p>
+
+      <div class="splunk-columns">
+        <div class="column-group">
+          <h3>Critères de clôture</h3>
+          <div class="column-item">
+            <span class="column-number">1</span>
+            <span>Fermeture au bout de 180 jours</span>
+          </div>
+          <div class="column-item">
+            <span class="column-number">2</span>
+            <span>Fermeture au bout de 60 jours</span>
+          </div>
+          <div class="column-item">
+            <span class="column-number">3</span>
+            <span>Condition ajoutée après analyse en recette (identifiant tiers manquant)</span>
+          </div>
+        </div>
+
+        <div class="column-group">
+          <h3>Colonnes de contrôle</h3>
+          <div class="column-item">
+            <span class="column-number">4</span>
+            <span>Ciblage (empêche la clôture mais conserve les logs)</span>
+          </div>
+          <div class="column-item">
+            <span class="column-number">5</span>
+            <span>Gestion des erreurs et analyse</span>
+          </div>
+          <div class="column-item">
+            <span class="column-number">6</span>
+            <span>Vérification (somme des 3 premières colonnes)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-box">
+        <i class="fas fa-lightbulb"></i>
+        <p>
+          Ce problème a pu être remonté rapidement grâce aux logs d'erreur mis en place. En effet, des identifiants tiers étaient manquants car purgés par un autre batch, donc si pas d'identifiant tiers, on peut clôturer l'espace.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section résultat -->
+  <section class="trace-section result-section">
+    <div class="content-wrapper">
+      <h2>Résultat de la mission</h2>
+      <div class="result-card">
+        <i class="fas fa-check-circle"></i>
+        <p>
+          Cette mission a donc été remplie entièrement. J'ai pu développer une application optimisée et facilement maintenable seul en partant de zéro, en respectant les critères des métiers et la stack de l'entreprise, et la livrer en production.
+        </p>
+      </div>
+
+      <div class="tech-stack">
+        <h3>Technologies utilisées</h3>
+        <div class="tech-badges">
+          <span class="tech-badge hoverable">Java</span>
+          <span class="tech-badge hoverable">Spring Boot</span>
+          <span class="tech-badge hoverable">Spring Batch</span>
+          <span class="tech-badge hoverable">PostgreSQL</span>
+          <span class="tech-badge hoverable">Splunk</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bouton retour -->
+  <div class="back-button-container">
+    <button class="btn-back hoverable" [routerLink]="['/' + ROUTES.COMPETENCES]">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux compétences
+    </button>
+  </div>
+</div>

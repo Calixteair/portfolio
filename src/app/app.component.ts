@@ -81,19 +81,24 @@ export class AppComponent {
     });
   }
 
-  onMouseMove(e: MouseEvent): void {
-    if (!this.bigBall?.nativeElement || !this.smallBall?.nativeElement) return;
-    gsap.to(this.bigBall.nativeElement, {
-      duration: 0.4,
-      x: e.pageX - 15,
-      y: e.pageY - 15
-    });
-    gsap.to(this.smallBall.nativeElement, {
-      duration: 0.1,
-      x: e.pageX - 5,
-      y: e.pageY - 7
-    });
-  }
+onMouseMove(e: MouseEvent): void {
+  if (!this.bigBall?.nativeElement || !this.smallBall?.nativeElement) return;
+
+  // Utiliser clientX/Y pour une position correcte avec le scroll
+  const x = e.clientX;
+  const y = e.clientY;
+
+  gsap.to(this.bigBall.nativeElement, {
+    duration: 0.4,
+    x: x - 15,
+    y: y - 15
+  });
+  gsap.to(this.smallBall.nativeElement, {
+    duration: 0.1,
+    x: x - 5,
+    y: y - 7
+  });
+}
 
   onMouseHover(): void {
     gsap.killTweensOf(this.bigBall.nativeElement);

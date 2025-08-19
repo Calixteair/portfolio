@@ -15,12 +15,13 @@ export class CompetencesComponent {
 
   competences: Competence[] = [
     {
-      title: 'OCPM',
-      technos: ['Java', 'Angular'],
+      title: 'Batch Cloture Espaces',
+      technos: ['Java', 'Spunk'],
       date: '2024',
-      context: 'Alternance',
-      logos: ['angular.png', 'spring-boot.png'],
-      idTrace: "1"
+      context: 'Portfolio',
+      logos: ['spring-boot.png', 'Splunk_logo.png'],
+      idTrace: "1",
+      competence: "Réaliser un développement d’application"
     },
     {
       title: 'OCPP',
@@ -28,15 +29,17 @@ export class CompetencesComponent {
       date: '2025',
       context: 'Alternance',
       logos: ['angular.png'],
-      idTrace: "1"
+      idTrace: "1",
+      competence: "Réaliser un développement d’application"
     },
     {
       title: 'Batch purge RGPD',
       technos: ['Java'],
       date: '2024',
-      context: 'Alternance',
+      context: 'SAE',
       logos: ['angular.png', 'spring-boot.png'],
-      idTrace: "1"
+      idTrace: "1",
+      competence: "Réaliser un développement d’application"
     }
   ];
 

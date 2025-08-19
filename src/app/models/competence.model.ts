@@ -5,4 +5,5 @@ export interface Competence {
   context: string;
   logos: string[];
   idTrace: string;
+  competence: string;
 }

@@ -30,6 +30,7 @@
 
             <!-- Infos visibles au hover -->
             <div class="infos" [class.revealed]="hover">
+              <p><strong>{{ c.competence }}</strong> </p>
                 <p><strong>Technologies :</strong> {{ c.technos.join(', ') }}</p>
                 <p><strong>Date :</strong> {{ c.date }}</p>
                 <p><strong>Contexte :</strong> {{ c.context }}</p>

@@ -4,12 +4,12 @@ import { RouterLink } from '@angular/router';
 import { ROUTES } from '../../paths';
 
 @Component({
-  selector: 'app-trace1',
+  selector: 'app-trace2',
   imports: [CommonModule, RouterLink],
   standalone: true,
-  templateUrl: './trace1.component.html',
-  styleUrl: './trace1.component.scss'
+  templateUrl: './trace2.component.html',
+  styleUrl: './trace2.component.scss'
 })
-export class Trace1Component {
+export class Trace2Component {
   protected readonly ROUTES = ROUTES;
 }

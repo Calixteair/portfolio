@@ -24,13 +24,13 @@ export class CompetencesComponent {
       competence: "Réaliser un développement d’application"
     },
     {
-      title: 'OCPP',
+      title: 'Récupération automatique d’informations dans des documents',
       technos: ['Java', 'Angular'],
       date: '2025',
       context: 'Alternance',
-      logos: ['angular.png'],
-      idTrace: "1",
-      competence: "Réaliser un développement d’application"
+      logos: ['spring-boot.png', 'Postgresql_elephant.png', 'angular.png'],
+      idTrace: "2",
+      competence: "Gestion des Données de l'Information"
     },
     {
       title: 'Batch purge RGPD',

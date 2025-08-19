@@ -1,1 +1,267 @@
-<div>trace2 works</div>
+<div class="trace-container">
+  <!-- Header avec titre et animation -->
+  <div class="trace-header">
+    <h1 class="trace-title">
+      <span class="highlight">Gestion</span> des Données de l'Information
+    </h1>
+    <div class="subtitle">Extraction et traitement automatisé par IA - Développement Java</div>
+  </div>
+
+  <!-- Section contexte -->
+  <section class="trace-section context-section">
+    <div class="section-decoration">
+      <div class="decoration-line"></div>
+      <div class="decoration-dot"></div>
+      <div class="decoration-line"></div>
+    </div>
+
+    <div class="content-wrapper">
+      <h2>Contexte de la mission</h2>
+      <p class="intro-text">
+        La situation professionnelle que j'ai rencontrée illustre pleinement la compétence "Gérer des données de l'information", puisqu'il s'agissait de concevoir et de mettre en œuvre un mécanisme de récupération, de transformation et de stockage automatisé de données extraites de documents grâce à l'IA.
+      </p>
+      <p>
+        Cette mission impliquait la création d'un système complet de traitement de données provenant du service <span class="tech-highlight">bs-documentIntelligence</span>, capable d'extraire des informations de documents légaux (Kbis, RNBE et statuts) et de les intégrer de manière cohérente dans notre système d'information.
+      </p>
+    </div>
+  </section>
+
+  <!-- Section récupération de données -->
+  <section class="trace-section data-retrieval-section">
+    <div class="content-wrapper">
+      <h2>Récupération et désérialisation des données</h2>
+      <p>
+        Tout d'abord, j'ai dû récupérer des données brutes fournies par le service bs-documentIntelligence. Ces données étaient renvoyées sous forme de chaînes de caractères JSON contenant les informations extraites par l'IA à partir de documents légaux.
+      </p>
+
+      <div class="data-sources">
+        <div class="source-card hoverable">
+          <div class="source-icon">📋</div>
+          <div class="source-title">Kbis</div>
+          <div class="source-desc">Document officiel d'identification des entreprises</div>
+          <div class="priority-badge priority-1">Priorité 1</div>
+        </div>
+        <div class="source-card hoverable">
+          <div class="source-icon">📄</div>
+          <div class="source-title">RNBE</div>
+          <div class="source-desc">Répertoire National des Bénéficiaires Effectifs</div>
+          <div class="priority-badge priority-2">Priorité 2</div>
+        </div>
+        <div class="source-card hoverable">
+          <div class="source-icon">📜</div>
+          <div class="source-title">Statuts</div>
+          <div class="source-desc">Documents constitutifs extraits par IA</div>
+          <div class="priority-badge priority-3">Priorité 3</div>
+        </div>
+      </div>
+
+      <div class="technical-details">
+        <p>
+          Cette première étape a nécessité une bonne maîtrise des formats d'échange de données ainsi que des outils de désérialisation : j'ai mis en place des classes Java adaptées et utilisé <span class="tech-highlight">Jackson</span> pour convertir ces JSON en objets manipulables.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section traitement des données -->
+  <section class="trace-section data-processing-section">
+    <div class="content-wrapper">
+      <h2>Traitement et nettoyage des données</h2>
+      <p>
+        Un travail important de traitement et de nettoyage des données a été réalisé afin d'assurer leur cohérence et leur qualité. Ces choix garantissent la fiabilité et l'intégrité des informations stockées.
+      </p>
+
+      <div class="processing-steps">
+        <div class="process-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Nettoyage des caractères</h3>
+            <p>Suppression des caractères spéciaux et normalisation du format</p>
+          </div>
+        </div>
+        <div class="process-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Correction des formats</h3>
+            <p>Codes postaux, villes et autres données structurées</p>
+          </div>
+        </div>
+        <div class="process-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Règles de priorité</h3>
+            <p>Kbis > RNBE > Statuts IA pour éviter les conflits</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section architecture -->
+  <section class="trace-section architecture-section">
+    <div class="content-wrapper">
+      <h2>Architecture du système</h2>
+
+      <!-- Trace 3 Image -->
+      <div class="trace-image-container hoverable">
+        <img src="ocpmlast.png" alt="Schéma de l'architecture des applications" class="trace-image">
+        <div class="image-caption">Trace n°3 : Architecture générale du système de traitement des données</div>
+      </div>
+
+      <p>
+        Le schéma ci-dessus illustre l'architecture complète mise en place pour gérer le flux de données depuis l'extraction par IA jusqu'au stockage final. Cette architecture garantit la séparation des responsabilités et la réutilisabilité des composants.
+      </p>
+
+      <div class="architecture-flow">
+        <div class="flow-step">
+          <div class="flow-icon">🤖</div>
+          <div class="flow-title">Extraction IA</div>
+          <div class="flow-desc">Service bs-documentIntelligence</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-icon">⚙️</div>
+          <div class="flow-title">Traitement</div>
+          <div class="flow-desc">Nettoyage et validation</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-icon">🗄️</div>
+          <div class="flow-title">Stockage</div>
+          <div class="flow-desc">Base PostgreSQL</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section base de données -->
+  <section class="trace-section database-section">
+    <div class="content-wrapper">
+      <h2>Conception de la base de données</h2>
+      <p>
+        L'étape suivante a consisté à concevoir une base de données relationnelle adaptée. Pour répondre aux besoins métiers, j'ai conçu de nouvelles tables spécifiques permettant de gérer à la fois les personnes morales, les personnes physiques, les adresses et leurs relations.
+      </p>
+
+      <!-- Trace 4 Image -->
+      <div class="trace-image-container hoverable">
+        <img src="dbdiagramio.png" alt="Schéma des 4 tables créées pour la gestion des données" class="trace-image">
+        <div class="image-caption">Trace n°4 : Modèle relationnel des tables créées</div>
+      </div>
+
+      <div class="database-features">
+        <div class="feature-item">
+          <i class="fas fa-key"></i>
+          <div>
+            <strong>Clés et contraintes :</strong> Définition de clés primaires et étrangères avec contraintes d'intégrité pour éviter toute incohérence dans les relations entre entités.
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-link"></i>
+          <div>
+            <strong>Relations optimisées :</strong> Modélisation des relations entre personnes morales, physiques et adresses pour une gestion efficace des données complexes.
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-code"></i>
+          <div>
+            <strong>Automatisation JPA :</strong> Accès et alimentation automatisés via des objets JPA et des endpoints réutilisables pour faciliter la collaboration.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section stockage et gestion -->
+  <section class="trace-section storage-section">
+    <div class="content-wrapper">
+      <h2>Stockage et gestion temporaire</h2>
+      <div class="storage-flow">
+        <div class="storage-branch">
+          <h3>Données Personne Morale</h3>
+          <div class="storage-card immediate">
+            <i class="fas fa-database"></i>
+            <p>Enregistrement direct dans PostgreSQL et le SI</p>
+          </div>
+        </div>
+        <div class="storage-branch">
+          <h3>Données Associés</h3>
+          <div class="storage-card temporary">
+            <i class="fas fa-clock"></i>
+            <p>Stockage temporaire en attendant l'association par un collaborateur</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-box">
+        <i class="fas fa-user-tie"></i>
+        <p>
+          Les données des personnes associées a la personne moral  sont stockées dans ces tables de façon temporaire en attendant qu'un collaborateur puisse, à travers le parcours d'ouverture de compte via l'application, associer ces nouvelles personnes à un tiers existant ou en créer un nouveau.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section compétences mobilisées -->
+  <section class="trace-section skills-section">
+    <div class="content-wrapper">
+      <h2>Compétences mobilisées</h2>
+      <p>À travers cette réalisation, plusieurs aspects de la compétence sont mobilisés :</p>
+
+      <div class="skills-grid">
+        <div class="skill-card hoverable">
+          <div class="skill-icon">🏗️</div>
+          <h3>Conception BDD</h3>
+          <p>Concevoir et mettre en place une base de données à partir d'un besoin métier (création des tables adaptées, modélisation relationnelle)</p>
+        </div>
+        <div class="skill-card hoverable">
+          <div class="skill-icon">🛡️</div>
+          <h3>Qualité des données</h3>
+          <p>Assurer la qualité, la cohérence et la sécurité des données (nettoyage, règles de priorité, intégrité des contraintes SQL)</p>
+        </div>
+        <div class="skill-card hoverable">
+          <div class="skill-icon">🔗</div>
+          <h3>Sources hétérogènes</h3>
+          <p>Exploiter des données hétérogènes (fusion de sources différentes : prestataire fiable, IA, et saisies manuelles)</p>
+        </div>
+        <div class="skill-card hoverable">
+          <div class="skill-icon">⚡</div>
+          <h3>Réutilisabilité</h3>
+          <p>Optimiser la réutilisabilité et la collaboration (code générique, endpoints communs, JPA)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section résultat -->
+  <section class="trace-section result-section">
+    <div class="content-wrapper">
+      <h2>Bilan de la compétence</h2>
+      <div class="result-card">
+        <i class="fas fa-check-circle"></i>
+        <p>
+          Cette expérience démontre donc à la fois un <strong>savoir</strong> (connaissance des formats de données, des bases relationnelles, de l'architecture logicielle) et un <strong>savoir-faire</strong> (capacité à concevoir, transformer et exploiter des données de manière fiable et sécurisée dans un projet concret).
+        </p>
+      </div>
+
+      <div class="tech-stack">
+        <h3>Technologies utilisées</h3>
+        <div class="tech-badges">
+          <span class="tech-badge hoverable">Java</span>
+          <span class="tech-badge hoverable">Jackson</span>
+          <span class="tech-badge hoverable">JPA</span>
+          <span class="tech-badge hoverable">PostgreSQL</span>
+          <span class="tech-badge hoverable">Intelligence Artificielle</span>
+          <span class="tech-badge hoverable">REST API</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bouton retour -->
+  <div class="back-button-container">
+    <button class="btn-back hoverable" [routerLink]="['/' + ROUTES.COMPETENCES]">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux compétences
+    </button>
+  </div>
+</div>

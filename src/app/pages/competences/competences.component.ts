@@ -27,7 +27,7 @@ export class CompetencesComponent {
       title: 'Récupération automatique d’informations dans des documents',
       technos: ['Java', 'Angular, SQL'],
       date: '2025',
-      context: 'Alternance',
+      context: 'Portfolio',
       logos: ['spring-boot.png', 'Postgresql_elephant.png', 'angular.png'],
       idTrace: "2",
       competence: "Gestion des Données de l'Information"
@@ -39,7 +39,7 @@ export class CompetencesComponent {
       context: 'SAE',
       logos: ['jira.png', 'agile.png'],
       idTrace: "3",
-      competence: "RCollaborer au sein d'une équipe informatique"
+      competence: "Collaborer au sein d'une équipe informatique"
     }
   ];
 

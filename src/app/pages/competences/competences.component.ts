@@ -25,7 +25,7 @@ export class CompetencesComponent {
     },
     {
       title: 'Récupération automatique d’informations dans des documents',
-      technos: ['Java', 'Angular'],
+      technos: ['Java', 'Angular, SQL'],
       date: '2025',
       context: 'Alternance',
       logos: ['spring-boot.png', 'Postgresql_elephant.png', 'angular.png'],
@@ -33,13 +33,13 @@ export class CompetencesComponent {
       competence: "Gestion des Données de l'Information"
     },
     {
-      title: 'Batch purge RGPD',
+      title: 'Collaborer au sein d\'une équipe informatique',
       technos: ['Java'],
-      date: '2024',
+      date: '2024 2025',
       context: 'SAE',
-      logos: ['angular.png', 'spring-boot.png'],
-      idTrace: "1",
-      competence: "Réaliser un développement d’application"
+      logos: ['jira.png', 'agile.png'],
+      idTrace: "3",
+      competence: "RCollaborer au sein d'une équipe informatique"
     }
   ];
 

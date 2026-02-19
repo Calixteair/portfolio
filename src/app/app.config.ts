@@ -6,5 +6,5 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 import {LucideAngularModule, Menu, X} from 'lucide-angular';
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes), importProvidersFrom(LucideAngularModule.pick({ Menu, X })), provideClientHydration(withEventReplay())]
+  providers: [provideZoneChangeDetection({ eventCoalescing: true }), provideRouter(routes), provideClientHydration(withEventReplay())]
 };

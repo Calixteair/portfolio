@@ -21,7 +21,7 @@
     "@angular/router": "19.2.16",
     "@angular/ssr": "19.2.16",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "express": "^4.22.1",
+    "express": "^4.22.2",
     "gsap": "^3.13.0",
     "lucide-angular": "^0.511.0",
     "lucide-static": "^0.511.0",

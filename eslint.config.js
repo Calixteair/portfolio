@@ -14,6 +14,11 @@ export default defineConfig(
     ...reactHooks.configs.flat.recommended,
   },
   {
+    // Node scripts: declared by hand instead of pulling the `globals` package for two names.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { console: 'readonly', process: 'readonly' } },
+  },
+  {
     rules: {
       // `any` is banned project-wide: use a real type or `unknown`.
       '@typescript-eslint/no-explicit-any': 'error',

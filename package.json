@@ -15,7 +15,8 @@
     "format": "prettier --write . && eslint --fix .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:webgpu": "E2E_WEBGPU=1 playwright test --project=webgpu"
+    "test:e2e:webgpu": "E2E_WEBGPU=1 playwright test --project=webgpu",
+    "size": "node scripts/check-bundle-size.mjs"
   },
   "dependencies": {
     "@astrojs/react": "7.0.1",

@@ -1,9 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
-/** Collects uncaught page errors so each test can assert there were none. */
+/** Collects uncaught page errors and CSP violations so each test can assert there were none. */
 function trackPageErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().includes('Content Security Policy')) {
+      errors.push(message.text());
+    }
+  });
   return errors;
 }
 

@@ -1,0 +1,14 @@
+node_modules
+dist
+.astro
+.git
+.github
+docs
+test-results
+playwright-report
+.env*
+*.log
+Dockerfile
+compose.yaml
+deploy
+tests

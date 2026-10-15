@@ -7,6 +7,9 @@ COPY package.json package-lock.json .npmrc ./
 RUN npm ci --no-audit
 
 COPY . .
+# Commit SHA rendered in a <meta>: the deploy smoke test checks the new version is live.
+ARG BUILD_SHA=dev
+ENV PUBLIC_BUILD_SHA=$BUILD_SHA
 RUN npm run build \
  && find dist -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.svg' \
       -o -name '*.json' -o -name '*.wasm' -o -name '*.glb' \) -exec gzip -9 -k {} +

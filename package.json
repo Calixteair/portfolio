@@ -12,7 +12,10 @@
     "preview": "astro preview",
     "typecheck": "astro check",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write . && eslint --fix ."
+    "format": "prettier --write . && eslint --fix .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:webgpu": "E2E_WEBGPU=1 playwright test --project=webgpu"
   },
   "dependencies": {
     "@astrojs/react": "7.0.1",
@@ -27,6 +30,7 @@
     "@astrojs/check": "0.9.10",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@types/three": "0.186.0",
@@ -36,6 +40,7 @@
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.2"
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.4"
   }
 }

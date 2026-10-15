@@ -18,3 +18,7 @@ docs/references/*
 !.vscode/extensions.json
 .DS_Store
 *.log
+
+# Test output
+test-results/
+playwright-report/

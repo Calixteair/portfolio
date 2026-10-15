@@ -5,12 +5,15 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M0 — Squelette du projet
 
-- [ ] Astro statique + île React + R3F + TypeScript strict, avec une scène vide qui s'affiche
-- [ ] `WebGPURenderer` dans R3F, repli WebGL 2 vérifié, un compute shader TSL minimal qui tourne
-- [ ] Vérifier la compatibilité WebGPU des composants drei prévus (SPEC §10)
-- [ ] Arborescence de la SPEC, scripts npm, ESLint et Prettier
-- [ ] Dockerfile + nginx.conf + docker-compose, testés en local (`docker compose up`)
-- [ ] MCP Playwright opérationnel : capture de la page de dev
+- [x] Astro statique + île React + R3F + TypeScript strict, avec une scène vide qui s'affiche
+- [x] `WebGPURenderer` dans R3F, repli WebGL 2 vérifié, un compute shader TSL minimal qui tourne
+- [x] Vérifier la compatibilité WebGPU des composants drei prévus (résultats : SPEC §11)
+- [x] Arborescence de la SPEC, scripts npm, ESLint et Prettier
+- [x] Dockerfile + nginx.conf + docker-compose, testés en local (`docker compose up`)
+- [x] Captures Playwright (script + e2e sur les deux backends). Le MCP Playwright n'est pas configuré : non bloquant
+- [x] CI : lint, tests, build, budget, e2e WebGL 2, hadolint, gitleaks, dependency review, CodeQL, Dependabot groupé
+- [x] CD : image GHCR (Trivy, SBOM, provenance, cosign) → `:prod` → déploiement SSH ForceCommand sur portfolio.calixteair.fr, smoke test
+- [ ] Budget JS initial : SPEC §7 dit 350 Ko gzip, le budget provisoire est 450 Ko (409 Ko mesurés). À trancher
 
 ## M1 — Ambiance et placeholder
 

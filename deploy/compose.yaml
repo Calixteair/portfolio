@@ -1,0 +1,20 @@
+# Production stack on the VPS: /home/calixteair/docker/apps/portfolio/compose.yaml
+# Deployed by CI: ssh ci-portfolio -> ci-deploy-self.sh -> bao-deploy.sh portfolio
+# (no-secrets marker: pull + up -d). :prod only ever points to a scanned, signed image.
+services:
+  portfolio:
+    image: ghcr.io/calixteair/portfolio:prod
+    container_name: portfolio
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - nginx-reverse-proxy
+
+networks:
+  nginx-reverse-proxy:
+    external: true

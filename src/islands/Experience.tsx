@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
 import '../three/extend';
 import { backendOf, createRenderer, type Backend } from '../three/renderer';
+import ComputeProbe from '../three/scenes/forge/ComputeProbe';
 import BackendBadge from './BackendBadge';
 
 /** Root of the 3D island. Empty scene for now: proves Astro → React → R3F → WebGPU wiring. */
@@ -27,6 +28,7 @@ export default function Experience() {
           <boxGeometry args={[0.6, 0.9, 0.08]} />
           <meshNormalMaterial />
         </mesh>
+        <ComputeProbe />
       </Canvas>
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}
     </>

@@ -1,0 +1,20 @@
+# Dependencies & build output
+node_modules/
+dist/
+.astro/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Reference photos: third-party product shots, kept local only
+docs/references/*
+!docs/references/README.md
+
+# Editor / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.log

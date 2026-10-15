@@ -1,0 +1,725 @@
+<title>Forge du pendentif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  /* Layout: full-bleed WebGL stage, one instrument panel docked bottom-left, status readout top-left. */
+  :root {
+    --void: #060405;
+    --panel: #0d0b0bcc;
+    --line: #2a2222;
+    --fg: #e4dfdc;
+    --muted: #8d837f;
+    --hot: #ff7a2e;
+    --font-display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; background: var(--void); color: var(--fg); overflow: hidden; }
+  body { font-family: var(--font-body); font-size: 14px; }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+
+  .readout { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px; pointer-events: none; display: grid; gap: 4px; }
+  .readout h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(20px, 3vw, 28px); margin: 0; letter-spacing: .02em; }
+  .readout .state { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .readout .state b { color: var(--hot); font-weight: 400; }
+
+  .panel { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: min(440px, calc(100% - 32px));
+    background: var(--panel); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; display: grid; gap: 12px; }
+  .row { display: grid; gap: 6px; }
+  .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; width: fit-content; max-width: 100%; }
+  .seg button, .actions button { font: 500 12px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: transparent; border: 0; padding: 8px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { color: var(--void); background: var(--fg); }
+  .heat { display: flex; align-items: center; gap: 10px; }
+  .heat input[type=range] { flex: 1; min-width: 0; accent-color: var(--hot); }
+  .heat output { font-family: var(--font-mono); font-size: 12px; width: 3.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .heat label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .actions button { border: 1px solid var(--line); border-radius: 3px; color: var(--fg); }
+  .actions button.primary { border-color: var(--hot); color: var(--hot); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+</style>
+
+<canvas id="stage" aria-label="Pendentif en 3D : cliquer pour chauffer, glisser pour faire tourner"></canvas>
+
+<div class="readout">
+  <h1>Forge du pendentif</h1>
+  <div class="state" id="state">état <b>idle</b> · 0,0 tour</div>
+</div>
+
+<div class="panel">
+  <p class="hint">Clique le pendentif pour le chauffer, glisse pour le faire tourner. Après deux tours en surchauffe, le portail s'ouvre.</p>
+  <div class="row">
+    <span class="label">Derrière le portail (ouvre le portail)</span>
+    <div class="seg" role="group" aria-label="Palette">
+      <button type="button" data-palette="B" aria-pressed="true">B · Braise contaminée</button>
+      <button type="button" data-palette="D" aria-pressed="false">D · Zone lente</button>
+    </div>
+  </div>
+  <div class="row">
+    <span class="label">La chaleur part du</span>
+    <div class="seg" role="group" aria-label="Origine de la chauffe">
+      <button type="button" data-origin="hole" aria-pressed="false">Trou</button>
+      <button type="button" data-origin="mix" aria-pressed="true">Trou + un peu le bord</button>
+      <button type="button" data-origin="outer" aria-pressed="false">Bord extérieur</button>
+    </div>
+  </div>
+  <div class="row">
+    <span class="label">Chauffe</span>
+    <div class="heat">
+      <input type="range" id="heat" min="0" max="100" value="0" aria-label="Niveau de chauffe">
+      <output id="heat-out" for="heat">0</output>
+      <label><input type="checkbox" id="freeze"> Figer</label>
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" class="primary" id="open">Ouvrir le portail</button>
+    <button type="button" id="reset">Réinitialiser</button>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+// ---------- Tunables (the future leva panel) ----------
+const PLATE = { hw: 0.31, hh: 0.45, chamfer: 0.075, depth: 0.05, bevel: 0.008 };
+const HOLE = { cx: 0.015, cy: 0.035, hw: 0.165, hh: 0.245 };
+const RULES = { heatPerClick: 0.11, coolPerSec: 0.07, spinImpulse: 5.5, spinDamping: 1.3, threshold: 0.85, turnsNeeded: 2, overheatDelay: 1.5 };
+const FIELD = { w: 160, h: 232, range: 0.2 };
+const PALETTES = {
+  B: { void: "#02040c", neb: "#0c2348", fil: "#2f6bff", core: "#b4e0ff", edge: "#ff5a14", ember: "#ff5a1a", light: "#3d7bff", emberMix: 0.5, speed: 1, veins: 1 },
+  D: { void: "#060707", neb: "#151b1d", fil: "#56737a", core: "#c9d6d9", edge: "#7a2a1e", ember: "#b8401f", light: "#7f9aa0", emberMix: 0.04, speed: 0.3, veins: 0.45 },
+};
+// Heat sources: weight of the hole edge, weight of the outer edge, share of sparks born on the outer edge.
+const ORIGINS = {
+  hole: { hole: 1, outer: 0, share: 0 },
+  mix: { hole: 1, outer: 0.6, share: 0.25 },
+  outer: { hole: 0, outer: 1, share: 1 },
+};
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- Deterministic randomness ----------
+function mulberry32(seed) {
+  return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const rand = mulberry32(7);
+
+// ---------- 2D outlines ----------
+function outerOutline() {
+  const { hw, hh, chamfer: c } = PLATE;
+  return [[-hw + c, hh], [hw - c, hh], [hw, hh - c], [hw, -hh + c], [hw - c, -hh], [-hw + c, -hh], [-hw, -hh + c], [-hw, hh - c]]
+    .map(([x, y]) => new THREE.Vector2(x, y));
+}
+
+// Rounded-rect superellipse pushed in and out by periodic noise: an eroded hole.
+function holeOutline(n = 180) {
+  const waves = [[3, 0.012], [7, 0.009], [13, 0.006], [29, 0.004], [53, 0.0025]].map(([f, a]) => ({ f, a, ph: rand() * 6.28 }));
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / n, ang = t * Math.PI * 2, c = Math.cos(ang), s = Math.sin(ang);
+    const x = Math.sign(c) * Math.abs(c) ** 0.25 * HOLE.hw, y = Math.sign(s) * Math.abs(s) ** 0.25 * HOLE.hh;
+    const off = waves.reduce((sum, w) => sum + w.a * Math.sin(w.f * ang + w.ph), 0) + (rand() - 0.5) * 0.006;
+    const len = Math.hypot(x, y) || 1;
+    pts.push(new THREE.Vector2(HOLE.cx + x + (x / len) * off, HOLE.cy + y + (y / len) * off));
+  }
+  return pts;
+}
+
+// ---------- Distance fields baked into one texture ----------
+// R: distance to hole edge · G: distance to outer edge · A: inside hole
+function segDist(px, py, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - a.x - t * dx, py - a.y - t * dy);
+}
+function polyDist(px, py, poly) {
+  let d = Infinity;
+  for (let i = 0; i < poly.length; i++) d = Math.min(d, segDist(px, py, poly[i], poly[(i + 1) % poly.length]));
+  return d;
+}
+function inside(px, py, poly) {
+  let c = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i], b = poly[j];
+    if ((a.y > py) !== (b.y > py) && px < ((b.x - a.x) * (py - a.y)) / (b.y - a.y) + a.x) c = !c;
+  }
+  return c;
+}
+function bakeFields(hole, outer) {
+  const { w, h, range } = FIELD;
+  const min = new THREE.Vector2(-PLATE.hw - 0.02, -PLATE.hh - 0.02), size = new THREE.Vector2(2 * PLATE.hw + 0.04, 2 * PLATE.hh + 0.04);
+  const data = new Uint8Array(w * h * 4), q = v => Math.round(Math.min(1, v) * 255);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const x = min.x + ((i + 0.5) / w) * size.x, y = min.y + ((j + 0.5) / h) * size.y;
+    const dh = polyDist(x, y, hole), ins = inside(x, y, hole), k = (j * w + i) * 4;
+    data[k] = q(dh / range);
+    data[k + 1] = q(polyDist(x, y, outer) / range);
+        data[k + 3] = ins ? 255 : 0;
+  }
+  const tex = new THREE.DataTexture(data, w, h, THREE.RGBAFormat);
+  tex.magFilter = tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return { tex, min, size };
+}
+
+// ---------- Shared GLSL ----------
+const GLSL_NOISE = `
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+1.),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*vnoise(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+float ridge(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){float n=1.-abs(vnoise(p)*2.-1.);v+=a*n*n;p=p*2.1+3.1;a*=.5;}return v;}
+vec3 blackbody(float t){return vec3(smoothstep(0.,.35,t),smoothstep(.2,.8,t)*.8,smoothstep(.55,1.,t)*.72);}
+`;
+
+// ---------- Steel plate material ----------
+function brushedRoughness() {
+  const c = document.createElement("canvas"); c.width = c.height = 512;
+  const g = c.getContext("2d");
+  g.fillStyle = "#6b6b6b"; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 4200; i++) {
+    const v = 70 + rand() * 90, y = rand() * 512;
+    g.strokeStyle = `rgba(${v},${v},${v},${0.15 + rand() * 0.35})`; g.lineWidth = 0.5 + rand();
+    g.beginPath(); g.moveTo(rand() * -200, y); g.lineTo(312 + rand() * 400, y + (rand() - 0.5) * 2); g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1.6, 1.6);
+  return tex;
+}
+
+function plateMaterial(fields, uniforms) {
+  const mat = new THREE.MeshPhysicalMaterial({ color: 0xb4b5b9, metalness: 1, roughness: 0.38, roughnessMap: brushedRoughness(), anisotropy: 0.55, envMapIntensity: 1.1 });
+  mat.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, uniforms, { uFields: { value: fields.tex }, uMin: { value: fields.min }, uSize: { value: fields.size } });
+    shader.vertexShader = "varying vec3 vObj;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvObj = position;");
+    shader.fragmentShader = `varying vec3 vObj;
+uniform sampler2D uFields; uniform vec2 uMin, uSize; uniform float uHeat, uHist, uHoleW, uOuterW, uTime;
+${GLSL_NOISE}
+float heatField(vec4 f,float h){
+  float n=(fbm(vObj.xy*38.+vec2(uTime*.6,-uTime*.4))-.5)*.25*h;
+  float fromHole=clamp(h*uHoleW-f.r*2.6+n,0.,1.);
+  float fromOuter=clamp(h*uOuterW-f.g*3.2+n,0.,1.);
+  return max(fromHole,fromOuter);
+}
+vec3 temper(float x){
+  vec3 straw=vec3(1.,.8,.48),bronze=vec3(.72,.4,.2),blue=vec3(.28,.38,.78);
+  return x<.5?mix(straw,bronze,x*2.):mix(bronze,blue,(x-.5)*2.);
+}
+` + shader.fragmentShader
+      .replace("#include <color_fragment>", `#include <color_fragment>
+vec4 F=texture2D(uFields,(vObj.xy-uMin)/uSize);
+float dh=F.r*${FIELD.range.toFixed(3)};
+float cw=.005+.018*fbm(vObj.xy*30.);
+float speck=step(.6,fbm(vObj.xy*150.))*exp(-dh*40.);
+float crust=max(max(1.-smoothstep(cw*.5,cw,dh),speck),smoothstep(.2,.6,F.a));
+float past=heatField(F,uHist);
+diffuseColor.rgb*=mix(vec3(1.),temper(past),smoothstep(.02,.2,past)*.75);
+diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.006)+vec3(.01)*vnoise(vObj.xy*400.),crust);`)
+      .replace("#include <lights_physical_fragment>", "#include <lights_physical_fragment>\nmaterial.specularColor=mix(material.specularColor,vec3(.008),crust);\nmaterial.specularF90=mix(material.specularF90,.15,crust);")
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.5,crust);")
+      .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor=mix(metalnessFactor,0.,crust);")
+      .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+float hf=heatField(F,uHeat);
+totalEmissiveRadiance+=blackbody(hf)*pow(hf,2.)*2.2;`);
+  };
+  return mat;
+}
+
+// ---------- Pendant ----------
+function buildPlate(outer, hole, fields, uniforms) {
+  const shape = new THREE.Shape(outer);
+  shape.holes.push(new THREE.Path(hole));
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: PLATE.depth, bevelEnabled: true, bevelThickness: PLATE.bevel, bevelSize: 0.006, bevelSegments: 4, curveSegments: 1 });
+  geo.translate(0, 0, -PLATE.depth / 2);
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, plateMaterial(fields, uniforms));
+}
+
+// Black diamonds: opaque, very glossy dielectric, set into the crust on both faces.
+function buildDiamonds(hole) {
+  const count = 70, front = PLATE.depth / 2 + PLATE.bevel;
+  const geo = new THREE.OctahedronGeometry(1, 0);
+  const mat = new THREE.MeshPhysicalMaterial({ color: 0x030303, metalness: 0, roughness: 0.04, clearcoat: 1, clearcoatRoughness: 0.02, ior: 2.4, specularIntensity: 1, flatShading: true });
+  const mesh = new THREE.InstancedMesh(geo, mat, count), m = new THREE.Object3D();
+  for (let i = 0; i < count; i++) {
+    const p = hole[Math.floor(rand() * hole.length)], dx = p.x - HOLE.cx, dy = p.y - HOLE.cy, len = Math.hypot(dx, dy);
+    const out = 0.006 + rand() * 0.018, side = i % 2 ? 1 : -1, s = 0.0035 + rand() * 0.0045;
+    m.position.set(p.x + (dx / len) * out, p.y + (dy / len) * out, side * (front - s * 0.35));
+    m.rotation.set(rand() * 6.28, rand() * 6.28, rand() * 6.28);
+    m.scale.set(s, s, s * 0.7);
+    m.updateMatrix(); mesh.setMatrixAt(i, m.matrix);
+  }
+  return mesh;
+}
+
+// ---------- Portal (space seen through the hole) ----------
+function buildPortal(hole, fields, uniforms) {
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    uniforms: Object.assign(uniforms, { uFields: { value: fields.tex }, uMin: { value: fields.min }, uSize: { value: fields.size } }),
+    vertexShader: "varying vec3 vObj; void main(){ vObj=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+    fragmentShader: `varying vec3 vObj;
+uniform float uTime,uOpen,uEmber,uRot,uSpeed,uVeins; uniform vec3 cVoid,cNeb,cFil,cCore,cEdge,cEmber;
+${GLSL_NOISE}
+vec3 filaments(vec2 p,float t){
+  float w=fbm(p*1.6+vec2(t*.04,-t*.03)); float r=ridge(p*2.4+w*1.8);
+  return mix(cFil,cCore,smoothstep(.82,.98,r))*smoothstep(.66,.94,r)*.55*uVeins;
+}
+vec3 embers(vec2 p,float t){
+  vec3 c=vec3(0.);
+  for(int l=0;l<3;l++){ float fl=float(l),s=10.+fl*9.; vec2 q=p*s; q.y-=t*(.25+.15*fl);
+    vec2 id=floor(q),f=fract(q)-.5; float r=h21(id+fl*17.31); if(r<.8) continue;
+    vec2 o=vec2(h21(id+3.1),h21(id+7.7))-.5; float d=length(f-o*.7);
+    vec3 col=h21(id+11.9)<uEmber?cEmber*2.2:cCore; c+=col*smoothstep(.08,0.,d)*(.55+.45*sin(t*2.3+r*60.)); }
+  return c;
+}
+vec3 space(vec2 p,float t){
+  vec3 col=cVoid+cNeb*smoothstep(.35,.85,fbm(p*1.3+vec2(t*.01,0.)))*1.3+filaments(p,t);
+  vec2 rp=(p-vec2(.15,.1))*vec2(1.,1.3); float rr=length(rp),ring=abs(rr-.3);
+  col=mix(col,cVoid*.5+cNeb*fbm(rp*7.+t*.12)*.9,smoothstep(.285,.27,rr)*.85);
+  col*=1.-smoothstep(.035,.014,ring)*.85;
+  col+=cFil*smoothstep(.014,0.,abs(ring-.022))*(.35+.25*sin(atan(rp.y,rp.x)*6.+t));
+  return col+embers(p,t);
+}
+void main(){
+  vec2 c=vObj.xy-vec2(${HOLE.cx},${HOLE.cy});
+  float r=length(c/vec2(${HOLE.hw},${HOLE.hh}))+(fbm(c*14.+uTime*.2)-.5)*.35;
+  float front=uOpen*1.35;
+  float open=1.-smoothstep(front-.18,front,r);
+  float rim=exp(-abs(r-front)*18.)*step(.001,uOpen)*(1.-smoothstep(.95,1.,uOpen)*.6);
+  vec2 p=c*3.2*mat2(cos(uRot*.15),-sin(uRot*.15),sin(uRot*.15),cos(uRot*.15));
+  p+=vec2(sin(atan(c.y,c.x)*3.+uTime)*.02)*(1.-open);
+  vec3 col=space(p,uTime*uSpeed)*open+cEdge*rim*1.5;
+  gl_FragColor=vec4(col,clamp(open+rim,0.,1.));
+}`,
+  });
+  return new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(hole)), mat);
+}
+
+// ---------- Sparks: ballistic motion computed in the vertex shader ----------
+function edgeSamples(poly, n, zSpread) {
+  const pos = new Float32Array(n * 3), dir = new Float32Array(n * 3), center = new THREE.Vector2(HOLE.cx, HOLE.cy);
+  for (let i = 0; i < n; i++) {
+    const k = Math.floor(rand() * poly.length), a = poly[k], b = poly[(k + 1) % poly.length], t = rand();
+    const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+    let nx = -(b.y - a.y), ny = b.x - a.x; const l = Math.hypot(nx, ny); nx /= l; ny /= l;
+    if ((x - center.x) * nx + (y - center.y) * ny < 0) { nx = -nx; ny = -ny; }
+    pos.set([x, y, (rand() - 0.5) * zSpread], i * 3);
+    dir.set([nx * 0.6, ny * 0.6 + 0.5, (rand() - 0.5) * 1.4], i * 3);
+  }
+  return { pos, dir };
+}
+function buildSparks(hole, outer, uniforms) {
+  const n = 900, z = PLATE.depth + PLATE.bevel * 2, h = edgeSamples(hole, n, z), o = edgeSamples(outer, n, z);
+  const seeds = Float32Array.from({ length: n }, () => rand());
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(h.pos, 3));
+  geo.setAttribute("aDirH", new THREE.BufferAttribute(h.dir, 3));
+  geo.setAttribute("aPosO", new THREE.BufferAttribute(o.pos, 3));
+  geo.setAttribute("aDirO", new THREE.BufferAttribute(o.dir, 3));
+  geo.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms,
+    vertexShader: `attribute vec3 aDirH,aPosO,aDirO; attribute float aSeed;
+uniform float uTime,uHeat,uOuterShare,uPix,uGround; uniform mat4 uModel; varying float vAge,vOn;
+void main(){
+  float life=1.+.9*fract(aSeed*7.13), t=mod(uTime+aSeed*13.,life);
+  vAge=t/life; vOn=step(fract(aSeed*91.7),uHeat*uHeat*.9);
+  float useO=step(fract(aSeed*53.1)+1e-4,uOuterShare);
+  vec3 o=(uModel*vec4(mix(position,aPosO,useO),1.)).xyz;
+  vec3 v=mat3(uModel)*mix(aDirH,aDirO,useO)*(.3+.6*fract(aSeed*3.3));
+  vec3 g=vec3(0.,-2.4,0.), p=o+v*t+g*.5*t*t;
+  if(p.y<uGround){
+    float th=(v.y+sqrt(v.y*v.y+2.4*(o.y-uGround)))/2.4;
+    vec3 vh=v+g*th, vb=vec3(vh.x*.5,-vh.y*.32,vh.z*.5);
+    float tb=t-th; p=o+v*th+g*.5*th*th+vb*tb+g*.5*tb*tb; p.y=max(p.y,uGround+.003);
+  }
+  gl_Position=projectionMatrix*viewMatrix*vec4(p,1.);
+  gl_PointSize=uPix*(1.-vAge*.7)*vOn*2.2/gl_Position.w;
+}`,
+    fragmentShader: `${GLSL_NOISE}
+varying float vAge,vOn;
+void main(){ float d=length(gl_PointCoord-.5); if(d>.5||vOn<.5) discard;
+  float t=1.-vAge; gl_FragColor=vec4(blackbody(t)*(1.2+2.5*t*t)*smoothstep(.5,.0,d),1.); }`,
+  });
+  const pts = new THREE.Points(geo, mat);
+  pts.frustumCulled = false;
+  return pts;
+}
+
+// ---------- Lighting: a dark HDR room with warm sources low and a cold rim ----------
+function infernalEnvironment(renderer) {
+  const room = new THREE.Scene();
+  const panel = (w, h, hex, k, pos) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(...pos); m.lookAt(0, 0, 0); room.add(m);
+  };
+  panel(6, 2.2, 0xff4a12, 2.8, [0, -3, 2]);
+  panel(3, 1, 0xff2a08, 3, [-3, -1.6, -0.5]);
+  panel(2.5, 0.8, 0xff6a1a, 2, [3, -1.2, 1.5]);
+  panel(1.4, 4, 0x6a8ab8, 1.3, [3, 2, -2.2]);
+  panel(5, 0.5, 0xffffff, 0.5, [0, 4, 1.5]);
+  panel(3.2, 2.0, 0xb8bcc4, 0.42, [-0.4, 0.9, 3.6]);
+  panel(0.5, 2.6, 0xd0d4dc, 0.3, [1.2, 0.6, 3.2]);
+  panel(3.5, 0.9, 0xff6a30, 0.18, [0.3, -1.6, 3.4]);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const env = pmrem.fromScene(room, 0.025).texture;
+  pmrem.dispose();
+  return env;
+}
+function backdrop() {
+  const c = document.createElement("canvas"); c.width = 64; c.height = 256;
+  const g = c.getContext("2d"), grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, "#050304"); grad.addColorStop(0.6, "#0a0505"); grad.addColorStop(1, "#2a0c05");
+  g.fillStyle = grad; g.fillRect(0, 0, 64, 256);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+// ---------- World: layered peaks, rough ground, sky ----------
+const DECOR = { ground: -0.9, fog: [0.02, 0.009, 0.007] };
+// Layers from near to far: count, distance range, height range, base radius range.
+const PEAK_LAYERS = [
+  { n: 5, dist: [4.5, 8], h: [0.5, 1.2], r: [0.35, 0.8], glow: 1 },
+  { n: 9, dist: [11, 18], h: [1.4, 3.2], r: [1.0, 2.2], glow: 0.5 },
+  { n: 12, dist: [24, 36], h: [3, 6.5], r: [2.5, 4.5], glow: 0.2 },
+];
+const RIDGES = [{ z: -50, w: 240, h: 8 }, { z: -80, w: 340, h: 14 }];
+
+function vnoise1(x, seed) {
+  const h = i => { const v = Math.sin(i * 127.1 + seed * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+  return h(i) * (1 - u) + h(i + 1) * u;
+}
+function vnoise2(x, y) {
+  const h = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  const a = h(i, j) * (1 - ux) + h(i + 1, j) * ux, b = h(i, j + 1) * (1 - ux) + h(i + 1, j + 1) * ux;
+  return a * (1 - uy) + b * uy;
+}
+const fbm2 = (x, y) => [1, 2.1, 4.3, 8.7].reduce((s, f, k) => s + vnoise2(x * f + k * 17, y * f) / 2 ** (k + 1), 0);
+
+// Rock: cast concrete with pour lines, cracks that glow with the heat near the forge.
+function rockMaterial(heat, { color, bands, glow }) {
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0, flatShading: true });
+  mat.onBeforeCompile = shader => {
+    shader.uniforms.uHeat = heat;
+    shader.vertexShader = "varying vec3 vW;\n" + shader.vertexShader.replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvW=(modelMatrix*vec4(transformed,1.)).xyz;");
+    shader.fragmentShader = "varying vec3 vW; uniform float uHeat;\n" + GLSL_NOISE + shader.fragmentShader
+      .replace("#include <color_fragment>", `#include <color_fragment>
+diffuseColor.rgb*=.55+.7*fbm(vW.xz*1.7+vW.y*3.);
+${bands ? "diffuseColor.rgb*=1.-.3*smoothstep(.46,.5,fract(vW.y*5.));" : ""}`)
+      .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
+float crack=smoothstep(.012,0.,abs(fbm(vW.xz*1.4+vec2(vW.y*1.1))-.5));
+totalEmissiveRadiance+=blackbody(.35+.4*uHeat)*crack*pow(uHeat,1.8)*exp(-length(vW.xz)*.14)*${glow.toFixed(2)};`);
+  };
+  return mat;
+}
+
+// A sharp, faceted peak: low-sided cone, jagged by position-hashed noise so facets stay watertight.
+function peakGeometry(r, h, lean) {
+  const sides = 4 + Math.floor(rand() * 4), geo = new THREE.ConeGeometry(r, h, sides, 5);
+  const pos = geo.attributes.position, seed = rand() * 100;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), f = y / h + 0.5;
+    const n = vnoise2(x * 3 + seed, z * 3 + y * 2) - 0.5;
+    pos.setXYZ(i, x * (1 + n * 0.5) + lean * f * f * h, y + n * h * 0.08 * (1 - f), z * (1 + n * 0.5));
+  }
+  geo.translate(0, h / 2 + DECOR.ground - 0.05, 0);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function peakCluster(layer, mat) {
+  const g = new THREE.Group(), lerp = ([a, b]) => a + rand() * (b - a);
+  const ang = (rand() - 0.5) * 2.6, d = lerp(layer.dist), h = lerp(layer.h), r = lerp(layer.r);
+  for (let k = 0; k < 3; k++) {
+    const s = k === 0 ? 1 : 0.45 + rand() * 0.35;
+    const m = new THREE.Mesh(peakGeometry(r * s, h * s, (rand() - 0.5) * 0.25), mat);
+    m.position.set(k === 0 ? 0 : (rand() - 0.5) * r * 2.2, 0, k === 0 ? 0 : (rand() - 0.5) * r * 1.5);
+    m.rotation.y = rand() * 6.28;
+    g.add(m);
+  }
+  g.position.set(Math.sin(ang) * d, 0, -Math.cos(ang) * d - 1);
+  return g;
+}
+
+// Distant range: a strip whose top edge follows ridged noise, readable only as a silhouette in the haze.
+function ridge({ z, w, h }, mat) {
+  const seg = 260, geo = new THREE.PlaneGeometry(w, 1, seg, 1), pos = geo.attributes.position, seed = z;
+  for (let i = 0; i <= seg; i++) {
+    const x = pos.getX(i);
+    let y = 0;
+    for (const [f, a] of [[0.02, 1], [0.05, 0.5], [0.12, 0.22], [0.3, 0.08]]) y += a * (1 - Math.abs(vnoise1(x * f, seed + f) * 2 - 1)) ** 2;
+    pos.setY(i, DECOR.ground + h * y);
+    pos.setY(i + seg + 1, DECOR.ground - 1);
+  }
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, mat);
+  m.position.z = z;
+  return m;
+}
+
+// Rough ground: almost flat under the pendant (sparks bounce on y = ground), broken rock further out.
+function buildGround(heat) {
+  const geo = new THREE.PlaneGeometry(140, 140, 220, 220);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), d = Math.hypot(x, z);
+    const amp = 0.015 + 0.6 * Math.min(1, Math.max(0, (d - 2) / 25));
+    const rocks = fbm2(x * 0.9, z * 0.9) + 0.5 * fbm2(x * 4, z * 4);
+    pos.setY(i, DECOR.ground + (rocks - 0.7) * amp);
+  }
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, rockMaterial(heat, { color: 0x1c1c1f, bands: false, glow: 0.35 }));
+}
+
+// Sky dome: fixed stars, thin drifting clouds lit from below by the forge, haze at the horizon.
+function buildSky(uTime, uHeat) {
+  const [fr, fg, fb] = DECOR.fog;
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, uniforms: { uTime, uHeat },
+    vertexShader: "varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+    fragmentShader: `uniform float uTime,uHeat; varying vec3 vDir;
+${GLSL_NOISE}
+void main(){
+  vec3 d=normalize(vDir); float el=d.y;
+  vec3 horizon=vec3(${fr},${fg},${fb});
+  vec3 col=mix(horizon,vec3(.0015,.0015,.003),smoothstep(-.02,.45,el));
+  col+=vec3(.2,.055,.015)*exp(-max(el,0.)*10.)*(.15+.85*uHeat)*.25;
+  vec3 sp=d*160.; vec3 id=floor(sp); float h=h21(id.xy+id.z*31.7);
+  vec3 off=vec3(h21(id.xy+3.1),h21(id.yz+7.7),h21(id.zx+1.3));
+  float star=step(.93,h)*smoothstep(.22,0.,length(fract(sp)-off*.6-.2));
+  col+=vec3(.75,.82,1.)*star*(.3+.7*h21(id.xy+11.))*smoothstep(.02,.2,el)*(.85+.15*sin(uTime*1.7+h*90.));
+  vec2 cp=d.xz/max(el,.03)*.5+vec2(uTime*.012,uTime*.005);
+  float c=smoothstep(.48,.82,fbm(cp))*smoothstep(.02,.3,el);
+  vec3 cloud=vec3(.012,.008,.008)+vec3(.12,.035,.01)*uHeat*exp(-el*2.5);
+  gl_FragColor=vec4(mix(col,cloud,c*.85),1.);
+}`,
+  });
+  return new THREE.Mesh(new THREE.SphereGeometry(140, 48, 24), mat);
+}
+
+function buildDecor(shared) {
+  const group = new THREE.Group(), heat = shared.uHeat;
+  const mats = PEAK_LAYERS.map((l, i) => rockMaterial(heat, { color: i ? 0x3a3b40 : 0x4a4b50, bands: i === 0, glow: l.glow }));
+  const far = rockMaterial(heat, { color: 0x3a3b40, bands: false, glow: 0 });
+  group.add(buildGround(heat), buildSky(shared.uTime, heat));
+  PEAK_LAYERS.forEach((layer, i) => { for (let k = 0; k < layer.n; k++) group.add(peakCluster(layer, mats[i])); });
+  RIDGES.forEach(r => group.add(ridge(r, far)));
+  // The pendant's own glow reaching the surroundings.
+  const glow = new THREE.PointLight(0xff6a2a, 0, 40, 1.25);
+  glow.position.set(0, DECOR.ground + 0.15, -0.4);
+  group.add(glow);
+  return { group, glow };
+}
+
+function updateDecor(decor, heat) {
+  decor.glow.intensity = 0.3 + heat ** 1.5 * 30;
+}
+
+function addLights(scene, target) {
+  const spot = new THREE.SpotLight(0xff5a1f, 11, 10, 0.4, 0.7, 1.6);
+  spot.position.set(0.3, -0.85, 2.6); spot.target = target; scene.add(spot);
+  const rim = new THREE.DirectionalLight(0x8fb0ff, 0.5);
+  rim.position.set(-1.5, 2, -2); scene.add(rim);
+}
+
+// ---------- Post: bloom, AgX, then lens grain / vignette / slight chromatic aberration ----------
+const LensPass = { uniforms: { tDiffuse: { value: null }, uTime: { value: 0 } },
+  vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime; varying vec2 vUv;
+void main(){ vec2 d=vUv-.5; vec2 o=d*.0035;
+  vec3 c=vec3(texture2D(tDiffuse,vUv+o).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-o).b);
+  c*=1.-dot(d,d)*1.3;
+  float g=fract(sin(dot(vUv*vec2(1717.,913.)+fract(uTime)*37.,vec2(12.9898,78.233)))*43758.5453);
+  gl_FragColor=vec4(c+(g-.5)*.045,1.); }` };
+
+function buildComposer(renderer, scene, camera) {
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.55, 0.4, 1.0));
+  composer.addPass(new OutputPass());
+  const lens = new ShaderPass(LensPass);
+  composer.addPass(lens);
+  return { composer, lens };
+}
+
+// ---------- State machine (mirrors SPEC §2, simplified) ----------
+const sim = { heat: 0, hist: 0, spin: 0, rotY: 0.35, turns: 0, overT: 0, phase: "idle", open: 0, freeze: false };
+function step(dt) {
+  sim.rotY += sim.spin * dt;
+  sim.turns += Math.abs(sim.spin * dt) / (Math.PI * 2);
+  sim.spin *= Math.exp(-RULES.spinDamping * dt);
+  if (!sim.freeze) sim.heat = Math.max(0, sim.heat - RULES.coolPerSec * dt);
+  sim.hist = Math.max(sim.hist, sim.heat);
+  if (sim.phase === "portalOpen") { sim.open = Math.min(1, sim.open + dt * 0.55); return; }
+  const hot = sim.heat >= RULES.threshold && sim.turns >= RULES.turnsNeeded;
+  sim.overT = hot ? sim.overT + dt : 0;
+  sim.phase = sim.overT >= RULES.overheatDelay ? "portalOpen" : hot ? "overheated" : sim.heat > 0.01 ? "heating" : "idle";
+}
+function strike() {
+  if (sim.phase === "portalOpen") return;
+  sim.heat = Math.min(1, sim.heat + RULES.heatPerClick);
+  sim.spin += RULES.spinImpulse * (sim.spin >= 0 ? 1 : -1);
+}
+
+// ---------- Scene assembly ----------
+function setup() {
+  const canvas = document.getElementById("stage");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.toneMapping = THREE.AgXToneMapping;
+  renderer.toneMappingExposure = 1.05;
+
+  const scene = new THREE.Scene();
+  scene.background = backdrop();
+  scene.environment = infernalEnvironment(renderer);
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 400);
+
+  const outer = outerOutline(), hole = holeOutline(), fields = bakeFields(hole, outer);
+  const shared = { uHeat: { value: 0 }, uHist: { value: 0 }, uHoleW: { value: 1 }, uOuterW: { value: 0 }, uTime: { value: 0 } };
+  const portalU = { uTime: shared.uTime, uOpen: { value: 0 }, uRot: { value: 0 }, uEmber: { value: 0 }, uSpeed: { value: 1 }, uVeins: { value: 1 } };
+  for (const k of ["void", "neb", "fil", "core", "edge", "ember"]) portalU["c" + k[0].toUpperCase() + k.slice(1)] = { value: new THREE.Color() };
+
+  const pendant = new THREE.Group();
+  const plate = buildPlate(outer, hole, fields, shared);
+  pendant.add(plate, buildDiamonds(hole), buildPortal(hole, fields, portalU));
+  // Light spilling out of the portal onto the crust and the hole walls, both faces.
+  const spill = [0.12, -0.12].map(z => { const l = new THREE.PointLight(0xffffff, 0, 0.9, 2); l.position.set(HOLE.cx, HOLE.cy, z); pendant.add(l); return l; });
+  scene.add(pendant);
+  addLights(scene, pendant);
+
+  const sparkU = { uTime: shared.uTime, uHeat: shared.uHeat, uOuterShare: { value: 0 }, uGround: { value: DECOR.ground }, uPix: { value: 1 }, uModel: { value: pendant.matrixWorld } };
+  scene.add(buildSparks(hole, outer, sparkU));
+  const decor = buildDecor(shared);
+  scene.add(decor.group);
+  scene.fog = new THREE.FogExp2(0x000000, 0.022);
+  scene.fog.color.setRGB(...DECOR.fog);
+
+  const post = buildComposer(renderer, scene, camera);
+  return { renderer, scene, camera, pendant, plate, shared, portalU, sparkU, spill, decor, ...post };
+}
+
+function setPalette(ctx, key) {
+  const p = PALETTES[key];
+  for (const k of ["void", "neb", "fil", "core", "edge", "ember"]) ctx.portalU["c" + k[0].toUpperCase() + k.slice(1)].value.set(p[k]).convertSRGBToLinear();
+  ctx.portalU.uEmber.value = p.emberMix;
+  ctx.portalU.uSpeed.value = p.speed;
+  ctx.portalU.uVeins.value = p.veins;
+  ctx.spill.forEach(l => l.color.set(p.light));
+}
+
+function setOrigin(ctx, key) {
+  const o = ORIGINS[key];
+  ctx.shared.uHoleW.value = o.hole;
+  ctx.shared.uOuterW.value = o.outer;
+  ctx.sparkU.uOuterShare.value = o.share;
+}
+
+function resize(ctx) {
+  const w = innerWidth, h = innerHeight, aspect = w / h;
+  ctx.renderer.setSize(w, h, false);
+  ctx.composer.setSize(w, h);
+  ctx.camera.aspect = aspect;
+  const camX = aspect > 1.2 ? -0.32 : 0;
+  ctx.camera.position.set(camX, 0.18, aspect < 0.85 ? 3.3 * 0.85 / aspect : 3.3);
+  ctx.camera.lookAt(camX, 0.02, 0);
+  ctx.camera.updateProjectionMatrix();
+  ctx.sparkU.uPix.value = h * ctx.renderer.getPixelRatio() * 0.004;
+}
+
+// ---------- Input ----------
+function bindPointer(ctx) {
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  let down = null;
+  const el = ctx.renderer.domElement;
+  el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY, last: e.clientX, t: performance.now(), moved: 0 }; el.setPointerCapture(e.pointerId); });
+  el.addEventListener("pointermove", e => {
+    if (!down) return;
+    const dx = e.clientX - down.last, now = performance.now(), dt = Math.max(0.008, (now - down.t) / 1000);
+    sim.rotY += dx * 0.008; sim.spin = (dx * 0.008) / dt; down.last = e.clientX; down.t = now; down.moved += Math.abs(dx);
+  });
+  el.addEventListener("pointerup", e => {
+    if (down && down.moved < 6) {
+      ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+      ray.setFromCamera(ndc, ctx.camera);
+      if (ray.intersectObject(ctx.plate).length) strike();
+    }
+    down = null;
+  });
+}
+
+function bindPanel(ctx) {
+  const pick = (attr, fn) => document.querySelectorAll(`[${attr}]`).forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(`[${attr}]`).forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+    fn(b.getAttribute(attr));
+  }));
+  pick("data-palette", k => { setPalette(ctx, k); sim.phase = "portalOpen"; });
+  pick("data-origin", k => { setOrigin(ctx, k); sim.hist = 0; });
+  const heat = document.getElementById("heat");
+  heat.addEventListener("input", () => { sim.heat = heat.value / 100; });
+  document.getElementById("freeze").addEventListener("change", e => { sim.freeze = e.target.checked; });
+  document.getElementById("open").addEventListener("click", () => { sim.heat = 1; sim.phase = "portalOpen"; });
+  document.getElementById("reset").addEventListener("click", () => Object.assign(sim, { heat: 0, hist: 0, spin: 0, turns: 0, overT: 0, phase: "idle", open: 0 }));
+}
+
+function syncUi(heatEl, outEl, stateEl) {
+  if (document.activeElement !== heatEl) heatEl.value = Math.round(sim.heat * 100);
+  outEl.textContent = Math.round(sim.heat * 100);
+  stateEl.innerHTML = `état <b>${sim.phase}</b> · ${sim.turns.toFixed(1).replace(".", ",")} tour${sim.turns >= 2 ? "s" : ""}`;
+}
+
+// ---------- Loop ----------
+function start() {
+  let ctx;
+  try { ctx = setup(); } catch (err) {
+    console.error(err);
+    document.body.insertAdjacentHTML("beforeend", '<div class="fallback">WebGL 2 est indisponible ici : ce prototype ne peut pas s\'afficher.</div>');
+    return;
+  }
+  setPalette(ctx, "B");
+  setOrigin(ctx, "mix");
+  resize(ctx); addEventListener("resize", () => resize(ctx));
+  bindPointer(ctx); bindPanel(ctx);
+  const heatEl = document.getElementById("heat"), outEl = document.getElementById("heat-out"), stateEl = document.getElementById("state");
+  const clock = new THREE.Clock();
+  let raf = 0;
+  const frame = () => {
+    const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+    step(dt);
+    const shake = sim.phase === "overheated" && !reduceMotion ? 0.0025 : 0;
+    ctx.pendant.rotation.set(0.06 + (reduceMotion ? 0 : Math.sin(t * 0.6) * 0.03), sim.rotY, 0);
+    ctx.pendant.position.set((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, 0);
+    ctx.pendant.updateMatrixWorld();
+    ctx.shared.uHeat.value = sim.heat; ctx.shared.uHist.value = sim.hist; ctx.shared.uTime.value = t;
+    ctx.portalU.uOpen.value = sim.open;
+    ctx.spill.forEach(l => { l.intensity = sim.open * 0.35; });
+    updateDecor(ctx.decor, sim.heat); ctx.portalU.uRot.value = sim.rotY;
+    ctx.lens.uniforms.uTime.value = t;
+    ctx.composer.render();
+    syncUi(heatEl, outEl, stateEl);
+    raf = requestAnimationFrame(frame);
+  };
+  document.addEventListener("visibilitychange", () => { cancelAnimationFrame(raf); if (!document.hidden) { clock.getDelta(); frame(); } });
+  frame();
+}
+start();
+</script>

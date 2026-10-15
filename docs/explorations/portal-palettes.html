@@ -1,0 +1,276 @@
+<title>Palettes du portail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  /* Layout: a single dark observation deck, 2×2 grid of live shader viewports, one shared view toggle. */
+  :root {
+    --void: #050608;
+    --panel: #0b0d11;
+    --line: #1c2027;
+    --fg: #d9dde3;
+    --muted: #7d8590;
+    --hot: #ff7a2e;
+    --font-display: "Chakra Petch", "Bahnschrift", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--void); color: var(--fg); }
+  body { font-family: var(--font-body); font-size: 15px; line-height: 1.55; padding-inline: 16px; padding-block: 28px 48px; }
+  .wrap { max-width: 1280px; margin-inline: auto; display: grid; gap: 22px; }
+
+  header { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.05; margin: 6px 0 0; text-wrap: balance; letter-spacing: .01em; }
+  .lede { max-width: 62ch; color: var(--muted); margin: 10px 0 0; }
+
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .toggle button { font: 500 13px var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: transparent; border: 0; padding: 10px 16px; cursor: pointer; }
+  .toggle button[aria-pressed="true"] { color: var(--void); background: var(--fg); }
+  .toggle button:focus-visible, .tile:focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .grid.focus { grid-template-columns: minmax(0, 1fr); }
+  .grid.focus .tile:not(.active) { display: none; }
+  @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; display: grid; cursor: zoom-in; text-align: left; color: inherit; padding: 0; font: inherit; }
+  .grid.focus .tile { cursor: zoom-out; }
+  .tile canvas { display: block; width: 100%; aspect-ratio: 16 / 10; max-width: 100%; background: #000; }
+  .meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; padding: 14px 16px 16px; border-top: 1px solid var(--line); }
+  .code { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1; grid-row: span 3; color: var(--muted); }
+  .name { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .02em; }
+  .desc { color: var(--muted); font-size: 14px; min-width: 0; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .sw { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .sw i { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #ffffff22; display: inline-block; }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 70ch; }
+  footer b { color: var(--fg); font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">calixteair.fr · exploration DA · portail &amp; espace portfolio</div>
+      <h1>Après la forge, quelle lumière ?</h1>
+      <p class="lede">Quatre palettes pour ce qu'on voit à travers le trou érodé et pour l'espace des fiches. Le pendentif garde sa DA infernale dans toutes les variantes ; seul ce qu'il y a derrière change. Clique une vue pour l'agrandir.</p>
+    </div>
+    <div class="toggle" role="group" aria-label="Vue">
+      <button type="button" id="view-portal" aria-pressed="true">Portail</button>
+      <button type="button" id="view-space" aria-pressed="false">Espace des anneaux</button>
+    </div>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <b>À regarder :</b> le contraste au seuil (bord du trou), la lisibilité future des fiches sur le fond, et si le rouge du pendentif doit survivre de l'autre côté. Rendu procédural en shader, sans aucun asset ; c'est une maquette d'ambiance, pas le rendu final.
+  </footer>
+</div>
+
+<script>
+const VARIANTS = [
+  { code: "A", name: "Protomolécule", desc: "Bleu pur. Même le bord du trou bascule en bleu : la chaleur est totalement absorbée par l'autre côté.",
+    c: { void: "#02040a", neb: "#071d38", fil: "#1d74ff", core: "#9fe6ff", edge: "#2f8cff", ember: "#ff6a2a" }, ember: 0.0, edgeHot: 0.8 },
+  { code: "B", name: "Braise contaminée", desc: "Bleu dominant, mais des braises rouges du pendentif dérivent jusque dans l'espace des fiches.",
+    c: { void: "#03050a", neb: "#0a1a30", fil: "#2a6dff", core: "#a8dcff", edge: "#ff5a14", ember: "#ff6a2a" }, ember: 0.35, edgeHot: 1.0 },
+  { code: "C", name: "Bascule", desc: "Le seuil reste chauffé à blanc, l'intérieur est bleu sans aucun rouge. Tout le contraste vit sur le bord.",
+    c: { void: "#010309", neb: "#061830", fil: "#1f80ff", core: "#bff0ff", edge: "#ffb347", ember: "#ff6a2a" }, ember: 0.0, edgeHot: 1.6 },
+  { code: "D", name: "Zone lente", desc: "Presque monochrome : acier froid, bleu-vert désaturé, un seul souvenir rouge très discret. Calme, silencieux.",
+    c: { void: "#050607", neb: "#10181c", fil: "#4d7682", core: "#d4ecf2", edge: "#a02c1a", ember: "#c4381f" }, ember: 0.08, edgeHot: 0.7 },
+];
+
+const VERT = `attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+const FRAG = `
+precision highp float;
+uniform vec2 uRes; uniform float uTime, uMode, uEmber, uEdgeHot;
+uniform vec3 cVoid, cNeb, cFil, cCore, cEdge, cEmber;
+
+float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+1.),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*noise(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+float ridge(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){float n=1.-abs(noise(p)*2.-1.);v+=a*n*n;p=p*2.1+3.1;a*=.5;}return v;}
+float sdBox(vec2 p,vec2 b){vec2 d=abs(p)-b;return length(max(d,0.))+min(max(d.x,d.y),0.);}
+mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
+
+// Protomolecule veins: ridged noise warped by slow fbm.
+vec3 filaments(vec2 p,float t,float amount){
+  float w=fbm(p*1.6+vec2(t*.04,-t*.03));
+  float r=ridge(p*2.4+w*1.8+vec2(0.,t*.02));
+  float vein=smoothstep(.62,.92,r)*amount;
+  return mix(cFil,cCore,smoothstep(.82,.98,r))*vein*1.4;
+}
+
+vec3 particles(vec2 p,float t){
+  vec3 c=vec3(0.);
+  for(int l=0;l<3;l++){
+    float fl=float(l), s=9.+fl*8.;
+    vec2 q=p*s; q.y-=t*(.25+.15*fl);
+    vec2 id=floor(q), f=fract(q)-.5;
+    float r=h21(id+fl*17.31);
+    if(r<.78) continue;
+    vec2 o=vec2(h21(id+3.1),h21(id+7.7))-.5;
+    float d=length(f-o*.7);
+    float tw=.55+.45*sin(t*2.3+r*60.);
+    vec3 col=h21(id+11.9)<uEmber?cEmber*1.6:cCore;
+    c+=col*smoothstep(.07,0.,d)*tw*(1.-fl*.25);
+  }
+  return c;
+}
+
+// Space behind the portal: nebula + veins + a distant ring gate + floating cards.
+vec3 space(vec2 p,float t,float detail){
+  vec3 col=cVoid;
+  float n=fbm(p*1.3+vec2(t*.01,0.));
+  col+=cNeb*smoothstep(.35,.85,n)*1.3;
+  col+=filaments(p*1.1,t,.55);
+  // Ring gate
+  vec2 rp=(p-vec2(.18,.04))*vec2(1.,1.35);
+  float rr=length(rp), ring=abs(rr-.27);
+  float inside=smoothstep(.255,.24,rr);
+  float surf=fbm(rp*7.+vec2(t*.15,t*.1));
+  col=mix(col,cVoid*.6+cNeb*surf*.9+cCore*.05*surf,inside*.85);
+  col*=1.-smoothstep(.03,.012,ring)*.85;
+  col+=cFil*smoothstep(.02,.0,abs(ring-.022))*(.6+.4*sin(atan(rp.y,rp.x)*6.+t))*.9;
+  // Cards (fiches)
+  if(detail>.5){
+    for(int i=0;i<5;i++){
+      float fi=float(i);
+      vec2 c=vec2(-.62+fi*.31,.22*sin(fi*2.1)+.03*sin(t*.8+fi));
+      float d=sdBox(p-c,vec2(.085,.055));
+      col=mix(col,cVoid*.7+cNeb*.35,smoothstep(.004,0.,d)*.85);
+      col+=cCore*smoothstep(.005,0.,abs(d))*.7;
+      col+=cFil*exp(-max(d,0.)*45.)*.18;
+      float ln=sdBox(p-c-vec2(-.02,.018),vec2(.05,.006));
+      col+=cCore*smoothstep(.003,0.,ln)*.45;
+    }
+  }
+  col+=particles(p,t);
+  return col;
+}
+
+vec3 portal(vec2 p,float t){
+  float hole=sdBox(p-vec2(.03,-.01),vec2(.46,.3))-.04+(fbm(p*5.5)-.5)*.13+(noise(p*22.)-.5)*.025;
+  // Behind the hole: space, swirled near the threshold.
+  vec2 q=p*rot(.9*exp(hole*7.)*sin(t*.4)*.6+t*.03*exp(hole*4.));
+  vec3 inner=space(q*1.25,t,0.);
+  inner+=filaments(p*2.2,t*1.4,1.)*exp(hole*9.);
+  // Brushed steel plate, warm grazing light from below.
+  float brush=noise(vec2(p.x*3.,p.y*420.))*.5+noise(vec2(p.x*9.,p.y*900.))*.5;
+  vec3 steel=vec3(.07,.068,.066)+vec3(.05)*brush;
+  steel+=vec3(.55,.16,.05)*smoothstep(.6,-.6,p.y)*.35;
+  // Eroded crust with black diamond glints.
+  float crust=smoothstep(.0,.07+fbm(p*9.)*.1,hole);
+  vec3 crustCol=vec3(.012)+vec3(.02)*noise(p*80.);
+  vec2 g=p*70.; float gl=h21(floor(g));
+  crustCol+=vec3(.9,.85,.8)*step(.965,gl)*smoothstep(.25,0.,length(fract(g)-.5))*(.4+.6*sin(t*1.5+gl*90.));
+  vec3 plate=mix(crustCol,steel,crust);
+  float heat=exp(-max(hole,0.)*26.)*uEdgeHot;
+  plate+=cEdge*heat*(.7+.3*noise(p*12.+t));
+  plate+=vec3(1.,.9,.75)*pow(heat/max(uEdgeHot,.01),6.)*uEdgeHot*.35;
+  vec3 col=mix(inner,plate,smoothstep(-.004,.004,hole));
+  col+=cEdge*exp(-abs(hole)*60.)*uEdgeHot*.6;
+  return col;
+}
+
+void main(){
+  vec2 p=(gl_FragCoord.xy-.5*uRes)/uRes.y;
+  float t=uTime;
+  vec3 col=uMode<.5?portal(p,t):space(p,t,1.);
+  col*=1.-.55*dot(p*.9,p*.9);
+  col+=(h21(gl_FragCoord.xy+fract(t)*91.)-.5)*.035;
+  col=col/(1.+col*.6);
+  gl_FragColor=vec4(pow(max(col,0.),vec3(.92)),1.);
+}`;
+
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const grid = document.getElementById("grid");
+const state = { mode: 0 };
+const views = [];
+
+function compile(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+
+function createView(v) {
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "tile";
+  tile.setAttribute("aria-label", `Variante ${v.code}, ${v.name} : agrandir`);
+  const sw = Object.entries(v.c).filter(([k]) => k !== "ember" || v.ember > 0)
+    .map(([k, h]) => `<span class="sw"><i style="background:${h}"></i>${h}</span>`).join("");
+  tile.innerHTML = `<canvas></canvas><div class="meta"><span class="code">${v.code}</span>
+    <span class="name">${v.name}</span><span class="desc">${v.desc}</span><span class="swatches">${sw}</span></div>`;
+  grid.appendChild(tile);
+
+  const canvas = tile.querySelector("canvas");
+  const gl = canvas.getContext("webgl", { antialias: false });
+  if (!gl) { canvas.replaceWith(Object.assign(document.createElement("p"), { textContent: "WebGL indisponible sur ce navigateur." })); return; }
+  const prog = gl.createProgram();
+  try {
+    gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+  } catch (e) { console.error(e); return; }
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const u = n => gl.getUniformLocation(prog, n);
+  for (const [k, h] of Object.entries(v.c)) gl.uniform3fv(u("c" + k[0].toUpperCase() + k.slice(1)), hex(h));
+  gl.uniform1f(u("uEmber"), v.ember);
+  gl.uniform1f(u("uEdgeHot"), v.edgeHot);
+
+  const view = { tile, canvas, gl, uRes: u("uRes"), uTime: u("uTime"), uMode: u("uMode"), visible: true };
+  new IntersectionObserver(([e]) => { view.visible = e.isIntersecting; }).observe(canvas);
+  tile.addEventListener("click", () => toggleFocus(tile));
+  views.push(view);
+}
+
+function draw(view, t) {
+  const { canvas, gl } = view;
+  const scale = Math.min(devicePixelRatio, 1.25) * (grid.classList.contains("focus") ? 1 : 0.8);
+  const w = Math.round(canvas.clientWidth * scale), h = Math.round(canvas.clientHeight * scale);
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); }
+  gl.uniform2f(view.uRes, w, h);
+  gl.uniform1f(view.uTime, t);
+  gl.uniform1f(view.uMode, state.mode);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+function frame(ms) {
+  const t = reduceMotion ? 12 : ms / 1000;
+  for (const v of views) if (v.visible) draw(v, t);
+  if (!reduceMotion) requestAnimationFrame(frame);
+}
+const redraw = () => reduceMotion && requestAnimationFrame(frame);
+
+function toggleFocus(tile) {
+  const on = !grid.classList.contains("focus");
+  grid.classList.toggle("focus", on);
+  views.forEach(v => v.tile.classList.toggle("active", on && v.tile === tile));
+  tile.focus();
+  redraw();
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  document.getElementById("view-portal").setAttribute("aria-pressed", String(mode === 0));
+  document.getElementById("view-space").setAttribute("aria-pressed", String(mode === 1));
+  redraw();
+}
+document.getElementById("view-portal").addEventListener("click", () => setMode(0));
+document.getElementById("view-space").addEventListener("click", () => setMode(1));
+addEventListener("resize", redraw);
+
+VARIANTS.forEach(createView);
+requestAnimationFrame(frame);
+</script>

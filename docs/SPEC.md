@@ -8,18 +8,19 @@ Une expérience d'accueil qu'on regarde « comme une vidéo », mais interactive
 Chaque étape annonce la suivante **sans la dévoiler**. On ne montre jamais le trou noir avant la fin.
 
 **Direction artistique** : deux mondes, la forge puis l'autre côté.
+
 - **Forge (pendentif)** : fond quasi noir, lumières chaudes rasantes venant du bas (rouge et orange), brume légère.
-- **L'autre côté (portail, trou de ver, espace)** : référence aux anneaux et à la protomolécule de *The Expanse*. Vide noir, filaments bleus bioluminescents, anneau sombre à la surface liquide. On s'inspire de l'esthétique, sans reprendre d'image, de logo ni de modèle de la série.
+- **L'autre côté (portail, trou de ver, espace)** : référence aux anneaux et à la protomolécule de _The Expanse_. Vide noir, filaments bleus bioluminescents, anneau sombre à la surface liquide. On s'inspire de l'esthétique, sans reprendre d'image, de logo ni de modèle de la série.
 - **Palette retenue : B « Braise contaminée »** (prototype `docs/explorations/`) : le bleu domine de l'autre côté, mais des braises rouges du pendentif y dérivent. Le bord du portail reste incandescent.
 
-| Rôle | Couleur |
-|---|---|
-| Vide | `#02040c` |
-| Nébuleuse | `#0c2348` |
-| Filaments protomolécule | `#2f6bff` |
-| Cœur lumineux | `#b4e0ff` |
-| Bord du portail | `#ff5a14` |
-| Braises | `#ff5a1a` (≈ 50 % des particules de fond) |
+| Rôle                    | Couleur                                   |
+| ----------------------- | ----------------------------------------- |
+| Vide                    | `#02040c`                                 |
+| Nébuleuse               | `#0c2348`                                 |
+| Filaments protomolécule | `#2f6bff`                                 |
+| Cœur lumineux           | `#b4e0ff`                                 |
+| Bord du portail         | `#ff5a14`                                 |
+| Braises                 | `#ff5a1a` (≈ 50 % des particules de fond) |
 
 - Matériaux crédibles : acier brossé satiné, croûte noire granuleuse autour du trou, diamants noirs très brillants (photos dans `docs/references/`).
 - Post-traitement « caméra » : bloom, tone mapping AgX, légère profondeur de champ, grain, vignette, aberration chromatique discrète.
@@ -32,16 +33,16 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
                                   ↑________↓ (refroidit si on arrête de cliquer)
 ```
 
-| État | Entrée | Ce qui se passe | Sortie |
-|---|---|---|---|
-| `loading` | page ouverte | Loader HTML/CSS : un fil incandescent trace le contour du pendentif (§4) | assets chargés + shaders compilés |
-| `ready` | chargement terminé | Bouton « Entrer ». Le clic débloque l'audio et lance un fondu depuis le noir | clic |
-| `idle` | — | Pendentif froid, légère rotation « respiration » | 1er clic |
-| `heating` | clic | Chaque clic ajoute une impulsion de rotation et `heat += Δ`. `heat` décroît avec le temps. Étincelles proportionnelles à `heat` | `heat ≥ 0,85` **et** tours cumulés ≥ N |
-| `overheated` | seuil atteint | Bord chauffé à blanc, tremblement léger, distorsion de chaleur | après environ 1,5 s |
-| `portalOpen` | — | Le trou érodé s'ouvre sur la scène du portfolio (render target) | clic sur le portail |
-| `wormhole` | clic | Timeline GSAP d'aspiration (§5.6) | fin de la timeline |
-| `portfolio` | — | Système planétaire à 360° (§5.7). Clic sur une planète : voyage puis panneau de détail ; retour au point d'arrivée | — |
+| État         | Entrée             | Ce qui se passe                                                                                                                 | Sortie                                 |
+| ------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `loading`    | page ouverte       | Loader HTML/CSS : un fil incandescent trace le contour du pendentif (§4)                                                        | assets chargés + shaders compilés      |
+| `ready`      | chargement terminé | Bouton « Entrer ». Le clic débloque l'audio et lance un fondu depuis le noir                                                    | clic                                   |
+| `idle`       | —                  | Pendentif froid, légère rotation « respiration »                                                                                | 1er clic                               |
+| `heating`    | clic               | Chaque clic ajoute une impulsion de rotation et `heat += Δ`. `heat` décroît avec le temps. Étincelles proportionnelles à `heat` | `heat ≥ 0,85` **et** tours cumulés ≥ N |
+| `overheated` | seuil atteint      | Bord chauffé à blanc, tremblement léger, distorsion de chaleur                                                                  | après environ 1,5 s                    |
+| `portalOpen` | —                  | Le trou érodé s'ouvre sur la scène du portfolio (render target)                                                                 | clic sur le portail                    |
+| `wormhole`   | clic               | Timeline GSAP d'aspiration (§5.6)                                                                                               | fin de la timeline                     |
+| `portfolio`  | —                  | Système planétaire à 360° (§5.7). Clic sur une planète : voyage puis panneau de détail ; retour au point d'arrivée              | —                                      |
 
 - La machine à états est du **TypeScript pur**, sans dépendance au rendu, testable unitairement.
 - Tous les seuils (N, Δ, vitesse de refroidissement…) sont des constantes réglables avec leva en dev.
@@ -68,11 +69,13 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 ## 5. Effets
 
 ### 5.1 Scène du pendentif
+
 - HDRI sombre avec des sources chaudes, en 1K, utilisée pour les reflets et non affichée en fond.
 - Lumière principale rasante orange-rouge venant du bas, contre-jour froid et faible pour détacher la silhouette.
 - Rotation : clic ou glisser. On applique une impulsion angulaire avec amortissement, pas un tween linéaire.
 
 **Décor : un monde, pas un fond**
+
 - **Pics et montagnes** à facettes, aux arêtes vives, d'aspect brutaliste et futuriste (béton coulé, roche taillée), répartis sur **plusieurs plans** qui s'estompent dans la brume :
   1. rochers et petits pics proches, les plus réactifs à la chauffe ;
   2. pics à moyenne distance ;
@@ -86,11 +89,13 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 - Rendu final (au-delà du prototype `docs/explorations/pendant-forge.html`) : terrain sculpté avec érosion et normal maps, textures de roche, cailloux instanciés, nuages en couches avec parallaxe. Les plans lointains peuvent être une image peinte ou une HDRI dédiée, pour les performances.
 
 ### 5.2 Matériaux
+
 - Acier : matériau physique (`MeshPhysicalNodeMaterial`) avec metalness 1, une **roughness map** brossée et de l'**anisotropie** (validée par le prototype : c'est elle qui donne l'aspect brossé).
 - Croûte d'érosion : noire, non métallique, presque sans reflet. Elle borde le trou et déborde sur la face en éclaboussures.
 - Diamants noirs : diélectrique très brillant, facettes nettes, **sans réfraction** (le diamant noir est quasi opaque). Instanciés, sertis dans la croûte.
 
 ### 5.3 Chauffe
+
 - Uniform `uHeat` (0 à 1) combiné avec deux champs de distance : au **bord du trou** et au **bord extérieur**.
 - Source principale : le **bord du trou**, qui monte jusqu'au blanc. Source secondaire : le **bord extérieur**, avec un poids d'environ 0,6, qui reste dans l'orange. Les deux poids sont réglables.
 - La chaleur progresse des bords vers l'intérieur de la plaque.
@@ -98,9 +103,11 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 - **Teintes de revenu** persistantes (paille, bronze, bleu) sur les zones qui ont déjà chauffé, avec un `uHeatHistory` qui ne redescend pas.
 
 ### 5.4 Particules (simulation physique GPU)
+
 Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dans des buffers de stockage. Rien n'est mis à jour particule par particule côté CPU.
 
 **Étincelles (métal en fusion)**
+
 - Émises depuis les bords chauds (≈ 75 % depuis le trou, ≈ 25 % depuis le bord extérieur), avec un taux proportionnel à `uHeat`.
 - Gravité, traînée de l'air, durée de vie courte, couleur de corps noir qui refroidit, particules étirées dans le sens de la vitesse, mélange additif.
 - **Collisions** avec rebond (restitution et frottement) :
@@ -109,6 +116,7 @@ Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dan
   - **éléments de décor** : SDF analytiques (boîtes, cylindres) ou SDF 3D précalculée au build pour une forme complexe.
 
 **Particules de protomolécule**
+
 - Une partie des particules qui sortent du trou sont de la protomolécule, pas du métal : bleues (`#2f6bff` → `#b4e0ff`), bioluminescentes.
 - Elles **n'obéissent pas à la gravité** : elles dérivent en essaim (curl noise), sont attirées par la croûte du trou et rampent sur la surface du pendentif.
 - Elles apparaissent quand le pendentif surchauffe, deviennent plus nombreuses à l'ouverture du portail et annoncent l'autre côté sans le dévoiler.
@@ -116,12 +124,15 @@ Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dan
 **Repli WebGL 2** : si WebGPU est indisponible, la scène tourne sur le backend WebGL 2 de Three.js. Si les compute shaders n'y sont pas disponibles, les étincelles passent en trajectoire balistique calculée dans le vertex shader, sans collisions, et les particules de protomolécule sont réduites.
 
 ### 5.5 Distorsion de chaleur et portail
+
 - La distorsion est un effet de post-traitement : un décalage des UV avec du bruit, masqué au-dessus des bords chauds.
 - Le portail occupe la forme exacte du trou et affiche la **scène du portfolio en render target, en demi-résolution**. Il s'ouvre depuis le centre, avec un front irrégulier ; son bord est incandescent (palette B).
 - La lumière bleue qui sort du portail éclaire la croûte et les parois du trou.
 
 ### 5.6 Aspiration (trou de ver)
+
 Timeline GSAP d'environ 3 s :
+
 1. La caméra est attirée vers le portail et le FOV s'élargit brutalement (effet vertigo).
 2. On entre dans un `TubeGeometry` qui suit une courbe. Un shader fait défiler du bruit sur les parois, avec une légère rotation de la caméra.
 3. Le zoom blur et l'aberration chromatique montent en intensité. Lentille gravitationnelle optionnelle.
@@ -130,15 +141,18 @@ Timeline GSAP d'environ 3 s :
 Ensuite, on libère la scène du pendentif (`dispose`).
 
 ### 5.7 Espace du portfolio : un système planétaire
-Dans *The Expanse*, les anneaux mènent à d'autres systèmes stellaires. Ici, le portail est une porte : on en sort dans un **système planétaire 3D** dont chaque planète est un contenu du portfolio.
+
+Dans _The Expanse_, les anneaux mènent à d'autres systèmes stellaires. Ici, le portail est une porte : on en sort dans un **système planétaire 3D** dont chaque planète est un contenu du portfolio.
 
 **Immersion**
+
 - La caméra est au point d'arrivée, juste devant l'anneau qu'on vient de traverser, qui reste visible derrière soi. On regarde à 360° : `OrbitControls` en rotation seule, avec inertie, sans zoom ni déplacement latéral. Gyroscope en option sur mobile.
 - Une étoile centrale éclaire le système. Ambiance palette B : vide noir, nébuleuse bleue profonde, filaments de protomolécule, braises rouges qui dérivent parmi les particules bleues.
 - Les planètes sont procédurales (shaders TSL) : leur aspect découle du contenu (catégorie, `planet` dans le frontmatter, §6). Elles tournent lentement sur leurs orbites, mais restent faciles à viser.
 - Chaque planète a une étiquette lisible (titre) qui apparaît au survol ou au focus.
 
 **Organisation du système** (validée)
+
 - Une seule étoile.
 - **Projets = planètes.** Leur taille et leur orbite dépendent de `order`.
 - **Compétences = lunes** de la planète du projet qui les utilise (`orbits` dans le frontmatter). Une compétence sans projet rejoint une **ceinture d'astéroïdes**, dont elle est un astéroïde cliquable.
@@ -146,14 +160,17 @@ Dans *The Expanse*, les anneaux mènent à d'autres systèmes stellaires. Ici, l
 - Le voyage fonctionne de la même façon vers une planète, une lune ou une station.
 
 **Voyage « en fusée »** (clic sur une planète, timeline GSAP d'environ 2,5 s)
+
 1. **Allumage** : léger recul puis accélération, FOV qui se resserre, tremblement discret, grondement grave.
 2. **Croisière** : étoiles et particules étirées en traînées (effet de vitesse), flou de mouvement léger.
 3. **Freinage et mise en orbite** : décélération amortie, la caméra se place en orbite autour de la planète, qui occupe une bonne partie de l'écran.
 4. Un **panneau HTML** s'ouvre à côté de la planète : l'explication du projet ou de la compétence, lisible, accessible, avec des liens.
+
 - Retour : bouton, touche Échap ou bouton « précédent » du navigateur. On refait le trajet en sens inverse vers le point d'arrivée.
 - Avec `prefers-reduced-motion` : fondu court au lieu du vol.
 
 **Navigation et accessibilité**
+
 - État dans l'URL (`#projet-slug`) pour partager un lien direct vers une planète et gérer le bouton retour.
 - Les planètes sont aussi atteignables au clavier : une liste HTML (masquée visuellement mais accessible) pilote la même navigation.
 - Cliquer sur l'anneau ramène à la forge (option, à valider en test).
@@ -179,14 +196,14 @@ Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **
 
 ## 7. Budgets de performance
 
-| Mesure | Cible |
-|---|---|
-| JS initial (gzip) | < 350 Ko pour l'île 3D ; scène portfolio chargée en différé |
-| Assets 3D totaux | < 8 Mo |
-| Images par seconde | 60 sur un ordinateur récent, ≥ 30 sur un mobile milieu de gamme |
-| Particules simulées | ≈ 65 000 sur un ordinateur récent, ≈ 8 000 sur mobile, ajusté par niveau de qualité |
-| Premier affichage (loader) | < 1 s |
-| Lighthouse (version HTML) | ≥ 95 en performance, accessibilité, bonnes pratiques et SEO |
+| Mesure                     | Cible                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| JS initial (gzip)          | < 350 Ko pour l'île 3D ; scène portfolio chargée en différé                         |
+| Assets 3D totaux           | < 8 Mo                                                                              |
+| Images par seconde         | 60 sur un ordinateur récent, ≥ 30 sur un mobile milieu de gamme                     |
+| Particules simulées        | ≈ 65 000 sur un ordinateur récent, ≈ 8 000 sur mobile, ajusté par niveau de qualité |
+| Premier affichage (loader) | < 1 s                                                                               |
+| Lighthouse (version HTML)  | ≥ 95 en performance, accessibilité, bonnes pratiques et SEO                         |
 
 - Niveaux de qualité avec `detect-gpu` au premier chargement et `PerformanceMonitor` en continu. On ajuste le DPR, les particules, les effets et la résolution du portail.
 - Le rendu se met en pause quand l'onglet est caché.
@@ -204,6 +221,7 @@ Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **
 ## 9. Asset final (commandé à un artiste)
 
 `.glb` optimisé pour Three.js, avec :
+
 - matériaux PBR metal/roughness ;
 - low-poly (< 50 000 triangles) avec normal map et AO bakées ;
 - textures 2K et UV propres ;

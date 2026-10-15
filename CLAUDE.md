@@ -4,7 +4,7 @@ Page d'accueil / portfolio immersive pour calixteair.fr.
 Au centre : mon pendentif brutaliste en 3D photoréaliste (plaque d'acier brossé à angles coupés, trou érodé, croûte noire et diamants noirs dans l'érosion, sans bélière).
 Les clics le font tourner et chauffent son bord (étincelles de métal en fusion). Après plusieurs tours, un portail s'ouvre.
 Cliquer dessus aspire le visiteur dans un trou de ver. Il ressort par un anneau dans un système planétaire 3D, à 360° : chaque planète est un projet ou une compétence, et cliquer dessus lance un voyage « en fusée » jusqu'à elle, où s'affiche l'explication.
-Ambiance : forge infernale côté pendentif, puis l'autre côté inspiré de *The Expanse* (anneaux, protomolécule bleue, palette B). Rendu « comme une vidéo ».
+Ambiance : forge infernale côté pendentif, puis l'autre côté inspiré de _The Expanse_ (anneaux, protomolécule bleue, palette B). Rendu « comme une vidéo ».
 
 - Cahier des charges complet : `docs/SPEC.md`. Lis-le avant toute tâche de conception.
 - Feuille de route et jalon en cours : `docs/ROADMAP.md`.

@@ -1,0 +1,5 @@
+dist/
+.astro/
+package-lock.json
+docs/explorations/
+docs/references/

@@ -1,0 +1,22 @@
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import astro from 'eslint-plugin-astro';
+import reactHooks from 'eslint-plugin-react-hooks';
+
+export default tseslint.config(
+  { ignores: ['dist/', '.astro/', 'docs/explorations/', 'test-results/', 'playwright-report/'] },
+  js.configs.recommended,
+  ...tseslint.configs.strict,
+  ...astro.configs['flat/recommended'],
+  {
+    files: ['**/*.{ts,tsx}'],
+    ...reactHooks.configs.flat.recommended,
+  },
+  {
+    rules: {
+      // `any` is banned project-wide: use a real type or `unknown`.
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+);

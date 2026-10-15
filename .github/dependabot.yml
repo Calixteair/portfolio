@@ -1,0 +1,40 @@
+# Grouped weekly updates: one PR per ecosystem instead of a flood of single bumps.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: newgen
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      three-stack:
+        patterns: ['three', '@types/three', '@react-three/*']
+      astro:
+        patterns: ['astro', '@astrojs/*']
+      dev-tooling:
+        dependency-type: development
+    ignore:
+      # R3F 9 requires react < 19.4; bump React together with R3F, by hand.
+      - dependency-name: 'react'
+        versions: ['>=19.4.0']
+      - dependency-name: 'react-dom'
+        versions: ['>=19.4.0']
+      # typescript-eslint and @astrojs/check do not support TypeScript 7 yet.
+      - dependency-name: 'typescript'
+        versions: ['>=6.1.0']
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: newgen
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directory: /
+    target-branch: newgen
+    schedule: { interval: weekly, day: monday }
+    groups:
+      base-images:
+        patterns: ['*']

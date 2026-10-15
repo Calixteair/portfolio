@@ -210,7 +210,7 @@ Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **
 
 ## 8. Déploiement et sécurité
 
-- `Dockerfile` multi-stage : `node:22-alpine` (build), puis `nginxinc/nginx-unprivileged:alpine` (runtime).
+- `Dockerfile` multi-stage : `node:24-alpine` (build, Node 24 LTS épinglé dans `.nvmrc`), puis `nginxinc/nginx-unprivileged:alpine` (runtime).
 - `nginx.conf` :
   - `Cache-Control: public, max-age=31536000, immutable` sur les fichiers avec hash, `no-cache` sur le HTML ;
   - gzip ou Brotli ;
@@ -237,4 +237,22 @@ On le passe ensuite dans `npm run optimize:assets`.
 - Son : ambiance grave, crépitements, aspiration. Quelle source, et quelle licence ?
 - Liste définitive des projets et compétences.
 - Nombre de tours N avant l'ouverture du portail (à régler en test).
-- **Compatibilité WebGPU de l'écosystème** (à vérifier en M0) : version de R3F à utiliser, et fonctionnement des composants drei utilisés (`Text`, `Float`, `OrbitControls`…) avec `WebGPURenderer`.
+
+## 11. Compatibilité WebGPU (tranché en M0, 2026-10-15)
+
+- **R3F 9 stable** (9.8.2), pas la v10 alpha : le prop `gl` accepte une fabrique asynchrone qui crée un `WebGPURenderer` et attend `init()`.
+- **Compute TSL** : le même compute shader tourne en WebGPU et sur le repli WebGL 2 (transform feedback). Le repli de la §5.4 garde donc la même simulation, seulement avec moins de particules.
+- **Chrome headless (SwiftShader)** : son WebGPU logiciel perd le device. En CI, les tests e2e passent par le repli WebGL 2 forcé (`?gl=webgl2`) ; le chemin WebGPU se vérifie sur un vrai GPU.
+- **drei** avec `WebGPURenderer` (drei 10.7.9, testé sur les deux backends) :
+
+| Composant            | WebGPU | WebGL 2 | Décision                                                                                                            |
+| -------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Float`              | ✅     | ✅      | Utilisable                                                                                                          |
+| `OrbitControls`      | ✅     | ✅      | Utilisable                                                                                                          |
+| `PerformanceMonitor` | ✅     | ✅      | Utilisable                                                                                                          |
+| `Html`               | ✅     | ✅      | Utilisable (avertissement React en dev au démontage, sans effet)                                                    |
+| `Environment`        | ✅     | ❌      | Ne pas l'utiliser : la sphère disparaît sur le repli, et les presets viennent d'un CDN. PMREM maison en M1          |
+| `Text` (troika)      | ❌     | ❌      | Ne pas l'utiliser : shader GLSL ignoré (carré plein), polices chargées depuis jsDelivr. Étiquettes en HTML (`Html`) |
+| `Stars`              | ❌     | ❌      | Ne pas l'utiliser : `ShaderMaterial` GLSL refusé. Ciel étoilé en TSL (§5.1)                                         |
+
+Règle générale : tout composant drei qui embarque un `ShaderMaterial` GLSL est incompatible. Il faut le refaire en TSL.

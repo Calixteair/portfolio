@@ -13,7 +13,7 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 - [x] Captures Playwright (script + e2e sur les deux backends). Le MCP Playwright n'est pas configuré : non bloquant
 - [x] CI : lint, tests, build, budget, e2e WebGL 2, hadolint, gitleaks, dependency review, CodeQL, Dependabot groupé
 - [x] CD : image GHCR (Trivy, SBOM, provenance, cosign) → `:prod` → déploiement SSH ForceCommand sur portfolio.calixteair.fr, smoke test
-- [ ] Budget JS initial : SPEC §7 dit 350 Ko gzip, le budget provisoire est 450 Ko (409 Ko mesurés). À trancher
+- [x] Budget JS initial : 450 Ko gzip (SPEC §7, 409 Ko mesurés en M0)
 
 ## M1 — Ambiance et placeholder
 

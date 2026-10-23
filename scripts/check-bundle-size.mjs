@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const DIST = 'dist';
-// Provisional: the SPEC's 350 KB predates the WebGPU switch (three/webgpu alone ≈ 300 KB).
+// SPEC §7: raised from 350 KB once three/webgpu (≈ 300 KB alone) became the renderer.
 const BUDGET_KB = 450;
 
 /** Script URLs referenced by the page: <script src>, island component/renderer URLs. */

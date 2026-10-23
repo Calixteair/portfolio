@@ -196,14 +196,14 @@ Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **
 
 ## 7. Budgets de performance
 
-| Mesure                     | Cible                                                                               |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| JS initial (gzip)          | < 350 Ko pour l'île 3D ; scène portfolio chargée en différé                         |
-| Assets 3D totaux           | < 8 Mo                                                                              |
-| Images par seconde         | 60 sur un ordinateur récent, ≥ 30 sur un mobile milieu de gamme                     |
-| Particules simulées        | ≈ 65 000 sur un ordinateur récent, ≈ 8 000 sur mobile, ajusté par niveau de qualité |
-| Premier affichage (loader) | < 1 s                                                                               |
-| Lighthouse (version HTML)  | ≥ 95 en performance, accessibilité, bonnes pratiques et SEO                         |
+| Mesure                     | Cible                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| JS initial (gzip)          | < 450 Ko pour l'île 3D (`three/webgpu` ≈ 300 Ko) ; scène portfolio chargée en différé |
+| Assets 3D totaux           | < 8 Mo                                                                                |
+| Images par seconde         | 60 sur un ordinateur récent, ≥ 30 sur un mobile milieu de gamme                       |
+| Particules simulées        | ≈ 65 000 sur un ordinateur récent, ≈ 8 000 sur mobile, ajusté par niveau de qualité   |
+| Premier affichage (loader) | < 1 s                                                                                 |
+| Lighthouse (version HTML)  | ≥ 95 en performance, accessibilité, bonnes pratiques et SEO                           |
 
 - Niveaux de qualité avec `detect-gpu` au premier chargement et `PerformanceMonitor` en continu. On ajuste le DPR, les particules, les effets et la résolution du portail.
 - Le rendu se met en pause quand l'onglet est caché.

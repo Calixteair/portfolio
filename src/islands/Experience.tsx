@@ -6,6 +6,8 @@ import LensEffects from '../three/post/LensEffects';
 import { createLensUniforms } from '../three/post/lens';
 import { backendOf, createRenderer, type Backend } from '../three/renderer';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
+import ForgeWorld from '../three/scenes/forge/ForgeWorld';
+import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
 import BackendBadge from './BackendBadge';
 
@@ -13,6 +15,7 @@ import BackendBadge from './BackendBadge';
 export default function Experience() {
   const [backend, setBackend] = useState<Backend | null>(null);
   const lens = useMemo(() => createLensUniforms(), []);
+  const forge = useMemo(() => createForgeUniforms(), []);
 
   return (
     <>
@@ -28,8 +31,8 @@ export default function Experience() {
           setBackend(active);
         }}
       >
-        <color attach="background" args={['#050302']} />
         <ForgeLighting />
+        <ForgeWorld uniforms={forge} />
         <Pendant />
         <LensEffects uniforms={lens} />
       </Canvas>

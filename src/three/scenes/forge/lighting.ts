@@ -74,8 +74,8 @@ export function createInfernalEnvironment(renderer: WebGPURenderer): Texture {
   return target.texture;
 }
 
-/** Haze colour, also the horizon colour of the sky. */
-export const FOG_COLOR = 0x050201;
+/** Haze colour (linear, as in the prototype), also the horizon colour of the sky. */
+export const HAZE = new Color().setRGB(0.02, 0.009, 0.007);
 
 /** AgX tone mapping, baked environment and haze. Returns the cleanup. */
 export function applyForgeAtmosphere(renderer: WebGPURenderer, scene: Scene): () => void {
@@ -83,7 +83,7 @@ export function applyForgeAtmosphere(renderer: WebGPURenderer, scene: Scene): ()
   renderer.toneMappingExposure = 1.05;
   const environment = createInfernalEnvironment(renderer);
   scene.environment = environment;
-  scene.fog = new FogExp2(FOG_COLOR, 0.022);
+  scene.fog = new FogExp2(HAZE, 0.022);
   return () => {
     scene.environment = null;
     scene.fog = null;

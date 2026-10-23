@@ -17,11 +17,11 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M1 — Ambiance et placeholder
 
-- [ ] Placeholder procédural du pendentif (SPEC §6)
-- [ ] HDRI, éclairage infernal, post-traitement (bloom, AgX, grain, vignette)
-- [ ] Décor : pics sur plusieurs plans, sol rocheux, ciel étoilé et nuages, réaction à la chauffe (SPEC §5.1)
-- [ ] Rotation au clic et au glisser avec inertie
-- [ ] Panneau leva pour régler lumières et effets
+- [x] Placeholder procédural du pendentif (SPEC §6) : plaque, croûte (edgeMask), diamants
+- [x] Environnement PMREM procédural (pas de HDRI, SPEC §5.1), éclairage infernal, post-traitement (bloom, AgX, aberration, grain, vignette)
+- [x] Décor : pics sur plusieurs plans, sol rocheux, ciel étoilé et nuages, réaction à la chauffe (SPEC §5.1), au niveau du prototype
+- [x] Rotation au clic et au glisser avec inertie, respiration coupée par `prefers-reduced-motion`
+- [x] Panneau leva (dev seulement, absent du bundle de prod) pour régler lumières, effets et chauffe
 
 ## M2 — Loader
 
@@ -62,6 +62,9 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 ## M8 — Performance et production
 
 - [ ] detect-gpu + PerformanceMonitor, budgets de la SPEC §7 respectés
+- [ ] Profondeur de champ légère (reportée de M1), activée selon le niveau de qualité
+- [ ] Finition du décor (SPEC §5.1 « rendu final ») : érosion, normal maps, cailloux instanciés, nuages en couches
+- [ ] Champs de bord du pendentif précalculés au build (111 ms au démarrage aujourd'hui)
 - [ ] Pipeline `optimize:assets`, décodeurs auto-hébergés
 - [ ] Déploiement sur le VPS, en-têtes vérifiés (securityheaders.com A+)
 

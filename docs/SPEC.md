@@ -23,7 +23,7 @@ Chaque étape annonce la suivante **sans la dévoiler**. On ne montre jamais le 
 | Braises                 | `#ff5a1a` (≈ 50 % des particules de fond) |
 
 - Matériaux crédibles : acier brossé satiné, croûte noire granuleuse autour du trou, diamants noirs très brillants (photos dans `docs/references/`).
-- Post-traitement « caméra » : bloom, tone mapping AgX, légère profondeur de champ, grain, vignette, aberration chromatique discrète.
+- Post-traitement « caméra » : bloom, tone mapping AgX, légère profondeur de champ (reportée en M8 avec les niveaux de qualité), grain, vignette, aberration chromatique discrète.
 - Mouvements physiques : inertie, ressorts, jamais linéaires.
 
 ## 2. Parcours utilisateur et machine à états
@@ -70,7 +70,7 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 
 ### 5.1 Scène du pendentif
 
-- HDRI sombre avec des sources chaudes, en 1K, utilisée pour les reflets et non affichée en fond.
+- Environnement sombre avec des sources chaudes, utilisé pour les reflets et non affiché en fond. **Tranché en M1** : PMREM généré au démarrage à partir d'une petite scène émissive (panneaux chauds en bas, bande froide derrière), au lieu d'une HDRI 1K : rien à télécharger, pas de licence, réglable. Une HDRI reste possible plus tard sans changer l'interface.
 - Lumière principale rasante orange-rouge venant du bas, contre-jour froid et faible pour détacher la silhouette.
 - Rotation : clic ou glisser. On applique une impulsion angulaire avec amortissement, pas un tween linéaire.
 

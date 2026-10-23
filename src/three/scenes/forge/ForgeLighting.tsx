@@ -1,11 +1,19 @@
+import { useFrame } from '@react-three/fiber';
 import { useEffect } from 'react';
 import { useWebGPU } from '../../useWebGPU';
-import { applyForgeAtmosphere, type ForgeLights } from './lighting';
+import { applyForgeAtmosphere, driveForgeLights, type ForgeLights } from './lighting';
+import type { ForgeUniforms } from './uniforms';
 
-/** Environment, tone mapping, fog and the two forge lights, all aimed at the origin. */
-export default function ForgeLighting({ lights }: { lights: ForgeLights }) {
+interface ForgeLightingProps {
+  lights: ForgeLights;
+  uniforms: ForgeUniforms;
+}
+
+/** Environment, tone mapping, fog and the two forge lights; the warmth follows the heat. */
+export default function ForgeLighting({ lights, uniforms }: ForgeLightingProps) {
   const { gl, scene } = useWebGPU();
-  useEffect(() => applyForgeAtmosphere(gl, scene), [gl, scene]);
+  useEffect(() => applyForgeAtmosphere(gl, scene, uniforms.heat), [gl, scene, uniforms]);
+  useFrame(() => driveForgeLights(lights, uniforms.heat.value));
   return (
     <>
       <primitive object={lights.target} />

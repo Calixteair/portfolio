@@ -6,6 +6,7 @@ import {
   type UniformNode,
   type WebGPURenderer,
 } from 'three/webgpu';
+import type { ForgeLights } from '../three/scenes/forge/lighting';
 
 /** Setters used by the dev panel: mutations live here, outside React components. */
 
@@ -31,6 +32,10 @@ export function setLightIntensity(light: Light, value: number): void {
 
 export function setLightColor(light: Light, color: string): void {
   light.color.set(color);
+}
+
+export function setKeyRange(lights: ForgeLights, end: 'cold' | 'hot', value: number): void {
+  lights.keyRange[end] = value;
 }
 
 export function setAnisotropy(material: MeshPhysicalNodeMaterial, value: number): void {

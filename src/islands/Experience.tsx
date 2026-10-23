@@ -41,7 +41,7 @@ export default function Experience() {
           setBackend(active);
         }}
       >
-        <ForgeLighting lights={lights} />
+        <ForgeLighting lights={lights} uniforms={forge} />
         <ForgeWorld uniforms={forge} />
         <Pendant pendant={pendant} />
         <LensEffects uniforms={lens} />

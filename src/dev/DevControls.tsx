@@ -9,6 +9,7 @@ import {
   setEnvironmentIntensity,
   setExposure,
   setFogDensity,
+  setKeyRange,
   setLightColor,
   setLightIntensity,
   setUniform,
@@ -43,7 +44,8 @@ export default function DevControls({ forge, lens, lights, steel }: DevControlsP
       environment: slider(scene.environmentIntensity, [0, 3, 0.01], (v) =>
         setEnvironmentIntensity(scene, v),
       ),
-      key: slider(key.intensity, [0, 40, 0.1], (v) => setLightIntensity(key, v)),
+      keyCold: slider(lights.keyRange.cold, [0, 20, 0.1], (v) => setKeyRange(lights, 'cold', v)),
+      keyHot: slider(lights.keyRange.hot, [0, 40, 0.1], (v) => setKeyRange(lights, 'hot', v)),
       keyColor: {
         value: `#${key.color.getHexString()}`,
         onChange: (c: string) => setLightColor(key, c),

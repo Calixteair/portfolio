@@ -1,0 +1,133 @@
+/**
+ * 2D outlines of the placeholder pendant and the distance fields baked from them.
+ * Pure math, no Three.js: the same data drives the mesh, the crust, the heat (M3)
+ * and the spark emitters and collisions (M3). Units are metres-ish scene units.
+ */
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/** Plate: elongated octagon (chamfered rectangle), ratio hh / hw ≈ 1.45, no bail. */
+export const PLATE = { hw: 0.31, hh: 0.45, chamfer: 0.075, depth: 0.05, bevel: 0.008 } as const;
+
+/** Eroded hole: off-centre rounded rectangle. */
+export const HOLE = { cx: 0.015, cy: 0.035, hw: 0.165, hh: 0.245 } as const;
+
+/** edgeMask resolution and the distance (scene units) mapped to 1 in the texture. */
+export const FIELD = { width: 160, height: 232, range: 0.2, margin: 0.02 } as const;
+
+export function outerOutline(): Point[] {
+  const { hw, hh, chamfer: c } = PLATE;
+  const corners: [number, number][] = [
+    [-hw + c, hh],
+    [hw - c, hh],
+    [hw, hh - c],
+    [hw, -hh + c],
+    [hw - c, -hh],
+    [-hw + c, -hh],
+    [-hw, -hh + c],
+    [-hw, hh - c],
+  ];
+  return corners.map(([x, y]) => ({ x, y }));
+}
+
+const HOLE_WAVES: [frequency: number, amplitude: number][] = [
+  [3, 0.012],
+  [7, 0.009],
+  [13, 0.006],
+  [29, 0.004],
+  [53, 0.0025],
+];
+
+/** Superellipse (rounded rectangle) pushed in and out along its radius by periodic noise. */
+export function holeOutline(rand: () => number, samples = 180): Point[] {
+  const waves = HOLE_WAVES.map(([f, a]) => ({ f, a, phase: rand() * Math.PI * 2 }));
+  const points: Point[] = [];
+  for (let i = 0; i < samples; i++) {
+    const angle = (i / samples) * Math.PI * 2;
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const x = Math.sign(c) * Math.abs(c) ** 0.25 * HOLE.hw;
+    const y = Math.sign(s) * Math.abs(s) ** 0.25 * HOLE.hh;
+    const wave = waves.reduce((sum, w) => sum + w.a * Math.sin(w.f * angle + w.phase), 0);
+    const offset = wave + (rand() - 0.5) * 0.006;
+    const len = Math.hypot(x, y) || 1;
+    points.push({ x: HOLE.cx + x + (x / len) * offset, y: HOLE.cy + y + (y / len) * offset });
+  }
+  return points;
+}
+
+function segmentDistance(p: Point, a: Point, b: Point): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+}
+
+/** Unsigned distance from p to the closed polygon's edges. */
+export function polygonDistance(p: Point, poly: readonly Point[]): number {
+  let d = Infinity;
+  poly.forEach((a, i) => {
+    d = Math.min(d, segmentDistance(p, a, poly[(i + 1) % poly.length] as Point));
+  });
+  return d;
+}
+
+/** Even-odd ray casting. */
+export function isInside(p: Point, poly: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i] as Point;
+    const b = poly[j] as Point;
+    const crosses =
+      a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+export interface EdgeFields {
+  /** RGBA8: R = distance to the hole edge, G = distance to the outer edge, A = 255 inside the hole. */
+  data: Uint8Array;
+  width: number;
+  height: number;
+  /** Bottom-left corner and size of the area covered by the texture, in plate space. */
+  min: Point;
+  size: Point;
+  range: number;
+}
+
+/** Texel centre (i, j) to plate-space coordinates. */
+export function fieldTexelToPlate(i: number, j: number, fields: Omit<EdgeFields, 'data'>): Point {
+  return {
+    x: fields.min.x + ((i + 0.5) / fields.width) * fields.size.x,
+    y: fields.min.y + ((j + 0.5) / fields.height) * fields.size.y,
+  };
+}
+
+export function bakeEdgeFields(hole: readonly Point[], outer: readonly Point[]): EdgeFields {
+  const { width, height, range, margin } = FIELD;
+  const min = { x: -PLATE.hw - margin, y: -PLATE.hh - margin };
+  const size = { x: 2 * (PLATE.hw + margin), y: 2 * (PLATE.hh + margin) };
+  const fields: EdgeFields = {
+    data: new Uint8Array(width * height * 4),
+    width,
+    height,
+    min,
+    size,
+    range,
+  };
+  const quantize = (d: number) => Math.round(Math.min(1, d / range) * 255);
+  for (let j = 0; j < height; j++) {
+    for (let i = 0; i < width; i++) {
+      const p = fieldTexelToPlate(i, j, fields);
+      const k = (j * width + i) * 4;
+      fields.data[k] = quantize(polygonDistance(p, hole));
+      fields.data[k + 1] = quantize(polygonDistance(p, outer));
+      fields.data[k + 3] = isInside(p, hole) ? 255 : 0;
+    }
+  }
+  return fields;
+}

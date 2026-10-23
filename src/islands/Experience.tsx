@@ -21,6 +21,8 @@ export default function Experience() {
     <>
       <Canvas
         dpr={[1, 2]}
+        // Drags turn the pendant: no browser panning or zooming on touch screens.
+        style={{ touchAction: 'none', cursor: 'grab' }}
         camera={{ fov: 32, near: 0.05, far: 400, position: [0, 0.18, 3.3] }}
         gl={createRenderer}
         onCreated={({ gl, camera }) => {

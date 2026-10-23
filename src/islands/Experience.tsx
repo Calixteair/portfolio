@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
 import '../three/extend';
 import LensEffects from '../three/post/LensEffects';
@@ -10,6 +10,9 @@ import ForgeWorld from '../three/scenes/forge/ForgeWorld';
 import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
 import BackendBadge from './BackendBadge';
+
+// Dev-only tuning panel: the dynamic import is dropped from the production build.
+const DevControls = import.meta.env.DEV ? lazy(() => import('../dev/DevControls')) : null;
 
 /** Root of the 3D island: the forge scene with the pendant at its centre. */
 export default function Experience() {
@@ -37,6 +40,11 @@ export default function Experience() {
         <ForgeWorld uniforms={forge} />
         <Pendant />
         <LensEffects uniforms={lens} />
+        {DevControls && (
+          <Suspense fallback={null}>
+            <DevControls forge={forge} lens={lens} />
+          </Suspense>
+        )}
       </Canvas>
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}
     </>

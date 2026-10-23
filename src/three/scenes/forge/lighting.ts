@@ -95,8 +95,10 @@ export function applyForgeAtmosphere(renderer: WebGPURenderer, scene: Scene): ()
 export function createForgeLights(target: Object3D): { key: SpotLight; rim: DirectionalLight } {
   const key = new SpotLight(0xff5a1f, 11, 10, 0.4, 0.7, 1.6);
   key.position.set(0.3, -0.85, 2.6);
+  key.name = 'forge-key';
   key.target = target;
   const rim = new DirectionalLight(0x8fb0ff, 0.5);
+  rim.name = 'forge-rim';
   rim.position.set(-1.5, 2, -2);
   return { key, rim };
 }

@@ -59,7 +59,9 @@ function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Mesh {
   });
   geometry.translate(0, 0, -PLATE.depth / 2);
   geometry.computeVertexNormals();
-  return new Mesh(geometry, createPlateMaterial(mask));
+  const body = new Mesh(geometry, createPlateMaterial(mask));
+  body.name = 'pendant-body';
+  return body;
 }
 
 /** Black diamonds set into the crust just outside the hole edge, on both faces. */

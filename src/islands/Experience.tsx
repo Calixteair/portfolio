@@ -1,7 +1,9 @@
 import { Canvas } from '@react-three/fiber';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
 import '../three/extend';
+import LensEffects from '../three/post/LensEffects';
+import { createLensUniforms } from '../three/post/lens';
 import { backendOf, createRenderer, type Backend } from '../three/renderer';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
 import Pendant from '../three/scenes/forge/Pendant';
@@ -10,6 +12,7 @@ import BackendBadge from './BackendBadge';
 /** Root of the 3D island: the forge scene with the pendant at its centre. */
 export default function Experience() {
   const [backend, setBackend] = useState<Backend | null>(null);
+  const lens = useMemo(() => createLensUniforms(), []);
 
   return (
     <>
@@ -28,6 +31,7 @@ export default function Experience() {
         <color attach="background" args={['#050302']} />
         <ForgeLighting />
         <Pendant />
+        <LensEffects uniforms={lens} />
       </Canvas>
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}
     </>

@@ -19,7 +19,7 @@ FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a
 
 # Alpine security fixes published after the base image was built (e.g. brotli-libs 1.2.1):
 # Trivy blocks fixable HIGH/CRITICAL. The pinned digest keeps the rest reproducible.
-USER root
+USER 0
 RUN apk upgrade --no-cache
 USER 101
 

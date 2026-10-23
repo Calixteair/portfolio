@@ -17,7 +17,11 @@ test('renders the scene on the forced WebGL 2 backend', async ({ page }) => {
   await page.goto('/?gl=webgl2');
 
   await expect(page.locator('canvas')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgl2');
+  // SwiftShader compiles every node material and the post pipeline on the CPU before the
+  // first frame (about 7 s locally since M1): give slow CI runners room.
+  await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgl2', {
+    timeout: 30_000,
+  });
   expect(errors).toEqual([]);
 });
 

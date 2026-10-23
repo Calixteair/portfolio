@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
 import '../three/extend';
 import { backendOf, createRenderer, type Backend } from '../three/renderer';
+import ForgeLighting from '../three/scenes/forge/ForgeLighting';
 import Pendant from '../three/scenes/forge/Pendant';
 import BackendBadge from './BackendBadge';
 
@@ -25,6 +26,7 @@ export default function Experience() {
         }}
       >
         <color attach="background" args={['#050302']} />
+        <ForgeLighting />
         <Pendant />
       </Canvas>
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}

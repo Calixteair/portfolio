@@ -1,10 +1,11 @@
-import { folder, useControls } from 'leva';
+import { button, folder, useControls } from 'leva';
 import type { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { LensUniforms } from '../three/post/lens';
 import { FORGE_LOOK, type ForgeLights } from '../three/scenes/forge/lighting';
 import type { ForgeUniforms } from '../three/scenes/forge/uniforms';
 import { useWebGPU } from '../three/useWebGPU';
 import {
+  copyLook,
   setAnisotropy,
   setEnvironmentIntensity,
   setExposure,
@@ -41,7 +42,7 @@ export default function DevControls({ forge, lens, lights, steel }: DevControlsP
     Forge: folder({ heat: uniformSlider(forge.heat, [0, 1, 0.01]) }),
     Lights: folder({
       exposure: slider(FORGE_LOOK.exposure, [0.3, 2.5, 0.01], (v) => setExposure(gl, v)),
-      environment: slider(scene.environmentIntensity, [0, 3, 0.01], (v) =>
+      environment: slider(FORGE_LOOK.environmentIntensity, [0, 3, 0.01], (v) =>
         setEnvironmentIntensity(scene, v),
       ),
       keyCold: slider(lights.keyRange.cold, [0, 20, 0.1], (v) => setKeyRange(lights, 'cold', v)),
@@ -64,6 +65,10 @@ export default function DevControls({ forge, lens, lights, steel }: DevControlsP
       aberration: uniformSlider(lens.aberration, [0, 0.015, 0.0005]),
       vignette: uniformSlider(lens.vignette, [0, 3, 0.01]),
       grain: uniformSlider(lens.grain, [0, 0.15, 0.001]),
+    }),
+    // leva rounds the displayed numbers: this copies the exact live values.
+    'Copier les valeurs': button(() => {
+      void copyLook({ gl, scene, lights, steel, lens });
     }),
   });
   return null;

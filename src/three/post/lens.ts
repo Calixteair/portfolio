@@ -17,11 +17,11 @@ import { RenderPipeline, type Camera, type Scene, type WebGPURenderer } from 'th
 /** Tunable camera-look parameters (driven by leva in dev). */
 export function createLensUniforms() {
   return {
-    bloomStrength: uniform(0.45),
-    bloomRadius: uniform(0.4),
-    bloomThreshold: uniform(1),
+    bloomStrength: uniform(0.28),
+    bloomRadius: uniform(0.49),
+    bloomThreshold: uniform(0.51),
     aberration: uniform(0.0035),
-    vignette: uniform(1.3),
+    vignette: uniform(2.33),
     grain: uniform(0.045),
   };
 }

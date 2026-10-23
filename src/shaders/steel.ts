@@ -18,7 +18,7 @@ import { fbm01, noise01 } from './noise';
 export type EdgeMaskInfo = Pick<EdgeFields, 'min' | 'size' | 'range'> & { texture: DataTexture };
 
 /** Brushed-steel anisotropy (tunable in the dev panel). */
-export const STEEL_ANISOTROPY = 0.55;
+export const STEEL_ANISOTROPY = 0.35;
 
 /** Sample the baked edge fields at the fragment's plate-space position (local XY). */
 function sampleEdgeMask(mask: EdgeMaskInfo) {

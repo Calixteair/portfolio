@@ -6,6 +6,7 @@ import {
   type UniformNode,
   type WebGPURenderer,
 } from 'three/webgpu';
+import type { LensUniforms } from '../three/post/lens';
 import type { ForgeLights } from '../three/scenes/forge/lighting';
 
 /** Setters used by the dev panel: mutations live here, outside React components. */
@@ -40,4 +41,34 @@ export function setKeyRange(lights: ForgeLights, end: 'cold' | 'hot', value: num
 
 export function setAnisotropy(material: MeshPhysicalNodeMaterial, value: number): void {
   material.anisotropy = value;
+}
+
+interface LookSources {
+  gl: WebGPURenderer;
+  scene: Scene;
+  lights: ForgeLights;
+  steel: MeshPhysicalNodeMaterial;
+  lens: LensUniforms;
+}
+
+const round = (v: number) => Math.round(v * 1e4) / 1e4;
+
+/** Exact live values of every tunable, as JSON (clipboard + console). */
+export async function copyLook({ gl, scene, lights, steel, lens }: LookSources): Promise<void> {
+  const look = {
+    exposure: round(gl.toneMappingExposure),
+    environment: round(scene.environmentIntensity),
+    fog: scene.fog instanceof FogExp2 ? round(scene.fog.density) : null,
+    key: { ...lights.keyRange, color: `#${lights.key.color.getHexString()}` },
+    rim: round(lights.rim.intensity),
+    anisotropy: round(steel.anisotropy),
+    lens: Object.fromEntries(Object.entries(lens).map(([k, u]) => [k, round(u.value)])),
+  };
+  const json = JSON.stringify(look, null, 2);
+  console.info('[dev] forge look\n' + json);
+  try {
+    await navigator.clipboard.writeText(json);
+  } catch (error) {
+    console.warn('[dev] clipboard unavailable, copy the values from the console', error);
+  }
 }

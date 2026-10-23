@@ -74,10 +74,11 @@ export const HAZE = new Color().setRGB(0.02, 0.009, 0.007);
 
 /** Look of the forge; the dev panel starts from these values. */
 export const FORGE_LOOK = {
-  exposure: 1.05,
+  exposure: 0.95,
+  environmentIntensity: 0.48,
   fogDensity: 0.022,
-  key: { color: '#ff5a1f', cold: 0.15, hot: 14 },
-  rim: { color: '#8fb0ff', intensity: 0.5 },
+  key: { color: '#ff5a1f', cold: 1.1, hot: 11.2 },
+  rim: { color: '#8fb0ff', intensity: 0.26 },
 } as const;
 
 /**
@@ -97,6 +98,7 @@ export function applyForgeAtmosphere(
   const hot = bakeRoom(pmrem, 'hot');
   pmrem.dispose();
   scene.environmentNode = mix(pmremTexture(cold), pmremTexture(hot), smoothstep(0, 0.9, heat));
+  scene.environmentIntensity = FORGE_LOOK.environmentIntensity;
   scene.fog = new FogExp2(HAZE, FORGE_LOOK.fogDensity);
   return () => {
     scene.environmentNode = null;

@@ -5,6 +5,7 @@ import {
   InstancedMesh,
   LinearFilter,
   Mesh,
+  type MeshPhysicalNodeMaterial,
   Object3D,
   OctahedronGeometry,
   Path,
@@ -13,6 +14,7 @@ import {
   Vector2,
 } from 'three/webgpu';
 import { createDiamondMaterial, createPlateMaterial, type EdgeMaskInfo } from '../../shaders/steel';
+import { disposeMeshes } from '../dispose';
 import { mulberry32 } from '../random';
 import {
   HOLE,
@@ -27,7 +29,7 @@ import {
 /** Same interface as the artist's GLB will expose (SPEC §6). */
 export interface Pendant {
   group: Group;
-  body: Mesh;
+  body: Mesh<ExtrudeGeometry, MeshPhysicalNodeMaterial>;
   diamonds: InstancedMesh;
   edgeMask: EdgeMaskInfo;
   /** Plate-space outlines, for spark emitters and collisions (M3). */
@@ -46,7 +48,7 @@ function edgeMaskTexture(fields: EdgeFields): EdgeMaskInfo {
   return { texture: tex, min: fields.min, size: fields.size, range: fields.range };
 }
 
-function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Mesh {
+function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Pendant['body'] {
   const shape = new Shape(toVectors(outer));
   shape.holes.push(new Path(toVectors(hole)));
   const geometry = new ExtrudeGeometry(shape, {
@@ -60,7 +62,6 @@ function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Mesh {
   geometry.translate(0, 0, -PLATE.depth / 2);
   geometry.computeVertexNormals();
   const body = new Mesh(geometry, createPlateMaterial(mask));
-  body.name = 'pendant-body';
   return body;
 }
 
@@ -105,10 +106,7 @@ export function createPendant(seed = 7): Pendant {
   const group = new Group();
   group.add(body, diamonds);
   const dispose = () => {
-    for (const mesh of [body, diamonds]) {
-      mesh.geometry.dispose();
-      (mesh.material as { dispose: () => void }).dispose();
-    }
+    disposeMeshes(group);
     edgeMask.texture.dispose();
   };
   return { group, body, diamonds, edgeMask, outline: { outer, hole }, dispose };

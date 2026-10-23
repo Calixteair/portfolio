@@ -31,19 +31,21 @@ export function createSpin(angle = 0.35): SpinState {
   return { angle, velocity: 0, turns: 0 };
 }
 
-/** Advance by dt seconds. */
-export function stepSpin(state: SpinState, dt: number): void {
-  const delta = state.velocity * dt;
+function rotate(state: SpinState, delta: number): void {
   state.angle += delta;
   state.turns += Math.abs(delta) / (Math.PI * 2);
+}
+
+/** Advance by dt seconds. */
+export function stepSpin(state: SpinState, dt: number): void {
+  rotate(state, state.velocity * dt);
   state.velocity *= Math.exp(-SPIN.damping * dt);
 }
 
 /** The pendant follows the pointer; the release speed becomes its inertia. */
 export function dragSpin(state: SpinState, dxPixels: number, dtSeconds: number): void {
   const delta = dxPixels * SPIN.dragSensitivity;
-  state.angle += delta;
-  state.turns += Math.abs(delta) / (Math.PI * 2);
+  rotate(state, delta);
   state.velocity = clampSpeed(delta / Math.max(dtSeconds, SPIN.minDt));
 }
 

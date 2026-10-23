@@ -11,17 +11,17 @@ import {
   vec3,
 } from 'three/tsl';
 import { MeshPhysicalNodeMaterial, type DataTexture, type Node } from 'three/webgpu';
+import type { EdgeFields } from '../three/pendant/shape';
 import { fbm01, noise01 } from './noise';
 
-export interface EdgeMaskInfo {
-  texture: DataTexture;
-  min: { x: number; y: number };
-  size: { x: number; y: number };
-  range: number;
-}
+/** The baked edge fields (see shape.ts) as a GPU texture plus its plate-space mapping. */
+export type EdgeMaskInfo = Pick<EdgeFields, 'min' | 'size' | 'range'> & { texture: DataTexture };
+
+/** Brushed-steel anisotropy (tunable in the dev panel). */
+export const STEEL_ANISOTROPY = 0.55;
 
 /** Sample the baked edge fields at the fragment's plate-space position (local XY). */
-export function sampleEdgeMask(mask: EdgeMaskInfo) {
+function sampleEdgeMask(mask: EdgeMaskInfo) {
   const uv = positionLocal.xy.sub(vec2(mask.min.x, mask.min.y)).div(vec2(mask.size.x, mask.size.y));
   const fields = texture(mask.texture, uv);
   return { holeDistance: fields.r.mul(mask.range), insideHole: fields.a };
@@ -55,7 +55,10 @@ export function createPlateMaterial(mask: EdgeMaskInfo): MeshPhysicalNodeMateria
   const crust = crustMask(mask);
   const steel = vec3(0.706, 0.71, 0.725);
   const crustColor = vec3(0.006).add(noise01(positionLocal.xy.mul(400)).mul(0.01));
-  const material = new MeshPhysicalNodeMaterial({ anisotropy: 0.55, envMapIntensity: 1.1 });
+  const material = new MeshPhysicalNodeMaterial({
+    anisotropy: STEEL_ANISOTROPY,
+    envMapIntensity: 1.1,
+  });
   material.colorNode = mix(steel, crustColor, crust);
   material.metalnessNode = mix(float(1), float(0), crust);
   material.roughnessNode = mix(brushedRoughness(), float(0.5), crust);

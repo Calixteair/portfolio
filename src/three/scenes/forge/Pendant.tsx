@@ -2,7 +2,7 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Object3D } from 'three/webgpu';
 import { bindDragSpin, type DragController } from '../../pendant/dragSpin';
-import { createPendant } from '../../pendant/placeholder';
+import type { Pendant as PendantModel } from '../../pendant/placeholder';
 import { SPIN, breathingTilt, createSpin, impulseSpin, stepSpin } from '../../pendant/spin';
 
 const MAX_FRAME_DT = 0.05; // no jump after a tab switch
@@ -12,11 +12,10 @@ function pose(object: Object3D, tilt: number, yaw: number): void {
 }
 
 /**
- * The procedural placeholder (the final GLB will replace createPendant() only), turned by
- * drags anywhere and pushed by clicks on the pendant itself, with inertia.
+ * Mounts the pendant (procedural placeholder now, the artist's GLB later: same interface),
+ * turned by drags anywhere and pushed by clicks on the pendant itself, with inertia.
  */
-export default function Pendant() {
-  const pendant = useMemo(() => createPendant(), []);
+export default function Pendant({ pendant }: { pendant: PendantModel }) {
   const spin = useMemo(() => createSpin(), []);
   const drag = useRef<DragController | null>(null);
   const canvas = useThree((s) => s.gl.domElement);

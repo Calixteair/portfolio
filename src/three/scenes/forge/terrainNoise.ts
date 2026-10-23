@@ -1,11 +1,6 @@
 /** CPU value noise used to sculpt the decor geometry once, at build time. Pure functions. */
 
-function hash1(i: number, seed: number): number {
-  const v = Math.sin(i * 127.1 + seed * 311.7) * 43758.5453;
-  return v - Math.floor(v);
-}
-
-function hash2(i: number, j: number): number {
+function hash(i: number, j: number): number {
   const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
   return v - Math.floor(v);
 }
@@ -16,7 +11,7 @@ const smooth = (f: number) => f * f * (3 - 2 * f);
 export function valueNoise1(x: number, seed: number): number {
   const i = Math.floor(x);
   const u = smooth(x - i);
-  return hash1(i, seed) * (1 - u) + hash1(i + 1, seed) * u;
+  return hash(i, seed) * (1 - u) + hash(i + 1, seed) * u;
 }
 
 /** 2D value noise in [0, 1]. */
@@ -25,8 +20,8 @@ export function valueNoise2(x: number, y: number): number {
   const j = Math.floor(y);
   const ux = smooth(x - i);
   const uy = smooth(y - j);
-  const a = hash2(i, j) * (1 - ux) + hash2(i + 1, j) * ux;
-  const b = hash2(i, j + 1) * (1 - ux) + hash2(i + 1, j + 1) * ux;
+  const a = hash(i, j) * (1 - ux) + hash(i + 1, j) * ux;
+  const b = hash(i, j + 1) * (1 - ux) + hash(i + 1, j + 1) * ux;
   return a * (1 - uy) + b * uy;
 }
 

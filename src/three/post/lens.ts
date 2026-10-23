@@ -6,12 +6,12 @@ import {
   pass,
   renderOutput,
   screenUV,
-  sin,
   time,
   uniform,
   vec2,
   vec4,
 } from 'three/tsl';
+import { hash21 } from '../../shaders/noise';
 import { RenderPipeline, type Camera, type Scene, type WebGPURenderer } from 'three/webgpu';
 
 /** Tunable camera-look parameters (driven by leva in dev). */
@@ -52,9 +52,7 @@ export function createLensPipeline(
   const glow = bloom(color, u.bloomStrength, u.bloomRadius, u.bloomThreshold);
   const display = renderOutput(split.add(glow));
   const vignette = float(1).sub(dot(centred, centred).mul(u.vignette));
-  // 2D hash (TSL's hash() takes a scalar: fed a vec2 it keeps x and draws vertical stripes).
-  const seed = screenUV.mul(vec2(1717, 913)).add(fract(time).mul(37));
-  const noise = fract(sin(dot(seed, vec2(12.9898, 78.233))).mul(43758.5453));
+  const noise = hash21(screenUV.mul(vec2(1717, 913)).add(fract(time).mul(37)));
   const pipeline = new RenderPipeline(renderer);
   pipeline.outputColorTransform = false;
   pipeline.outputNode = vec4(display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain)), 1);

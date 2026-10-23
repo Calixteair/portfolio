@@ -5,8 +5,10 @@ import '../three/extend';
 import LensEffects from '../three/post/LensEffects';
 import { createLensUniforms } from '../three/post/lens';
 import { backendOf, createRenderer, type Backend } from '../three/renderer';
+import { createPendant } from '../three/pendant/placeholder';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
 import ForgeWorld from '../three/scenes/forge/ForgeWorld';
+import { createForgeLights } from '../three/scenes/forge/lighting';
 import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
 import BackendBadge from './BackendBadge';
@@ -19,6 +21,9 @@ export default function Experience() {
   const [backend, setBackend] = useState<Backend | null>(null);
   const lens = useMemo(() => createLensUniforms(), []);
   const forge = useMemo(() => createForgeUniforms(), []);
+  // Built here and passed down, so the dev panel tunes these exact objects.
+  const lights = useMemo(() => createForgeLights(), []);
+  const pendant = useMemo(() => createPendant(), []);
 
   return (
     <>
@@ -36,13 +41,13 @@ export default function Experience() {
           setBackend(active);
         }}
       >
-        <ForgeLighting />
+        <ForgeLighting lights={lights} />
         <ForgeWorld uniforms={forge} />
-        <Pendant />
+        <Pendant pendant={pendant} />
         <LensEffects uniforms={lens} />
         {DevControls && (
           <Suspense fallback={null}>
-            <DevControls forge={forge} lens={lens} />
+            <DevControls forge={forge} lens={lens} lights={lights} steel={pendant.body.material} />
           </Suspense>
         )}
       </Canvas>

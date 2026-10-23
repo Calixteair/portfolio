@@ -59,20 +59,25 @@ export function holeOutline(rand: () => number, samples = 180): Point[] {
   return points;
 }
 
-function segmentDistance(p: Point, a: Point, b: Point): number {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
-  return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
-}
-
-/** Unsigned distance from p to the closed polygon's edges. */
+/**
+ * Unsigned distance from p to the closed polygon's edges. Hot loop of the bake (~37k texels ×
+ * ~190 edges): plain loop on squared distances, a single sqrt at the end.
+ */
 export function polygonDistance(p: Point, poly: readonly Point[]): number {
-  let d = Infinity;
-  poly.forEach((a, i) => {
-    d = Math.min(d, segmentDistance(p, a, poly[(i + 1) % poly.length] as Point));
-  });
-  return d;
+  let best = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[j] as Point;
+    const b = poly[i] as Point;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const px = p.x - a.x;
+    const py = p.y - a.y;
+    const t = Math.max(0, Math.min(1, (px * dx + py * dy) / (dx * dx + dy * dy)));
+    const ex = px - t * dx;
+    const ey = py - t * dy;
+    best = Math.min(best, ex * ex + ey * ey);
+  }
+  return Math.sqrt(best);
 }
 
 /** Even-odd ray casting. */

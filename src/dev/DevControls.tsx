@@ -1,8 +1,9 @@
-import { useThree } from '@react-three/fiber';
 import { folder, useControls } from 'leva';
-import type { Scene, WebGPURenderer } from 'three/webgpu';
+import type { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { LensUniforms } from '../three/post/lens';
+import { FORGE_LOOK, type ForgeLights } from '../three/scenes/forge/lighting';
 import type { ForgeUniforms } from '../three/scenes/forge/uniforms';
+import { useWebGPU } from '../three/useWebGPU';
 import {
   setAnisotropy,
   setEnvironmentIntensity,
@@ -16,41 +17,51 @@ import {
 export interface DevControlsProps {
   forge: ForgeUniforms;
   lens: LensUniforms;
+  lights: ForgeLights;
+  steel: MeshPhysicalNodeMaterial;
 }
 
-type Range = [value: number, min: number, max: number, step: number];
+type Range = [min: number, max: number, step: number];
 
-/** Number slider whose changes go straight to the scene (transient: no React re-render). */
-function slider([value, min, max, step]: Range, apply: (v: number) => void) {
+/** Slider starting from the live value; changes go straight to the scene (no re-render). */
+function slider(value: number, [min, max, step]: Range, apply: (v: number) => void) {
   return { value, min, max, step, onChange: apply, transient: true as const };
 }
 
+function uniformSlider(u: ForgeUniforms['heat'], range: Range) {
+  return slider(u.value, range, (v) => setUniform(u, v));
+}
+
 /** Dev-only leva panel (lazy-loaded behind import.meta.env.DEV, absent from the prod bundle). */
-export default function DevControls({ forge, lens }: DevControlsProps) {
-  const gl = useThree((s) => s.gl) as unknown as WebGPURenderer;
-  const scene = useThree((s) => s.scene) as unknown as Scene;
+export default function DevControls({ forge, lens, lights, steel }: DevControlsProps) {
+  const { gl, scene } = useWebGPU();
+  const { key, rim } = lights;
   useControls({
-    Forge: folder({ heat: slider([0, 0, 1, 0.01], (v) => setUniform(forge.heat, v)) }),
+    Forge: folder({ heat: uniformSlider(forge.heat, [0, 1, 0.01]) }),
     Lights: folder({
-      exposure: slider([1.05, 0.3, 2.5, 0.01], (v) => setExposure(gl, v)),
-      environment: slider([1, 0, 3, 0.01], (v) => setEnvironmentIntensity(scene, v)),
-      key: slider([11, 0, 40, 0.1], (v) => setLightIntensity(scene, 'forge-key', v)),
+      exposure: slider(FORGE_LOOK.exposure, [0.3, 2.5, 0.01], (v) => setExposure(gl, v)),
+      environment: slider(scene.environmentIntensity, [0, 3, 0.01], (v) =>
+        setEnvironmentIntensity(scene, v),
+      ),
+      key: slider(key.intensity, [0, 40, 0.1], (v) => setLightIntensity(key, v)),
       keyColor: {
-        value: '#ff5a1f',
-        onChange: (c: string) => setLightColor(scene, 'forge-key', c),
+        value: `#${key.color.getHexString()}`,
+        onChange: (c: string) => setLightColor(key, c),
         transient: true as const,
       },
-      rim: slider([0.5, 0, 4, 0.01], (v) => setLightIntensity(scene, 'forge-rim', v)),
-      fog: slider([0.022, 0, 0.08, 0.001], (v) => setFogDensity(scene, v)),
+      rim: slider(rim.intensity, [0, 4, 0.01], (v) => setLightIntensity(rim, v)),
+      fog: slider(FORGE_LOOK.fogDensity, [0, 0.08, 0.001], (v) => setFogDensity(scene, v)),
     }),
-    Steel: folder({ anisotropy: slider([0.55, 0, 1, 0.01], (v) => setAnisotropy(scene, v)) }),
+    Steel: folder({
+      anisotropy: slider(steel.anisotropy, [0, 1, 0.01], (v) => setAnisotropy(steel, v)),
+    }),
     Lens: folder({
-      bloom: slider([0.45, 0, 2, 0.01], (v) => setUniform(lens.bloomStrength, v)),
-      bloomRadius: slider([0.4, 0, 1, 0.01], (v) => setUniform(lens.bloomRadius, v)),
-      bloomThreshold: slider([1, 0, 3, 0.01], (v) => setUniform(lens.bloomThreshold, v)),
-      aberration: slider([0.0035, 0, 0.015, 0.0005], (v) => setUniform(lens.aberration, v)),
-      vignette: slider([1.3, 0, 3, 0.01], (v) => setUniform(lens.vignette, v)),
-      grain: slider([0.045, 0, 0.15, 0.001], (v) => setUniform(lens.grain, v)),
+      bloom: uniformSlider(lens.bloomStrength, [0, 2, 0.01]),
+      bloomRadius: uniformSlider(lens.bloomRadius, [0, 1, 0.01]),
+      bloomThreshold: uniformSlider(lens.bloomThreshold, [0, 3, 0.01]),
+      aberration: uniformSlider(lens.aberration, [0, 0.015, 0.0005]),
+      vignette: uniformSlider(lens.vignette, [0, 3, 0.01]),
+      grain: uniformSlider(lens.grain, [0, 0.15, 0.001]),
     }),
   });
   return null;

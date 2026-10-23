@@ -12,6 +12,7 @@ import {
 } from 'three/webgpu';
 import { createRockMaterial } from '../../../shaders/rock';
 import { createSkyMaterial } from '../../../shaders/sky';
+import { disposeMeshes } from '../../dispose';
 import { mulberry32 } from '../../random';
 import { fbm2, ridgeProfile, valueNoise2 } from './terrainNoise';
 import { glowIntensity } from './uniforms';
@@ -70,8 +71,7 @@ const pick = (rand: Rand, [a, b]: Range) => a + rand() * (b - a);
 /** Sharp faceted peak: low-sided cone jagged by position-hashed noise (facets stay watertight). */
 function peakGeometry(rand: Rand, radius: number, height: number, lean: number): BufferGeometry {
   const geometry = new ConeGeometry(radius, height, 4 + Math.floor(rand() * 4), 5);
-  const pos = geometry.attributes.position;
-  if (!pos) return geometry;
+  const pos = geometry.getAttribute('position');
   const seed = rand() * 100;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
@@ -112,8 +112,7 @@ function peakCluster(rand: Rand, layer: PeakLayer): BufferGeometry[] {
 function ridgeGeometry({ z, width, height }: (typeof RIDGES)[number]): BufferGeometry {
   const segments = 260;
   const geometry = new PlaneGeometry(width, 1, segments, 1);
-  const pos = geometry.attributes.position;
-  if (!pos) return geometry;
+  const pos = geometry.getAttribute('position');
   for (let i = 0; i <= segments; i++) {
     pos.setY(i, GROUND_Y + height * ridgeProfile(pos.getX(i), z));
     pos.setY(i + segments + 1, GROUND_Y - 1);
@@ -124,10 +123,10 @@ function ridgeGeometry({ z, width, height }: (typeof RIDGES)[number]): BufferGeo
 
 /** Almost flat under the pendant, broken rock further out. */
 function groundGeometry(): BufferGeometry {
-  const geometry = new PlaneGeometry(140, 140, 220, 220);
+  // ~0.9 m cells: the relief is 1.5 cm near the pendant and the haze hides detail far out.
+  const geometry = new PlaneGeometry(140, 140, 160, 160);
   geometry.rotateX(-Math.PI / 2);
-  const pos = geometry.attributes.position;
-  if (!pos) return geometry;
+  const pos = geometry.getAttribute('position');
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
@@ -135,14 +134,12 @@ function groundGeometry(): BufferGeometry {
     const rocks = fbm2(x * 0.9, z * 0.9) + 0.5 * fbm2(x * 4, z * 4);
     pos.setY(i, GROUND_Y + (rocks - 0.7) * amplitude);
   }
-  geometry.computeVertexNormals();
+  // No computeVertexNormals: rock is flat-shaded from screen-space derivatives.
   return geometry;
 }
 
 export interface ForgeWorld {
   group: Group;
-  /** The pendant's own glow reaching the surroundings. */
-  glow: PointLight;
   /** Per-frame: glow intensity follows the heat. */
   update: (heat: number) => void;
   dispose: () => void;
@@ -175,14 +172,9 @@ export function createForgeWorld(heat: UniformNode<'float', number>, horizon: Co
   glow.position.set(0, GROUND_Y + 0.15, -0.4);
   const group = new Group();
   group.add(ground, sky, glow, ...buildPeaks(rand, heat));
-  const dispose = () =>
-    group.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      object.geometry.dispose();
-      (object.material as { dispose: () => void }).dispose();
-    });
+  const dispose = () => disposeMeshes(group);
   const update = (value: number) => {
     glow.intensity = glowIntensity(value);
   };
-  return { group, glow, update, dispose };
+  return { group, update, dispose };
 }

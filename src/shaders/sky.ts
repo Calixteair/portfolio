@@ -1,6 +1,5 @@
 import {
   color,
-  dot,
   exp,
   float,
   floor,
@@ -24,12 +23,7 @@ import {
   type Node,
   type UniformNode,
 } from 'three/webgpu';
-import { fbm01 } from './noise';
-
-/** 2D → 1D hash (TSL's hash() is scalar-only). */
-function hash21(p: Node<'vec2'>): Node<'float'> {
-  return fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
-}
+import { fbm01, hash21 } from './noise';
 
 /** One star per lit cell of a 3D grid on the dome, slight twinkle, none near the horizon. */
 function stars(dir: Node<'vec3'>, elevation: Node<'float'>): Node<'vec3'> {

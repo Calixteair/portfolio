@@ -58,9 +58,9 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 ## 4. Loader
 
 - En **HTML/CSS inline**, sans JavaScript de framework : il s'affiche au premier octet reçu.
-- Un SVG `<rect pathLength="100">` a le même ratio que le pendentif. On l'anime avec `stroke-dashoffset: calc(100 - var(--p))`.
+- Un SVG `<path pathLength="100">` suit le **contour exact** du pendentif (généré au build depuis le même `outerOutline` que la 3D). On l'anime avec `stroke-dashoffset: calc(100 - var(--p))`. _Tranché en M2_ : un `<rect>` n'aurait que le ratio, le contour exact rend le raccord invisible.
 - Couleur de corps noir : les segments récents sont blancs ou jaunes, les plus anciens refroidissent vers l'orange puis le rouge. Lueur avec `drop-shadow`, quelques étincelles à la pointe.
-- Progression : `useProgress` (drei), **lissée** par interpolation. Les 10 derniers pour cent sont réservés à `gl.compileAsync`.
+- Progression : étapes réelles (île chargée, renderer, scène, assets, shaders compilés), **lissée** par interpolation. Les 10 derniers pour cent sont réservés à `gl.compileAsync`. `useProgress` (drei) s'ajoutera à l'étape « assets » avec les premiers fichiers téléchargés (GLB, KTX2).
 - À 100 % : le pendentif 3D apparaît **à la même position et à la même taille** pendant que le contour s'éteint (raccord dans le mouvement).
 - Si le cache est chaud (chargement < 300 ms), on saute directement à `ready`.
 - Si WebGL est indisponible ou si le chargement dépasse 10 s, on propose la version HTML.

@@ -25,9 +25,10 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M2 — Loader
 
-- [ ] Fil incandescent en SVG/CSS inline (SPEC §4), progression lissée
-- [ ] Précompilation des shaders, bouton « Entrer », raccord avec le pendentif
-- [ ] Cas cache chaud, sans WebGPU ni WebGL, timeout
+- [x] Fil incandescent en SVG/CSS (contour exact du pendentif), progression lissée par étapes réelles
+- [x] Précompilation des shaders (`compileAsync`), bouton « Entrer », raccord avec le pendentif projeté à l'écran
+- [x] Cas cache chaud, sans WebGPU ni WebGL, timeout, sans JavaScript : version classique minimale (complétée en M7)
+- [ ] Audio débloqué par « Entrer » et bouton « Passer l'intro » : reportés (son en question ouverte, SPEC §10 ; portfolio en M6)
 
 ## M3 — Chauffe et étincelles
 

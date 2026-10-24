@@ -12,23 +12,41 @@ function trackPageErrors(page: Page): string[] {
   return errors;
 }
 
-test('renders the scene on the forced WebGL 2 backend', async ({ page }) => {
+/**
+ * Loader → "Entrer" → scene. The shaders are precompiled before "Entrer" appears: under
+ * SwiftShader (CPU-emulated GPU in CI) that alone takes several seconds, hence the timeout.
+ */
+async function enterScene(page: Page) {
+  const enter = page.getByRole('button', { name: 'Entrer' });
+  await expect(enter).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
+  await enter.click();
+  await expect(page.locator('#loader')).toBeHidden();
+  await expect(page.locator('canvas')).toBeVisible();
+}
+
+test('loads, then enters the scene on the forced WebGL 2 backend', async ({ page }) => {
   const errors = trackPageErrors(page);
   await page.goto('/?gl=webgl2');
-
-  await expect(page.locator('canvas')).toBeVisible();
-  // SwiftShader compiles every node material and the post pipeline on the CPU before the
-  // first frame (about 7 s locally since M1): give slow CI runners room.
-  await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgl2', {
-    timeout: 30_000,
-  });
+  await enterScene(page);
+  await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgl2');
   expect(errors).toEqual([]);
 });
 
-test('renders the scene on WebGPU @webgpu', async ({ page }) => {
+test('loads, then enters the scene on WebGPU @webgpu', async ({ page }) => {
   const errors = trackPageErrors(page);
   await page.goto('/');
-
+  await enterScene(page);
   await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgpu');
   expect(errors).toEqual([]);
+});
+
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('shows the classic version', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Calixte Reymond' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
+  });
 });

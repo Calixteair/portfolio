@@ -55,6 +55,11 @@ export function impulseSpin(state: SpinState): void {
   state.velocity = clampSpeed(state.velocity + SPIN.impulse * direction);
 }
 
+/** Coast to `target` and stop there: the velocity damping alone carries it (v / damping). */
+export function settleSpin(state: SpinState, target: number): void {
+  state.velocity = clampSpeed((target - state.angle) * SPIN.damping);
+}
+
 /** Small idle "breathing" tilt; none with prefers-reduced-motion. */
 export function breathingTilt(time: number, reducedMotion: boolean): number {
   return 0.06 + (reducedMotion ? 0 : Math.sin(time * 0.6) * 0.03);

@@ -1,10 +1,12 @@
 import { Canvas } from '@react-three/fiber';
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
+import { useLoader } from '../loader/useLoader';
 import '../three/extend';
+import Precompile from '../three/Precompile';
 import LensEffects from '../three/post/LensEffects';
 import { createLensUniforms } from '../three/post/lens';
-import { backendOf, createRenderer, type Backend } from '../three/renderer';
+import { backendOf, createRenderer, supports3D, type Backend } from '../three/renderer';
 import { createPendant } from '../three/pendant/placeholder';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
 import ForgeWorld from '../three/scenes/forge/ForgeWorld';
@@ -12,22 +14,37 @@ import { createForgeLights } from '../three/scenes/forge/lighting';
 import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
 import BackendBadge from './BackendBadge';
+import RenderErrorBoundary from './RenderErrorBoundary';
 
 // Dev-only tuning panel: the dynamic import is dropped from the production build.
 const DevControls = import.meta.env.DEV ? lazy(() => import('../dev/DevControls')) : null;
 
-/** Root of the 3D island: the forge scene with the pendant at its centre. */
+/**
+ * Root of the 3D island: the forge scene with the pendant at its centre. It drives the
+ * static loader: nothing renders until the shaders are compiled, then "Entrer" appears.
+ */
 export default function Experience() {
+  const loader = useLoader();
+  const supported = useMemo(() => supports3D(), []);
+  const [frameloop, setFrameloop] = useState<'never' | 'always'>('never');
   const [backend, setBackend] = useState<Backend | null>(null);
   const lens = useMemo(() => createLensUniforms(), []);
   const forge = useMemo(() => createForgeUniforms(), []);
   // Built here and passed down, so the dev panel tunes these exact objects.
   const lights = useMemo(() => createForgeLights(), []);
   const pendant = useMemo(() => createPendant(), []);
+  const startRendering = useCallback(() => setFrameloop('always'), []);
+  const { fail, reach } = loader;
+
+  useEffect(() => {
+    if (!supported) fail(new Error('Neither WebGPU nor WebGL 2 is available'));
+  }, [supported, fail]);
+  if (!supported) return null;
 
   return (
-    <>
+    <RenderErrorBoundary onError={fail}>
       <Canvas
+        frameloop={frameloop}
         dpr={[1, 2]}
         // Drags turn the pendant: no browser panning or zooming on touch screens.
         style={{ touchAction: 'none', cursor: 'grab' }}
@@ -39,19 +56,21 @@ export default function Experience() {
           // Exposed for e2e tests and debugging: which backend actually runs.
           document.documentElement.dataset.backend = active;
           setBackend(active);
+          reach('renderer');
         }}
       >
         <ForgeLighting lights={lights} uniforms={forge} />
         <ForgeWorld uniforms={forge} />
-        <Pendant pendant={pendant} />
+        <Pendant pendant={pendant} interactive={loader.phase === 'entered'} />
         <LensEffects uniforms={lens} />
         {DevControls && (
           <Suspense fallback={null}>
             <DevControls forge={forge} lens={lens} lights={lights} steel={pendant.body.material} />
           </Suspense>
         )}
+        <Precompile onStage={reach} onCompiled={startRendering} onError={fail} />
       </Canvas>
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}
-    </>
+    </RenderErrorBoundary>
   );
 }

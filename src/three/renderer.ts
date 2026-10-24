@@ -7,6 +7,16 @@ export function isWebGLForced(search: string = window.location.search): boolean 
   return new URLSearchParams(search).get('gl') === 'webgl2';
 }
 
+/** WebGPU, or the WebGL 2 the fallback backend needs. Otherwise: classic version (SPEC §4). */
+export function supports3D(): boolean {
+  if ('gpu' in navigator) return true;
+  try {
+    return document.createElement('canvas').getContext('webgl2') !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function backendOf(renderer: WebGPURenderer): Backend {
   return 'isWebGPUBackend' in renderer.backend ? 'webgpu' : 'webgl2';
 }

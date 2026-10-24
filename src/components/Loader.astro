@@ -77,7 +77,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   // Watchdog for when the island never starts (script blocked, network failure): after
   // 10 s, offer the classic version. Once the island drives the loader, it owns the timeout.
   setTimeout(function () {
-    var loader = document.getElementById('loader');
+    const loader = document.getElementById('loader');
     if (loader && loader.dataset.phase === 'loading' && !loader.dataset.driven) {
       loader.dataset.phase = 'timeout';
     }
@@ -195,6 +195,17 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   #loader[data-phase='ready'] .sparks,
   #loader[data-phase='entered'] .sparks {
     display: none;
+  }
+  /* Closed loop: the whole wire glows evenly orange, the hot tip is gone. */
+  #loader[data-phase='ready'] .orange,
+  #loader[data-phase='entered'] .orange {
+    stroke-dasharray: 100 0;
+    transition: stroke-dasharray 0.6s ease;
+  }
+  #loader[data-phase='ready'] :is(.yellow, .white),
+  #loader[data-phase='entered'] :is(.yellow, .white) {
+    opacity: 0;
+    transition: opacity 0.6s ease;
   }
   #loader[data-phase='ready'] .glow {
     animation: breathe 2.4s ease-in-out infinite alternate;

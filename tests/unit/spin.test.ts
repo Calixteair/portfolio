@@ -5,6 +5,7 @@ import {
   createSpin,
   dragSpin,
   impulseSpin,
+  settleSpin,
   stepSpin,
 } from '../../src/three/pendant/spin';
 
@@ -65,6 +66,14 @@ describe('spin', () => {
     for (let i = 0; i < 100; i++) dragSpin(s, ((Math.PI * 2) / SPIN.dragSensitivity) * 0.01, 0.1);
     for (let i = 0; i < 100; i++) dragSpin(s, -((Math.PI * 2) / SPIN.dragSensitivity) * 0.01, 0.1);
     expect(s.turns).toBeCloseTo(2);
+  });
+
+  it('settles to a target angle by inertia alone', () => {
+    const s = createSpin(0);
+    settleSpin(s, 0.35);
+    simulate(s, 8);
+    expect(s.angle).toBeCloseTo(0.35, 2);
+    expect(Math.abs(s.velocity)).toBeLessThan(1e-3);
   });
 
   it('breathes only without reduced motion', () => {

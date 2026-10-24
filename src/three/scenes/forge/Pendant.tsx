@@ -1,6 +1,7 @@
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import type { Object3D } from 'three/webgpu';
+import { alignWire, projectWire } from '../../../loader/wire';
 import { bindDragSpin, type DragController } from '../../pendant/dragSpin';
 import type { Pendant as PendantModel } from '../../pendant/placeholder';
 import {
@@ -49,6 +50,11 @@ export default function Pendant({ pendant, interactive }: PendantProps) {
   useFrame((state, dt) => {
     if (!drag.current?.isDragging()) stepSpin(spin, Math.min(dt, MAX_FRAME_DT));
     pose(pendant.group, breathingTilt(state.clock.elapsedTime, reducedMotion), spin.angle);
+    // Under the loader, keep its wire exactly on the pendant's outline (handoff, SPEC §4).
+    if (!interactive) {
+      pendant.group.updateMatrixWorld();
+      alignWire(projectWire(pendant.group, state.camera, state.size));
+    }
   });
 
   const strike = (e: ThreeEvent<MouseEvent>) => {

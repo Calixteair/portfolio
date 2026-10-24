@@ -1,0 +1,308 @@
+---
+/**
+ * Incandescent loader (SPEC §4): static HTML/CSS shown from the first byte. A glowing wire
+ * traces the pendant's exact outline; the island drives `--p` (0-100) and `data-phase`.
+ * Before the island runs, CSS alone creeps the wire forward so it never sits still.
+ */
+import { PLATE, outerOutline } from '../three/pendant/shape';
+
+// Plate outline in SVG user units (y down), closed. The 3D pendant uses the same points.
+const points = outerOutline().map((p) => `${p.x.toFixed(4)} ${(-p.y).toFixed(4)}`);
+const outline = `M ${points.join(' L ')} Z`;
+const pad = 0.02;
+// Sparks ride the tip along the same path (CSS motion path, in SVG user units).
+const sparkPath = `#loader .sparks circle { offset-path: path('${outline}'); }`;
+const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PLATE.hh + pad)]
+  .map((v) => v.toFixed(4))
+  .join(' ');
+---
+
+<div
+  id="loader"
+  data-phase="loading"
+  role="progressbar"
+  aria-label="Chargement de la scène 3D"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow="0"
+>
+  <svg class="wire" viewBox={viewBox} aria-hidden="true" focusable="false">
+    <g class="glow">
+      <path class="trail cooled" d={outline} pathLength="100"></path>
+      <path class="trail orange" d={outline} pathLength="100"></path>
+      <path class="trail yellow" d={outline} pathLength="100"></path>
+      <path class="trail white" d={outline} pathLength="100"></path>
+    </g>
+    <g class="sparks">
+      <circle r="0.009"></circle>
+      <circle r="0.006"></circle>
+      <circle r="0.007"></circle>
+    </g>
+  </svg>
+
+  <button id="loader-enter" class="enter" type="button" disabled>
+    Entrer
+  </button>
+
+  <section id="version-classique" class="classic" aria-labelledby="classic-title">
+    <p class="reason" data-reason="unsupported">
+      Votre navigateur ne peut pas afficher la scène 3D (WebGPU et WebGL 2 indisponibles).
+    </p>
+    <p class="reason" data-reason="timeout">
+      Le chargement de la scène 3D prend trop de temps.
+    </p>
+    <noscript>
+      <p>JavaScript est désactivé : voici la version classique.</p>
+    </noscript>
+    <h1 id="classic-title">Calixte Reymond</h1>
+    <p>Étudiant ingénieur en cybersécurité.</p>
+    <ul>
+      <li>
+        <a href="https://github.com/Calixteair" rel="me noopener">
+          GitHub
+        </a>
+      </li>
+      <li>
+        <a href="https://www.linkedin.com/in/calixte-reymond/" rel="me noopener">
+          LinkedIn
+        </a>
+      </li>
+    </ul>
+  </section>
+</div>
+
+<style is:inline set:html={sparkPath}></style>
+
+<script is:inline>
+  // Watchdog for when the island never starts (script blocked, network failure): after
+  // 10 s, offer the classic version. Once the island drives the loader, it owns the timeout.
+  setTimeout(function () {
+    var loader = document.getElementById('loader');
+    if (loader && loader.dataset.phase === 'loading' && !loader.dataset.driven) {
+      loader.dataset.phase = 'timeout';
+    }
+  }, 10000);
+</script>
+
+<style>
+  @property --p {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  #loader {
+    --p: 0;
+    --ember: #ff5a14;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: var(--forge-void);
+    transition:
+      opacity 1.6s ease,
+      visibility 0s linear 1.6s;
+  }
+
+  /* Before the island takes over: creep towards the "hydrated" milestone (35 %). */
+  #loader:not([data-driven]) {
+    animation: creep 6s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+  }
+
+  @keyframes creep {
+    to {
+      --p: 35;
+    }
+  }
+
+  /* Placed where the 3D pendant will appear (fov 32°, camera 3.3 m away): the island
+     refines it with the real projection, for a seamless handoff. */
+  .wire {
+    position: absolute;
+    left: var(--wire-x, 50%);
+    top: var(--wire-y, 51%);
+    height: var(--wire-h, 49vh);
+    translate: -50% -50%;
+    overflow: visible;
+  }
+
+  .trail {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    /* User units (viewBox ≈ 0.94 tall ≈ 49vh): ~0.005 ≈ 2 px. No non-scaling-stroke: it
+       would measure dashes in screen pixels and ignore pathLength. */
+  }
+
+  /* Black-body trail: white at the tip, cooling to yellow, orange, then dark red. Each
+     layer is a dash of length L ending at the tip: dasharray L 100, offset L - p. */
+  .cooled {
+    stroke: #6b1406;
+    stroke-width: 0.0045;
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: calc(100 - var(--p));
+  }
+  .orange {
+    stroke: var(--ember);
+    stroke-width: 0.0055;
+    stroke-dasharray: 24 100;
+    stroke-dashoffset: calc(24 - var(--p));
+  }
+  .yellow {
+    stroke: #ffc04a;
+    stroke-width: 0.006;
+    stroke-dasharray: 7 100;
+    stroke-dashoffset: calc(7 - var(--p));
+  }
+  .white {
+    stroke: #fff6e0;
+    stroke-width: 0.007;
+    stroke-dasharray: 1.5 100;
+    stroke-dashoffset: calc(1.5 - var(--p));
+  }
+
+  .glow {
+    filter: drop-shadow(0 0 0.008px rgb(255 120 40 / 0.9))
+      drop-shadow(0 0 0.03px rgb(255 70 20 / 0.5));
+  }
+
+  .sparks {
+    filter: drop-shadow(0 0 0.01px #ffb347);
+  }
+  .sparks circle {
+    fill: #fff1c9;
+    offset-distance: calc(var(--p) * 1%);
+    animation: spark 0.45s ease-out infinite;
+  }
+  .sparks circle:nth-child(2) {
+    animation-delay: -0.15s;
+  }
+  .sparks circle:nth-child(3) {
+    animation-delay: -0.3s;
+  }
+
+  @keyframes spark {
+    from {
+      opacity: 1;
+      translate: 0 0;
+    }
+    to {
+      opacity: 0;
+      translate: 0.025px 0.06px;
+    }
+  }
+
+  /* Ready: the wire is closed and steady, "Entrer" appears below it. */
+  #loader[data-phase='ready'] .sparks,
+  #loader[data-phase='entered'] .sparks {
+    display: none;
+  }
+  #loader[data-phase='ready'] .glow {
+    animation: breathe 2.4s ease-in-out infinite alternate;
+  }
+  @keyframes breathe {
+    to {
+      opacity: 0.75;
+    }
+  }
+
+  .enter {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--wire-y, 51%) + var(--wire-h, 49vh) / 2 + 4vh);
+    translate: -50% 0;
+    padding: 0.7em 2.2em;
+    font:
+      500 0.95rem/1 system-ui,
+      sans-serif;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid rgb(255 90 20 / 0.6);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.8s ease,
+      background 0.3s ease;
+  }
+  .enter:hover,
+  .enter:focus-visible {
+    background: rgb(255 90 20 / 0.15);
+    outline: none;
+  }
+  #loader[data-phase='ready'] .enter {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Entered: the outline goes out while the scene fades in from black (SPEC §2, §4). */
+  #loader[data-phase='entered'] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  #loader[data-phase='entered'] .wire {
+    transition: opacity 0.9s ease;
+    opacity: 0;
+  }
+
+  /* Classic version: shown when the 3D cannot run or takes too long, and without JS. */
+  .classic {
+    display: none;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    height: fit-content;
+    max-width: 32rem;
+    padding: 0 1.5rem;
+    font:
+      400 1rem/1.6 system-ui,
+      sans-serif;
+  }
+  .classic h1 {
+    margin: 0.4em 0 0.1em;
+    font-weight: 600;
+  }
+  .classic ul {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+  .classic a {
+    color: var(--ember);
+  }
+  .reason {
+    display: none;
+    opacity: 0.75;
+  }
+  #loader[data-phase='unsupported'] .classic,
+  #loader[data-phase='timeout'] .classic,
+  #loader[data-phase='unsupported'] .reason[data-reason='unsupported'],
+  #loader[data-phase='timeout'] .reason[data-reason='timeout'] {
+    display: block;
+  }
+  #loader[data-phase='unsupported'] .wire,
+  #loader[data-phase='timeout'] .wire {
+    display: none;
+  }
+
+  @media (scripting: none) {
+    .classic {
+      display: block;
+    }
+    .wire {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sparks {
+      display: none;
+    }
+    #loader[data-phase='ready'] .glow {
+      animation: none;
+    }
+  }
+</style>

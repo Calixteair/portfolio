@@ -61,13 +61,14 @@ describe('loader progress', () => {
     expect(s.phase).toBe('ready');
   });
 
-  it('times out when loading drags on', () => {
+  it('offers the classic version after the timeout, but keeps loading', () => {
     const s = createLoader();
     reach(s, 'scene');
     tick(s, 1 / 60, LOADER.timeoutMs + 1);
     expect(s.phase).toBe('timeout');
     reach(s, 'compiled');
-    expect(s.target).toBe(STAGES.scene);
+    run(s, 3, LOADER.timeoutMs + 2);
+    expect(s.phase).toBe('ready');
   });
 
   it('only enters from ready, and failure only applies while loading', () => {

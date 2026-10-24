@@ -31,7 +31,7 @@ function paint(el: HTMLElement, state: LoaderState): void {
 
 /**
  * Takes over from the CSS creep (reads the current `--p`), then animates the progress
- * every frame until the loader leaves the "loading" phase.
+ * every frame until "Entrer" or a failure (a timeout keeps loading in the background).
  */
 export function createLoaderController(el: HTMLElement | null): LoaderController {
   if (!el) return { reach: () => {}, fail: () => {}, onPhase: () => {}, dispose: () => {} };
@@ -56,7 +56,7 @@ export function createLoaderController(el: HTMLElement | null): LoaderController
     last = now;
     paint(el, state);
     if (state.phase !== before) setPhase(state.phase);
-    if (state.phase === 'loading') raf = requestAnimationFrame(frame);
+    if (state.phase === 'loading' || state.phase === 'timeout') raf = requestAnimationFrame(frame);
   };
   const onEnter = () => {
     enter(state);

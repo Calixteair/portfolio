@@ -8,7 +8,7 @@ export type LoaderPhase = 'loading' | 'ready' | 'entered' | 'unsupported' | 'tim
 export const LOADER = {
   /** Loaded this fast (cache warm): skip the tracing and go straight to "Entrer". */
   warmCacheMs: 300,
-  /** Still loading after this: offer the classic version instead. */
+  /** Still loading after this: offer the classic version, but keep loading (SPEC §4). */
   timeoutMs: 10_000,
   /** Exponential smoothing rate of the displayed progress (1/s). */
   smoothing: 5,
@@ -40,8 +40,11 @@ export function createLoader(shown = 0): LoaderState {
   return { phase: 'loading', target: Math.max(0, Math.min(shown, STAGES.hydrated)), shown };
 }
 
+/** Still working towards "Entrer" (a slow load keeps going after the timeout). */
+const isLoading = (state: LoaderState) => state.phase === 'loading' || state.phase === 'timeout';
+
 export function reach(state: LoaderState, stage: Stage): void {
-  if (state.phase !== 'loading') return;
+  if (!isLoading(state)) return;
   state.target = Math.max(state.target, STAGES[stage]);
 }
 
@@ -50,21 +53,21 @@ export function reach(state: LoaderState, stage: Stage): void {
  * start: a warm load jumps straight to ready, a slow one times out.
  */
 export function tick(state: LoaderState, dt: number, elapsedMs: number): void {
-  if (state.phase !== 'loading') return;
+  if (!isLoading(state)) return;
   if (state.target >= 1 && elapsedMs < LOADER.warmCacheMs) state.shown = 1;
   const step = (state.target - state.shown) * (1 - Math.exp(-LOADER.smoothing * dt));
   state.shown = Math.min(state.target, state.shown + Math.max(0, step));
   if (state.target >= 1 && state.target - state.shown < 0.002) {
     state.shown = 1;
     state.phase = 'ready';
-  } else if (elapsedMs > LOADER.timeoutMs) {
+  } else if (state.phase === 'loading' && elapsedMs > LOADER.timeoutMs) {
     state.phase = 'timeout';
   }
 }
 
 /** No WebGPU nor WebGL 2, or the renderer failed to start. */
 export function fail(state: LoaderState): void {
-  if (state.phase === 'loading') state.phase = 'unsupported';
+  if (isLoading(state)) state.phase = 'unsupported';
 }
 
 /** The visitor pressed "Entrer". */

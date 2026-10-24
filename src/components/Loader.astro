@@ -10,8 +10,6 @@ import { PLATE, WIRE_PAD, outerOutline } from '../three/pendant/shape';
 const points = outerOutline().map((p) => `${p.x.toFixed(4)} ${(-p.y).toFixed(4)}`);
 const outline = `M ${points.join(' L ')} Z`;
 const pad = WIRE_PAD;
-// Sparks ride the tip along the same path (CSS motion path, in SVG user units).
-const sparkPath = `#loader .sparks circle { offset-path: path('${outline}'); }`;
 const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PLATE.hh + pad)]
   .map((v) => v.toFixed(4))
   .join(' ');
@@ -71,17 +69,24 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   </section>
 </div>
 
-<style is:inline set:html={sparkPath}></style>
+<script>
+  // Bundled by Astro (an external file under 'self'): the strict CSP blocks inline scripts
+  // and inline style blocks. Setting styles from JS (CSSOM) is allowed.
+  const loader = document.getElementById('loader');
 
-<script is:inline>
+  // Sparks ride the wire's tip along the same outline (CSS motion path, SVG user units).
+  const outline = loader?.querySelector('.trail')?.getAttribute('d');
+  for (const spark of loader?.querySelectorAll<SVGElement>('.sparks circle') ?? []) {
+    if (outline) spark.style.offsetPath = `path('${outline}')`;
+  }
+
   // Watchdog for when the island never starts (script blocked, network failure): after
   // 10 s, offer the classic version. Once the island drives the loader, it owns the timeout.
-  setTimeout(function () {
-    const loader = document.getElementById('loader');
-    if (loader && loader.dataset.phase === 'loading' && !loader.dataset.driven) {
+  setTimeout(() => {
+    if (loader?.dataset.phase === 'loading' && !('driven' in loader.dataset)) {
       loader.dataset.phase = 'timeout';
     }
-  }, 10000);
+  }, 10_000);
 </script>
 
 <style>

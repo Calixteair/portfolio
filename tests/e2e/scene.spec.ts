@@ -17,6 +17,8 @@ function trackPageErrors(page: Page): string[] {
  * SwiftShader (CPU-emulated GPU in CI) that alone takes several seconds, hence the timeout.
  */
 async function enterScene(page: Page) {
+  // The wait below alone can exceed the default 30 s test budget on CI.
+  test.setTimeout(90_000);
   const enter = page.getByRole('button', { name: 'Entrer' });
   await expect(enter).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');

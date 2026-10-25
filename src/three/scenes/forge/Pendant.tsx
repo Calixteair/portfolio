@@ -35,6 +35,8 @@ interface PendantProps {
 export default function Pendant({ pendant, interactive }: PendantProps) {
   const spin = useMemo(() => createSpin(0), []);
   const drag = useRef<DragController | null>(null);
+  /** Clock time of "Entrer": breathing starts from there, smoothly (sin(0) = 0). */
+  const enteredAt = useRef<number | null>(null);
   const canvas = useThree((s) => s.gl.domElement);
   const reducedMotion = useMemo(() => matchMedia('(prefers-reduced-motion: reduce)').matches, []);
 
@@ -49,7 +51,11 @@ export default function Pendant({ pendant, interactive }: PendantProps) {
 
   useFrame((state, dt) => {
     if (!drag.current?.isDragging()) stepSpin(spin, Math.min(dt, MAX_FRAME_DT));
-    pose(pendant.group, breathingTilt(state.clock.elapsedTime, reducedMotion), spin.angle);
+    const t = state.clock.elapsedTime;
+    if (interactive && enteredAt.current === null) enteredAt.current = t;
+    // Still under the loader: no breathing, so the wire (and Entrer below it) stays put.
+    const breathing = enteredAt.current === null ? 0 : t - enteredAt.current;
+    pose(pendant.group, breathingTilt(breathing, reducedMotion), spin.angle);
     // Under the loader, keep its wire exactly on the pendant's outline (handoff, SPEC §4).
     if (!interactive) {
       pendant.group.updateMatrixWorld();

@@ -1,6 +1,8 @@
 import {
   BoxGeometry,
+  BufferAttribute,
   BufferGeometry,
+  Color,
   DodecahedronGeometry,
   Group,
   Line,
@@ -58,13 +60,28 @@ function meshFor(body: Body, highlight?: UniformNode<'float', number>): Object3D
   return new Mesh(new SphereGeometry(radius, detail, detail / 2), material);
 }
 
-/** Faint orbit trace for planets and stations: makes the system readable at a glance. */
+/** How much an orbit trace takes its body's hue over the palette's blue: a slight shift. */
+const ORBIT_TINT = 0.6;
+
+/**
+ * Faint orbit trace for planets and stations: makes the system readable at a glance. Each
+ * is tinted towards its body's hue, so neighbouring orbits tell apart. The colour is a
+ * vertex attribute: all traces share one material, hence one shader.
+ */
 function orbitLine(body: Body, material: LineBasicNodeMaterial): Line {
   const points = Array.from({ length: 161 }, (_, i) => {
     const probe = { ...body, phase: (i / 160) * Math.PI * 2, speed: 0, host: undefined };
     return new Vector3(...positionAt(probe, 0, new Map()));
   });
-  return new Line(new BufferGeometry().setFromPoints(points), material);
+  const tint = new Color(PALETTE_B.filament).lerp(
+    new Color().setHSL(body.look.hue / 360, 0.85, 0.55),
+    ORBIT_TINT,
+  );
+  const colors = new Float32Array(points.length * 3);
+  for (let i = 0; i < points.length; i++) tint.toArray(colors, i * 3);
+  const geometry = new BufferGeometry().setFromPoints(points);
+  geometry.setAttribute('color', new BufferAttribute(colors, 3));
+  return new Line(geometry, material);
 }
 
 /**
@@ -98,9 +115,12 @@ export function createBodies(bodies: Body[]): SystemBodies {
   const group = new Group();
   const objects = new Map<string, Object3D>();
   const lookup = new Map(bodies.map((b) => [b.slug, b]));
-  const orbitMaterial = new LineBasicNodeMaterial({ transparent: true, depthWrite: false });
-  orbitMaterial.colorNode = color(PALETTE_B.filament);
-  orbitMaterial.opacityNode = float(0.12);
+  const orbitMaterial = new LineBasicNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+    vertexColors: true,
+  });
+  orbitMaterial.opacityNode = float(0.16);
   const hitMaterial = new MeshBasicNodeMaterial({ visible: false });
   const glows = new Map<string, UniformNode<'float', number>>();
   for (const body of bodies) {

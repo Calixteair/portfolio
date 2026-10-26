@@ -1,10 +1,13 @@
 /**
  * Journey state machine (SPEC §2), pure: no DOM, no rendering, unit tested. It takes
- * over from the loader once the visitor has pressed "Entrer". wormhole and portfolio
- * arrive with M5-M6.
+ * over from the loader once the visitor has pressed "Entrer".
  */
 
-export type JourneyPhase = 'idle' | 'heating' | 'overheated' | 'portalOpen';
+export type JourneyPhase =
+  'idle' | 'heating' | 'overheated' | 'portalOpen' | 'wormhole' | 'portfolio';
+
+/** Phases where the forge no longer reacts: the portal is open or already crossed. */
+const BEYOND_FORGE: ReadonlySet<JourneyPhase> = new Set(['portalOpen', 'wormhole', 'portfolio']);
 
 /** Thresholds from the prototype, tunable in the dev panel. */
 export interface JourneyRules {
@@ -42,7 +45,7 @@ export function createJourney(): JourneyState {
 
 /** A click on the pendant. Once the portal is open, heat no longer matters. */
 export function strike(state: JourneyState, rules: JourneyRules = DEFAULT_RULES): void {
-  if (state.phase === 'portalOpen') return;
+  if (BEYOND_FORGE.has(state.phase)) return;
   state.heat = Math.min(1, state.heat + rules.heatPerStrike);
   state.heatHistory = Math.max(state.heatHistory, state.heat);
 }
@@ -63,7 +66,7 @@ export function stepJourney(
   turns: number,
   rules: JourneyRules = DEFAULT_RULES,
 ): void {
-  if (state.phase === 'portalOpen') {
+  if (BEYOND_FORGE.has(state.phase)) {
     state.heat = 1;
     return;
   }
@@ -71,4 +74,16 @@ export function stepJourney(
   const hot = state.heat >= rules.threshold && turns >= rules.turnsNeeded;
   state.overheatTime = hot ? state.overheatTime + dt : 0;
   state.phase = nextPhase(state, hot, rules);
+}
+
+/** A click (or Enter/Space) on the fully open portal: the wormhole dive starts (SPEC §5.6). */
+export function enterPortal(state: JourneyState): boolean {
+  if (state.phase !== 'portalOpen') return false;
+  state.phase = 'wormhole';
+  return true;
+}
+
+/** End of the dive: the visitor is in the planetary system (SPEC §5.7). */
+export function arrive(state: JourneyState): void {
+  if (state.phase === 'wormhole') state.phase = 'portfolio';
 }

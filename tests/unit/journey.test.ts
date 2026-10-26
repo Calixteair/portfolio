@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_RULES,
+  arrive,
   createJourney,
+  enterPortal,
   stepJourney,
   strike,
   type JourneyState,
@@ -74,5 +76,21 @@ describe('journey state machine', () => {
     run(s, 0.5, 3); // cools to ~0.83
     expect(s.overheatTime).toBe(0);
     expect(s.phase).toBe('heating');
+  });
+
+  it('dives through the open portal, then arrives in the portfolio', () => {
+    const s = createJourney();
+    expect(enterPortal(s)).toBe(false);
+    s.phase = 'portalOpen';
+    arrive(s);
+    expect(s.phase).toBe('portalOpen');
+    expect(enterPortal(s)).toBe(true);
+    expect(s.phase).toBe('wormhole');
+    expect(enterPortal(s)).toBe(false);
+    run(s, 2, 3);
+    strike(s);
+    expect(s.phase).toBe('wormhole');
+    arrive(s);
+    expect(s.phase).toBe('portfolio');
   });
 });

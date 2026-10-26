@@ -84,6 +84,42 @@ test('the overheated pendant opens the portal @webgpu', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+/** From the forge to the open portal, by keyboard (Space strikes), then Enter dives in. */
+async function diveThroughPortal(page: Page) {
+  await page.goto('/');
+  await enterScene(page);
+  const strikeBySpace = async () => {
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(60);
+    return (await page.locator('html').getAttribute('data-state')) ?? '';
+  };
+  let state = '';
+  for (let i = 0; i < 200 && state !== 'portalOpen'; i++) state = await strikeBySpace();
+  await expect(page.locator('html')).toHaveAttribute('data-portal', 'open', { timeout: 10_000 });
+  await page.keyboard.press('Enter');
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'portfolio', {
+    timeout: 10_000,
+  });
+}
+
+test('dives through the portal into the planetary system @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await diveThroughPortal(page);
+  expect(errors).toEqual([]);
+});
+
+test.describe('with reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('fades into the planetary system instead of flying @webgpu', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    const start = Date.now();
+    await diveThroughPortal(page);
+    expect(errors).toEqual([]);
+    expect(Date.now() - start).toBeLessThan(60_000);
+  });
+});
+
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 

@@ -41,8 +41,9 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M4 — Portail
 
-- [ ] Render target du système planétaire (provisoire) en demi-résolution, lumière bleue qui déborde sur la croûte
-- [ ] Ouverture animée depuis le centre, front irrégulier et bord incandescent
+- [x] Render target du système planétaire (provisoire, palette B) en demi-résolution HDR, vu comme une fenêtre (caméra du portail liée à la vraie, parallaxe)
+- [x] Lumière bleue qui déborde sur la croûte et les parois, étincelles qui se calment pendant l'ouverture
+- [x] Ouverture animée depuis le centre, front irrégulier et bord incandescent
 
 ## M5 — Aspiration
 

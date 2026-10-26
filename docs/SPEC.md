@@ -126,7 +126,7 @@ Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dan
 ### 5.5 Distorsion de chaleur et portail
 
 - La distorsion est un effet de post-traitement : un décalage des UV avec du bruit, masqué au-dessus des bords chauds.
-- Le portail occupe la forme exacte du trou et affiche la **scène du portfolio en render target, en demi-résolution**. Il s'ouvre depuis le centre, avec un front irrégulier ; son bord est incandescent (palette B).
+- Le portail occupe la forme exacte du trou et affiche la **scène du portfolio en render target, en demi-résolution**. _Tranché en M4_ : c'est une **fenêtre**, pas une image plaquée : la caméra du portail garde la pose de la vraie caméra par rapport au pendentif, d'où une parallaxe quand il tourne. Le système planétaire est provisoire jusqu'au M6 ; pendant l'ouverture, les étincelles se raréfient (jusqu'à −85 %) pour que le regard aille au portail. Il s'ouvre depuis le centre, avec un front irrégulier ; son bord est incandescent (palette B).
 - La lumière bleue qui sort du portail éclaire la croûte et les parois du trou.
 
 ### 5.6 Aspiration (trou de ver)

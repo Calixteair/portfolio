@@ -122,7 +122,10 @@ jobs:
         run: |
           set -euo pipefail
           for i in 1 2 3 4 5 6; do
-            if curl -fsS "$URL" | grep -q "name=\"x-build\" content=\"$SHA\""; then
+            # Fetch the whole page first: grep -q stops at the first match, and curl then
+            # fails writing the rest (error 23), which pipefail turns into a failure.
+            page=$(curl -fsS "$URL" || true)
+            if grep -q "name=\"x-build\" content=\"$SHA\"" <<<"$page"; then
               break
             fi
             [ "$i" = 6 ] && { echo "build $SHA not live"; exit 1; }

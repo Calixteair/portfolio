@@ -59,7 +59,7 @@ export default function Experience() {
         }}
       >
         {!arrived && <Forge world={world} entered={entered} />}
-        <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} />
+        <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} readiness={world.readiness} />
         <Dive
           runtime={runtime}
           pendant={pendant}
@@ -69,6 +69,8 @@ export default function Experience() {
           system={system}
           portalCamera={world.portalCamera}
           frozen={world.frozen}
+          readiness={world.readiness}
+          portalOpen={world.forge.portal}
           loadAnimation={entered}
           bind={world.bindDive}
           onArrived={onArrived}

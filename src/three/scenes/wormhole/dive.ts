@@ -7,6 +7,7 @@ import type { ForgeRuntime } from '../../../journey/runtime';
 import type { Pendant } from '../../pendant/placeholder';
 import { REST_ANGLE, type SpinState } from '../../pendant/spin';
 import { HOLE } from '../../pendant/shape';
+import type { DiveReadiness } from '../../readiness';
 import type { PortalSystem } from '../portal/system';
 import { ARRIVAL, poseArrival } from '../portal/window';
 import type { LensUniforms } from '../../post/lens';
@@ -166,6 +167,10 @@ export function playFade(gsap: typeof Gsap, cast: DiveCast): Promise<void> {
 /** Everything the dive needs, known when the scene is built. */
 export interface DiveSetup {
   runtime: ForgeRuntime;
+  /** Shaders of the other side compiled: no stall (or blank frame) after the flash. */
+  readiness: DiveReadiness;
+  /** Portal opening, 0-1: no diving through a half-open portal. */
+  portalOpen: { value: number };
   pendant: Pendant;
   lens: LensUniforms;
   tunnel: Tunnel;
@@ -204,7 +209,9 @@ export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera
   let started = false;
   const start = () => {
     const eye = setup.portalCamera.current;
-    if (!gsap || !eye || started || !enterPortal(setup.runtime.journey)) return;
+    const { system, tunnel } = setup.readiness;
+    const ready = system && tunnel && setup.portalOpen.value >= 1;
+    if (!ready || !gsap || !eye || started || !enterPortal(setup.runtime.journey)) return;
     started = true;
     mirrorState('wormhole');
     const cast: DiveCast = {

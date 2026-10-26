@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type { ForgeRuntime } from '../../../journey/runtime';
+import { markReady, type DiveReadiness } from '../../readiness';
 import { showStage, type StageView } from '../../stage';
 import { useWebGPU } from '../../useWebGPU';
 import type { Tunnel } from './tunnel';
@@ -9,17 +10,20 @@ interface WormholeProps {
   runtime: ForgeRuntime;
   stage: StageView;
   tunnel: Tunnel;
+  readiness: DiveReadiness;
 }
 
 /** The wormhole tunnel (SPEC §5.6). Dev: `Dive > previewTunnel` flies through it in a loop. */
-export default function Wormhole({ runtime, stage, tunnel }: WormholeProps) {
+export default function Wormhole({ runtime, stage, tunnel, readiness }: WormholeProps) {
   const { gl } = useWebGPU();
   const previewing = useRef(false);
 
   useEffect(() => {
     // Compiled ahead, so the dive does not stall when it switches to the tunnel.
-    gl.compileAsync(tunnel.scene, tunnel.camera).catch((e: unknown) => console.error(e));
-  }, [gl, tunnel]);
+    gl.compileAsync(tunnel.scene, tunnel.camera)
+      .then(() => markReady(readiness, 'tunnel'))
+      .catch((e: unknown) => console.error(e));
+  }, [gl, tunnel, readiness]);
 
   useFrame((state) => {
     const preview = runtime.manual.previewTunnel;

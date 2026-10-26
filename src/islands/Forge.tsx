@@ -36,6 +36,7 @@ export default function Forge({ world, entered }: ForgeProps) {
         system={system}
         frozen={world.frozen}
         onReady={world.setPortalCamera}
+        readiness={world.readiness}
       />
     </>
   );

@@ -4,6 +4,7 @@ import { PointLight, type Node } from 'three/webgpu';
 import { PALETTE_B } from '../../../shaders/nebula';
 import { portalOpening } from '../../../shaders/portalOpening';
 import type { Pendant } from '../../pendant/placeholder';
+import { markReady, type DiveReadiness } from '../../readiness';
 import { HOLE } from '../../pendant/shape';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
@@ -47,10 +48,12 @@ interface PortalProps {
   /** Set once the dive has started: the portal camera is then driven by the arrival. */
   frozen: { value: boolean };
   onReady: (camera: PortalWindow['camera']) => void;
+  readiness: DiveReadiness;
 }
 
 /** The other side, seen through the hole once the portal opens (SPEC §5.5). */
-export default function Portal({ pendant, forge, system, frozen, onReady }: PortalProps) {
+export default function Portal(props: PortalProps) {
+  const { pendant, forge, system, frozen, onReady, readiness } = props;
   const { gl } = useWebGPU();
   const size = useThree((s) => s.size);
   const dpr = useThree((s) => s.viewport.dpr);
@@ -58,10 +61,12 @@ export default function Portal({ pendant, forge, system, frozen, onReady }: Port
 
   useEffect(() => {
     // Compile the other side early, so opening the portal does not stall a frame.
-    gl.compileAsync(system.scene, portal.win.camera).catch((e: unknown) => console.error(e));
+    gl.compileAsync(system.scene, portal.win.camera)
+      .then(() => markReady(readiness, 'system'))
+      .catch((e: unknown) => console.error(e));
     onReady(portal.win.camera);
     return portal.dispose;
-  }, [gl, portal, system, onReady]);
+  }, [gl, portal, system, onReady, readiness]);
   useEffect(
     () => resizePortal(portal.win, size.width * dpr, size.height * dpr),
     [portal, size, dpr],

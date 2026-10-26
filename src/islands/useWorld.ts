@@ -8,6 +8,7 @@ import { createForgeLights } from '../three/scenes/forge/lighting';
 import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import { createPortalSystem } from '../three/scenes/portal/system';
 import { createTunnel } from '../three/scenes/wormhole/tunnel';
+import { createDiveReadiness } from '../three/readiness';
 import { createStageView } from '../three/stage';
 
 /**
@@ -25,6 +26,7 @@ export function useWorld() {
   const tunnel = useMemo(() => createTunnel(), []);
   const portalCamera = useRef<PerspectiveCamera | null>(null);
   const frozen = useMemo(() => ({ value: false }), []);
+  const readiness = useMemo(() => createDiveReadiness(), []);
   const dive = useRef<(() => void) | null>(null);
 
   useEffect(
@@ -58,6 +60,7 @@ export function useWorld() {
     tunnel,
     portalCamera,
     frozen,
+    readiness,
     onStrike,
     bindDive,
     setPortalCamera,

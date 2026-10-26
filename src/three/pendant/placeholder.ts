@@ -13,6 +13,7 @@ import {
   Shape,
   Vector2,
 } from 'three/webgpu';
+import type { PlateHeat } from '../../shaders/heat';
 import { createDiamondMaterial, createPlateMaterial, type EdgeMaskInfo } from '../../shaders/steel';
 import { disposeMeshes } from '../dispose';
 import { mulberry32 } from '../random';
@@ -48,7 +49,12 @@ function edgeMaskTexture(fields: EdgeFields): EdgeMaskInfo {
   return { texture: tex, min: fields.min, size: fields.size, range: fields.range };
 }
 
-function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Pendant['body'] {
+function buildBody(
+  outer: Point[],
+  hole: Point[],
+  mask: EdgeMaskInfo,
+  heat: PlateHeat,
+): Pendant['body'] {
   const shape = new Shape(toVectors(outer));
   shape.holes.push(new Path(toVectors(hole)));
   const geometry = new ExtrudeGeometry(shape, {
@@ -61,7 +67,7 @@ function buildBody(outer: Point[], hole: Point[], mask: EdgeMaskInfo): Pendant['
   });
   geometry.translate(0, 0, -PLATE.depth / 2);
   geometry.computeVertexNormals();
-  const body = new Mesh(geometry, createPlateMaterial(mask));
+  const body = new Mesh(geometry, createPlateMaterial(mask, heat));
   return body;
 }
 
@@ -96,12 +102,12 @@ function buildDiamonds(hole: Point[], rand: () => number): InstancedMesh {
 }
 
 /** Procedural stand-in for the final GLB: chamfered steel plate, eroded hole, black diamonds. */
-export function createPendant(seed = 7): Pendant {
+export function createPendant(heat: PlateHeat, seed = 7): Pendant {
   const rand = mulberry32(seed);
   const outer = outerOutline();
   const hole = holeOutline(rand);
   const edgeMask = edgeMaskTexture(bakeEdgeFields(hole, outer));
-  const body = buildBody(outer, hole, edgeMask);
+  const body = buildBody(outer, hole, edgeMask, heat);
   const diamonds = buildDiamonds(hole, rand);
   const group = new Group();
   group.add(body, diamonds);

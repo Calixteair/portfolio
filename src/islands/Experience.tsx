@@ -35,7 +35,7 @@ export default function Experience() {
   const forge = useMemo(() => createForgeUniforms(), []);
   // Built here and passed down, so the dev panel tunes these exact objects.
   const lights = useMemo(() => createForgeLights(), []);
-  const pendant = useMemo(() => createPendant(), []);
+  const pendant = useMemo(() => createPendant(forge), [forge]);
   const runtime = useMemo(() => createForgeRuntime(), []);
   const onStrike = useCallback(() => strike(runtime.journey, runtime.rules), [runtime]);
   const entered = loader.phase === 'entered';

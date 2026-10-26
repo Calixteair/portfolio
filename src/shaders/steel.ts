@@ -12,6 +12,7 @@ import {
 } from 'three/tsl';
 import { MeshPhysicalNodeMaterial, type DataTexture, type Node } from 'three/webgpu';
 import type { EdgeFields } from '../three/pendant/shape';
+import { heatField, incandescence, temperTint, type PlateHeat } from './heat';
 import { fbm01, noise01 } from './noise';
 
 /** The baked edge fields (see shape.ts) as a GPU texture plus its plate-space mapping. */
@@ -24,13 +25,19 @@ export const STEEL_ANISOTROPY = 0.35;
 function sampleEdgeMask(mask: EdgeMaskInfo) {
   const uv = positionLocal.xy.sub(vec2(mask.min.x, mask.min.y)).div(vec2(mask.size.x, mask.size.y));
   const fields = texture(mask.texture, uv);
-  return { holeDistance: fields.r.mul(mask.range), insideHole: fields.a };
+  return {
+    holeDistance: fields.r.mul(mask.range),
+    insideHole: fields.a,
+    /** Raw 0-1 distances (1 = mask.range or farther), as the heat field expects. */
+    holeEdge: fields.r,
+    outerEdge: fields.g,
+  };
 }
 
 /** Crust coverage: a noisy band along the hole edge, splashes onto the face, the hole walls. */
-function crustMask(mask: EdgeMaskInfo): Node<'float'> {
+function crustMask(fields: ReturnType<typeof sampleEdgeMask>): Node<'float'> {
   const p = positionLocal.xy;
-  const { holeDistance, insideHole } = sampleEdgeMask(mask);
+  const { holeDistance, insideHole } = fields;
   const width = float(0.005).add(fbm01(p.mul(30)).mul(0.018));
   const band = float(1).sub(smoothstep(width.mul(0.5), width, holeDistance));
   const speck = step(0.6, fbm01(p.mul(150))).mul(exp(holeDistance.mul(-40)));
@@ -50,10 +57,13 @@ function brushedRoughness(): Node<'float'> {
 /**
  * Satin brushed steel with a black, matte, non-metallic erosion crust around the hole.
  * Anisotropy follows the cap UVs (plate X), which is what makes the steel read as brushed.
+ * It glows from the edges with the forge heat and keeps tempering tints where it got hot.
  */
-export function createPlateMaterial(mask: EdgeMaskInfo): MeshPhysicalNodeMaterial {
-  const crust = crustMask(mask);
-  const steel = vec3(0.706, 0.71, 0.725);
+export function createPlateMaterial(mask: EdgeMaskInfo, heat: PlateHeat): MeshPhysicalNodeMaterial {
+  const fields = sampleEdgeMask(mask);
+  const crust = crustMask(fields);
+  const past = heatField(fields.holeEdge, fields.outerEdge, heat.heatHistory, heat);
+  const steel = vec3(0.706, 0.71, 0.725).mul(temperTint(past));
   const crustColor = vec3(0.006).add(noise01(positionLocal.xy.mul(400)).mul(0.01));
   const material = new MeshPhysicalNodeMaterial({
     anisotropy: STEEL_ANISOTROPY,
@@ -63,6 +73,9 @@ export function createPlateMaterial(mask: EdgeMaskInfo): MeshPhysicalNodeMateria
   material.metalnessNode = mix(float(1), float(0), crust);
   material.roughnessNode = mix(brushedRoughness(), float(0.5), crust);
   material.specularIntensityNode = mix(float(1), float(0.2), crust);
+  material.emissiveNode = incandescence(
+    heatField(fields.holeEdge, fields.outerEdge, heat.heat, heat),
+  );
   return material;
 }
 

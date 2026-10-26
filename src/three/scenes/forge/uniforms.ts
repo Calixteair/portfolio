@@ -7,6 +7,9 @@ export function createForgeUniforms() {
     heat: uniform(0),
     /** Highest heat reached so far: tempering tints (SPEC §5.3). */
     heatHistory: uniform(0),
+    /** Heat sources: the hole edge, and the outer edge at ~0.6 (SPEC §5.3), tunable. */
+    holeWeight: uniform(1),
+    outerWeight: uniform(0.6),
   };
 }
 

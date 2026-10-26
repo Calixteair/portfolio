@@ -66,6 +66,16 @@ export default function DevControls({ runtime, lens, lights, steel }: DevControl
       heat: slider(runtime.manual.heat, [0, 1, 0.01], (v) => setManualHeat(runtime, { heat: v })),
     }),
     Journey: rulesFolder(runtime.rules),
+    Portal: folder({
+      scrub: {
+        value: runtime.manual.scrubPortal,
+        onChange: (on: boolean) => setManualHeat(runtime, { scrubPortal: on }),
+        transient: true as const,
+      },
+      open: slider(runtime.manual.portal, [0, 1, 0.01], (v) =>
+        setManualHeat(runtime, { portal: v }),
+      ),
+    }),
     Sparks: folder({
       perSecond: slider(SPARK_RATE.perSecond, [0, 3000, 10], (v) => setSparkRate(v)),
     }),

@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
-import { step } from 'three/tsl';
 import type { Node } from 'three/webgpu';
+import { portalOpening } from '../../../shaders/portalOpening';
 import type { Pendant } from '../../pendant/placeholder';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
@@ -10,10 +10,9 @@ import { createPortalWindow, renderPortal, resizePortal } from './window';
 
 function buildPortal(pendant: Pendant, forge: ForgeUniforms) {
   const system = createPortalSystem();
-  const win = createPortalWindow(pendant.outline.hole, (view: Node<'vec4'>) => ({
-    color: view.rgb,
-    alpha: step(0.001, forge.portal),
-  }));
+  const win = createPortalWindow(pendant.outline.hole, (view: Node<'vec4'>) =>
+    portalOpening(view, forge.portal),
+  );
   pendant.group.add(win.surface);
   const dispose = () => {
     pendant.group.remove(win.surface);

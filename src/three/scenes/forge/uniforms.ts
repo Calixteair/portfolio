@@ -46,3 +46,7 @@ export function advancePortal(uniforms: ForgeUniforms, phase: string, dt: number
   const opening = phase === 'portalOpen' ? dt / PORTAL_OPENING_SECONDS : -dt;
   uniforms.portal.value = Math.min(1, Math.max(0, uniforms.portal.value + opening));
 }
+
+export function setPortal(uniforms: ForgeUniforms, open: number): void {
+  uniforms.portal.value = open;
+}

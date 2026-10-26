@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
 import { advanceJourney, type ForgeRuntime } from '../../../journey/runtime';
-import { advancePortal, applyHeat, easeSwarm, type ForgeUniforms } from './uniforms';
+import { advancePortal, applyHeat, easeSwarm, setPortal, type ForgeUniforms } from './uniforms';
 
 const MAX_FRAME_DT = 0.05; // no jump after a tab switch
 
@@ -29,7 +29,8 @@ export default function ForgeDirector({ runtime, uniforms, active }: ForgeDirect
     applyHeat(uniforms, frame.heat, frame.heatHistory);
     const phase = runtime.manual.enabled ? manualPhase(frame.heat) : frame.phase;
     easeSwarm(uniforms, phase, step);
-    advancePortal(uniforms, phase, step);
+    if (runtime.manual.scrubPortal) setPortal(uniforms, runtime.manual.portal);
+    else advancePortal(uniforms, phase, step);
     if (frame.phase !== lastPhase.current) {
       lastPhase.current = frame.phase;
       document.documentElement.dataset.state = frame.phase;

@@ -6,6 +6,7 @@ import '../three/extend';
 import Precompile from '../three/Precompile';
 import LensEffects from '../three/post/LensEffects';
 import { backendOf, createRenderer, supports3D, type Backend } from '../three/renderer';
+import Explore from '../three/scenes/portal/Explore';
 import Dive from '../three/scenes/wormhole/Dive';
 import Wormhole from '../three/scenes/wormhole/Wormhole';
 import BackendBadge from './BackendBadge';
@@ -60,6 +61,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
         }}
       >
         {!arrived && <Forge world={world} entered={entered} />}
+        {arrived && <Explore system={system} eye={world.portalCamera} />}
         <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} readiness={world.readiness} />
         <Dive
           runtime={runtime}

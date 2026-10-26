@@ -113,7 +113,7 @@ Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dan
 - **Collisions** avec rebond (restitution et frottement) :
   - **pendentif** : champ de distance signé (SDF) exact, obtenu à partir du contour 2D et de l'épaisseur. La particule est testée dans le repère du pendentif, et la vitesse de surface due à la rotation lui est transmise (le pendentif qui tourne projette les étincelles) ;
   - **sol** : plan, sur lequel les étincelles rebondissent, glissent, refroidissent et s'éteignent ;
-  - **éléments de décor** : SDF analytiques (boîtes, cylindres) ou SDF 3D précalculée au build pour une forme complexe.
+  - **éléments de décor** : SDF analytiques (boîtes, cylindres) ou SDF 3D précalculée au build pour une forme complexe. _M3_ : non implémenté, les étincelles retombent avant les rochers les plus proches (4,5 m) ; à ajouter si on en voit les atteindre.
 
 **Particules de protomolécule**
 
@@ -236,7 +236,7 @@ On le passe ensuite dans `npm run optimize:assets`.
 
 - Son : ambiance grave, crépitements, aspiration. Quelle source, et quelle licence ?
 - Liste définitive des projets et compétences.
-- Nombre de tours N avant l'ouverture du portail (à régler en test).
+- Nombre de tours N avant l'ouverture du portail : 2 en M3 (comme le prototype), réglable dans leva, à confirmer en test.
 
 ## 11. Compatibilité WebGPU (tranché en M0, 2026-10-15)
 

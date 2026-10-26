@@ -32,11 +32,12 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M3 — Chauffe et étincelles
 
-- [ ] Machine à états en TypeScript pur + tests unitaires (Vitest)
-- [ ] Shader de chauffe (corps noir, trou + bord extérieur, croûte, teintes de revenu)
-- [ ] Étincelles en compute shader : gravité, collisions SDF avec le pendentif en rotation et le sol
-- [ ] Particules de protomolécule qui sortent du trou (essaim, sans gravité)
-- [ ] Repli WebGL 2 des particules, distorsion de chaleur
+- [x] Machine à états en TypeScript pur + tests unitaires (Vitest), clics qui chauffent, seuils réglables (leva)
+- [x] Shader de chauffe (corps noir, trou + bord extérieur, croûte, teintes de revenu)
+- [x] Étincelles en compute shader : gravité, traînée, collisions SDF avec le pendentif en rotation (vitesse de surface transmise) et le sol
+- [x] Particules de protomolécule qui sortent du trou (essaim, sans gravité, rampent sur la surface)
+- [x] Repli WebGL 2 (même simulation, moitié moins de particules), distorsion de chaleur (masque d'émission en MRT), tremblement en surchauffe
+- [ ] Collisions avec les rochers du décor : reportées (les étincelles retombent avant les rochers les plus proches, à 4,5 m)
 
 ## M4 — Portail
 
@@ -64,6 +65,7 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 - [ ] detect-gpu + PerformanceMonitor, budgets de la SPEC §7 respectés
 - [ ] Profondeur de champ légère (reportée de M1), activée selon le niveau de qualité
+- [ ] Budgets de particules par niveau de qualité : 32 768 étincelles en WebGPU aujourd'hui (65 536 tiennent 129 fps sur un GPU haut de gamme), cible SPEC ≈ 65 000
 - [ ] Finition du décor (SPEC §5.1 « rendu final ») : érosion, normal maps, cailloux instanciés, nuages en couches
 - [ ] Champs de bord du pendentif précalculés au build (111 ms au démarrage aujourd'hui)
 - [ ] Pipeline `optimize:assets`, décodeurs auto-hébergés

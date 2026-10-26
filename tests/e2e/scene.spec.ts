@@ -75,6 +75,15 @@ test('repeated clicks overheat the pendant @webgpu', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('the overheated pendant opens the portal @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/');
+  await enterScene(page);
+  expect(await strikePendant(page, (s) => s === 'portalOpen', 200)).toBe('portalOpen');
+  await expect(page.locator('html')).toHaveAttribute('data-portal', 'open', { timeout: 10_000 });
+  expect(errors).toEqual([]);
+});
+
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 

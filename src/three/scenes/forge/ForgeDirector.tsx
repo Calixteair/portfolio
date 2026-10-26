@@ -18,10 +18,12 @@ const manualPhase = (heat: number) =>
 
 /**
  * Runs the journey state machine every frame (before rendering) and feeds the shaders.
- * The current phase is mirrored on <html data-state> for e2e tests and debugging.
+ * The phase and the portal opening are mirrored on <html data-state / data-portal> for e2e
+ * tests and debugging.
  */
 export default function ForgeDirector({ runtime, uniforms, active }: ForgeDirectorProps) {
   const lastPhase = useRef('');
+  const lastPortal = useRef('');
   useFrame((_, dt) => {
     if (!active) return;
     const step = Math.min(dt, MAX_FRAME_DT);
@@ -34,6 +36,11 @@ export default function ForgeDirector({ runtime, uniforms, active }: ForgeDirect
     if (frame.phase !== lastPhase.current) {
       lastPhase.current = frame.phase;
       document.documentElement.dataset.state = frame.phase;
+    }
+    const portal = uniforms.portal.value >= 1 ? 'open' : uniforms.portal.value > 0 ? 'opening' : '';
+    if (portal !== lastPortal.current) {
+      lastPortal.current = portal;
+      document.documentElement.dataset.portal = portal;
     }
   });
   return null;

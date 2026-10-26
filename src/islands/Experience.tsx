@@ -10,6 +10,7 @@ import Dive from '../three/scenes/wormhole/Dive';
 import Wormhole from '../three/scenes/wormhole/Wormhole';
 import BackendBadge from './BackendBadge';
 import Forge from './Forge';
+import type { SystemEntry } from '../system/layout';
 import RenderErrorBoundary from './RenderErrorBoundary';
 import { useWorld } from './useWorld';
 
@@ -20,12 +21,12 @@ const DevControls = import.meta.env.DEV ? lazy(() => import('../dev/DevControls'
  * Root of the 3D island: the forge scene with the pendant at its centre. It drives the
  * static loader: nothing renders until the shaders are compiled, then "Entrer" appears.
  */
-export default function Experience() {
+export default function Experience({ entries }: { entries: SystemEntry[] }) {
   const loader = useLoader();
   const supported = useMemo(() => supports3D(), []);
   const [frameloop, setFrameloop] = useState<'never' | 'always'>('never');
   const [backend, setBackend] = useState<Backend | null>(null);
-  const world = useWorld();
+  const world = useWorld(entries);
   const { lens, lights, pendant, runtime, stage, system, tunnel } = world;
   const entered = loader.phase === 'entered';
   const startRendering = useCallback(() => setFrameloop('always'), []);

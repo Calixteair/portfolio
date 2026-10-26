@@ -10,19 +10,20 @@ import { createPortalSystem } from '../three/scenes/portal/system';
 import { createTunnel } from '../three/scenes/wormhole/tunnel';
 import { createDiveReadiness } from '../three/readiness';
 import { createStageView } from '../three/stage';
+import type { SystemEntry } from '../system/layout';
 
 /**
  * Every long-lived object of the experience, built once and passed down by reference (the
  * dev panel and the dive act on these exact objects; nothing goes through React state).
  */
-export function useWorld() {
+export function useWorld(entries: SystemEntry[]) {
   const lens = useMemo(() => createLensUniforms(), []);
   const forge = useMemo(() => createForgeUniforms(), []);
   const lights = useMemo(() => createForgeLights(), []);
   const pendant = useMemo(() => createPendant(forge), [forge]);
   const runtime = useMemo(() => createForgeRuntime(), []);
   const stage = useMemo(() => createStageView(), []);
-  const system = useMemo(() => createPortalSystem(), []);
+  const system = useMemo(() => createPortalSystem(entries), [entries]);
   const tunnel = useMemo(() => createTunnel(), []);
   const portalCamera = useRef<PerspectiveCamera | null>(null);
   const frozen = useMemo(() => ({ value: false }), []);

@@ -7,8 +7,8 @@ import type { Pendant } from '../../pendant/placeholder';
 import { HOLE } from '../../pendant/shape';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
-import { createPortalSystem } from './system';
-import { createPortalWindow, renderPortal, resizePortal } from './window';
+import type { PortalSystem } from './system';
+import { createPortalWindow, renderPortal, resizePortal, type PortalWindow } from './window';
 
 /** Peak intensity of the blue light the open portal casts on the crust and the walls. */
 const SPILL_INTENSITY = 2.5;
@@ -27,7 +27,6 @@ function setSpill(lights: PointLight[], open: number): void {
 }
 
 function buildPortal(pendant: Pendant, forge: ForgeUniforms) {
-  const system = createPortalSystem();
   const win = createPortalWindow(pendant.outline.hole, (view: Node<'vec4'>) =>
     portalOpening(view, forge.portal),
   );
@@ -36,13 +35,22 @@ function buildPortal(pendant: Pendant, forge: ForgeUniforms) {
   const dispose = () => {
     pendant.group.remove(win.surface, ...spill);
     win.dispose();
-    system.dispose();
   };
-  return { system, win, spill, dispose };
+  return { win, spill, dispose };
+}
+
+interface PortalProps {
+  pendant: Pendant;
+  forge: ForgeUniforms;
+  /** The other side: owned above, the wormhole lands in it full screen. */
+  system: PortalSystem;
+  /** Set once the dive has started: the portal camera is then driven by the arrival. */
+  frozen: { value: boolean };
+  onReady: (camera: PortalWindow['camera']) => void;
 }
 
 /** The other side, seen through the hole once the portal opens (SPEC §5.5). */
-export default function Portal({ pendant, forge }: { pendant: Pendant; forge: ForgeUniforms }) {
+export default function Portal({ pendant, forge, system, frozen, onReady }: PortalProps) {
   const { gl } = useWebGPU();
   const size = useThree((s) => s.size);
   const dpr = useThree((s) => s.viewport.dpr);
@@ -50,9 +58,10 @@ export default function Portal({ pendant, forge }: { pendant: Pendant; forge: Fo
 
   useEffect(() => {
     // Compile the other side early, so opening the portal does not stall a frame.
-    gl.compileAsync(portal.system.scene, portal.win.camera).catch((e: unknown) => console.error(e));
+    gl.compileAsync(system.scene, portal.win.camera).catch((e: unknown) => console.error(e));
+    onReady(portal.win.camera);
     return portal.dispose;
-  }, [gl, portal]);
+  }, [gl, portal, system, onReady]);
   useEffect(
     () => resizePortal(portal.win, size.width * dpr, size.height * dpr),
     [portal, size, dpr],
@@ -60,8 +69,8 @@ export default function Portal({ pendant, forge }: { pendant: Pendant; forge: Fo
 
   useFrame((state) => {
     setSpill(portal.spill, forge.portal.value);
-    if (forge.portal.value <= 0) return;
-    renderPortal(gl, portal.win, portal.system, {
+    if (forge.portal.value <= 0 || frozen.value) return;
+    renderPortal(gl, portal.win, system, {
       camera: state.camera as unknown as Parameters<typeof renderPortal>[3]['camera'],
       pendant: pendant.group,
       elapsed: state.clock.elapsedTime,

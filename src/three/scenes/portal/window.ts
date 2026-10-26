@@ -101,3 +101,17 @@ export function renderPortal(
   renderer.render(system.scene, win.camera);
   renderer.setRenderTarget(previous);
 }
+
+/**
+ * Arrival pose (SPEC §5.6, end of the dive): at the anchor, the hole now behind us, facing
+ * the star with a natural field of view (the vertigo FOV of the dive is left behind).
+ */
+export function poseArrival(camera: PerspectiveCamera, aspect: number): void {
+  pose.copy(ANCHOR);
+  pose.decompose(camera.position, camera.quaternion, camera.scale);
+  camera.lookAt(0, 0, 0);
+  camera.fov = 50;
+  camera.aspect = aspect;
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+}

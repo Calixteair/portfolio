@@ -55,14 +55,14 @@ export default function Pendant({ pendant, spin, journey, interactive, onStrike 
     const controller = bindDragSpin(canvas, spin);
     drag.current = controller;
     const unbindSpace = bindSpaceStrike(() => {
-      impulseSpin(spin);
+      if (!journey.phase.startsWith('portal')) impulseSpin(spin);
       onStrike();
     });
     return () => {
       controller.dispose();
       unbindSpace();
     };
-  }, [canvas, spin, interactive, onStrike]);
+  }, [canvas, spin, journey, interactive, onStrike]);
 
   useFrame((state, dt) => {
     if (!drag.current?.isDragging()) stepSpin(spin, Math.min(dt, MAX_FRAME_DT));
@@ -82,7 +82,8 @@ export default function Pendant({ pendant, spin, journey, interactive, onStrike 
   const strike = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     if (!interactive || e.delta > SPIN.clickSlop) return;
-    impulseSpin(spin);
+    // On the open portal, a click dives in (onStrike): no more spinning then.
+    if (!journey.phase.startsWith('portal')) impulseSpin(spin);
     onStrike();
   };
 

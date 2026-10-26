@@ -55,6 +55,9 @@ export function impulseSpin(state: SpinState): void {
   state.velocity = clampSpeed(state.velocity + SPIN.impulse * direction);
 }
 
+/** Resting three-quarter view of the pendant (it starts face-on under the loader). */
+export const REST_ANGLE = 0.35;
+
 /** Coast to `target` and stop there: the velocity damping alone carries it (v / damping). */
 export function settleSpin(state: SpinState, target: number): void {
   state.velocity = clampSpeed((target - state.angle) * SPIN.damping);

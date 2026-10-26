@@ -12,6 +12,8 @@ export function createForgeUniforms() {
     outerWeight: uniform(0.6),
     /** Protomolecule swarm level: 0, then rising with overheat and the open portal. */
     swarm: uniform(0),
+    /** Portal opening, 0 (closed) to 1 (fully open), from the centre of the hole. */
+    portal: uniform(0),
   };
 }
 
@@ -34,4 +36,13 @@ export function easeSwarm(uniforms: ForgeUniforms, phase: string, dt: number): v
 /** Point light intensity of the pendant's glow on its surroundings for a given heat. */
 export function glowIntensity(heat: number): number {
   return 0.3 + heat ** 1.5 * 30;
+}
+
+/** Seconds for the portal to open fully once the journey reaches portalOpen. */
+const PORTAL_OPENING_SECONDS = 2.2;
+
+/** Opens the portal at a steady pace once portalOpen is reached (eased in the shader). */
+export function advancePortal(uniforms: ForgeUniforms, phase: string, dt: number): void {
+  const opening = phase === 'portalOpen' ? dt / PORTAL_OPENING_SECONDS : -dt;
+  uniforms.portal.value = Math.min(1, Math.max(0, uniforms.portal.value + opening));
 }

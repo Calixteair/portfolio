@@ -18,6 +18,7 @@ import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
 import Sparks from '../three/scenes/forge/Sparks';
 import Swarm from '../three/scenes/forge/Swarm';
+import Portal from '../three/scenes/portal/Portal';
 import BackendBadge from './BackendBadge';
 import RenderErrorBoundary from './RenderErrorBoundary';
 
@@ -79,6 +80,7 @@ export default function Experience() {
         />
         <Sparks pendant={pendant} forge={forge} spin={runtime.spin} />
         <Swarm pendant={pendant} forge={forge} />
+        <Portal pendant={pendant} forge={forge} />
         <LensEffects uniforms={lens} />
         {DevControls && (
           <Suspense fallback={null}>

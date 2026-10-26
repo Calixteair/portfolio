@@ -6,6 +6,7 @@ import { alignWire, projectWire } from '../../../loader/wire';
 import { bindDragSpin, type DragController } from '../../pendant/dragSpin';
 import type { Pendant as PendantModel } from '../../pendant/placeholder';
 import {
+  REST_ANGLE,
   SPIN,
   breathingTilt,
   impulseSpin,
@@ -15,8 +16,6 @@ import {
 } from '../../pendant/spin';
 
 const MAX_FRAME_DT = 0.05; // no jump after a tab switch
-/** Resting three-quarter view; the pendant starts face-on to match the loader outline. */
-const REST_ANGLE = 0.35;
 
 /** Amplitude of the overheat tremor (SPEC §2), none with prefers-reduced-motion. */
 const SHAKE = 0.0025;

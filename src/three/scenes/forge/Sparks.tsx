@@ -7,14 +7,13 @@ import { sampleEdge } from '../../pendant/edges';
 import type { Pendant } from '../../pendant/placeholder';
 import type { SpinState } from '../../pendant/spin';
 import { mulberry32 } from '../../random';
+import { backendOf } from '../../renderer';
 import { useWebGPU } from '../../useWebGPU';
+import { particleBudget } from './budget';
 import { GROUND_Y } from './decor';
 import type { ForgeUniforms } from './uniforms';
 
-/** Simulated sparks (tuned per backend in the perf step). */
-export const SPARK_COUNT = 16_384;
-
-function buildSparks(pendant: Pendant) {
+function buildSparks(pendant: Pendant, count: number) {
   const rand = mulberry32(23);
   const emitters = {
     hole: sampleEdge(pendant.outline.hole, 512, rand, true),
@@ -22,10 +21,10 @@ function buildSparks(pendant: Pendant) {
   };
   const uniforms = createSparkUniforms();
   uniforms.groundY.value = GROUND_Y;
-  const sim = createSparkSimulation(SPARK_COUNT, emitters, pendant.edgeMask, uniforms);
+  const sim = createSparkSimulation(count, emitters, pendant.edgeMask, uniforms);
   const geometry = new PlaneGeometry(1, 1);
   const material = createSparkMaterial(sim.body, sim.motion);
-  const mesh = new InstancedMesh(geometry, material, SPARK_COUNT);
+  const mesh = new InstancedMesh(geometry, material, count);
   mesh.frustumCulled = false;
   const dispose = () => {
     geometry.dispose();
@@ -44,7 +43,10 @@ interface SparksProps {
 
 export default function Sparks({ pendant, forge, spin }: SparksProps) {
   const { gl } = useWebGPU();
-  const sparks = useMemo(() => buildSparks(pendant), [pendant]);
+  const sparks = useMemo(
+    () => buildSparks(pendant, particleBudget(backendOf(gl)).sparks),
+    [pendant, gl],
+  );
 
   useEffect(() => {
     gl.computeAsync(sparks.sim.init).catch((error: unknown) => console.error(error));

@@ -6,5 +6,3 @@ summary: 'Programmation système et rendu OpenGL.'
 order: 11
 orbits: ['parksimulator']
 ---
-
-Programmation système et rendu OpenGL.

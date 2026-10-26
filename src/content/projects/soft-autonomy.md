@@ -6,5 +6,3 @@ summary: 'Toute mon infrastructure, montée, sécurisée et maintenue seul.'
 order: 1
 orbits: ['vps']
 ---
-
-Toute mon infrastructure, montée, sécurisée et maintenue seul.

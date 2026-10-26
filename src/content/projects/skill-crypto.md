@@ -6,5 +6,3 @@ summary: 'AES-256-GCM, Argon2id, chiffrement de bout en bout zero-knowledge, TOT
 order: 7
 orbits: ['devsecvault', 'keysafe']
 ---
-
-AES-256-GCM, Argon2id, chiffrement de bout en bout zero-knowledge, TOTP.

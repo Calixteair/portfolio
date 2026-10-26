@@ -6,5 +6,3 @@ summary: 'Pipelines qui scannent, signent et déploient : Trivy, SBOM, cosign, J
 order: 9
 orbits: ['portfolio', 'jenkins', 'vps']
 ---
-
-Pipelines qui scannent, signent et déploient : Trivy, SBOM, cosign, Jenkins.

@@ -6,5 +6,3 @@ summary: 'Analyse de criticité métier des SI, mesures adaptées, sensibilisati
 order: 13
 orbits: ['ratp']
 ---
-
-Analyse de criticité métier des SI, mesures adaptées, sensibilisation.

@@ -6,5 +6,3 @@ summary: "Orchestrateur d'assistant, microservice OCR, tableaux de bord de donn√
 order: 4
 orbits: ['assistant', 'ai-jobs-docker', 'byd']
 ---
-
-Orchestrateur d'assistant, microservice OCR, tableaux de bord de donn√©es.

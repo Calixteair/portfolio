@@ -6,5 +6,3 @@ summary: 'Deux alternances dans deux métiers différents, du développement à 
 order: 6
 orbits: ['bred', 'ratp', 'produjeu']
 ---
-
-Deux alternances dans deux métiers différents, du développement à la gouvernance cyber.

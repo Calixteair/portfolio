@@ -6,5 +6,3 @@ summary: 'Je monte moi-même ce que je veux comprendre : SOC, VPN, reverse proxy
 order: 4
 orbits: ['soc', 'vps', 'portfolio']
 ---
-
-Je monte moi-même ce que je veux comprendre : SOC, VPN, reverse proxy, WebGPU.

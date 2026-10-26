@@ -6,5 +6,3 @@ summary: 'Java au quotidien en alternance et dans mes projets : Spring Boot, Jav
 order: 1
 orbits: ['bred', 'byd', 'keysafe', 'chess', 'produjeu', 'automine']
 ---
-
-Java au quotidien en alternance et dans mes projets : Spring Boot, JavaFX, réseau multi-thread.

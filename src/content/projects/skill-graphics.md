@@ -6,5 +6,3 @@ summary: 'WebGPU, TSL et compute shaders ; OpenGL en C.'
 order: 10
 orbits: ['portfolio', 'parksimulator']
 ---
-
-WebGPU, TSL et compute shaders ; OpenGL en C.

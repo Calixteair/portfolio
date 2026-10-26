@@ -97,7 +97,11 @@ export function isInside(p: Point, poly: readonly Point[]): boolean {
 }
 
 export interface EdgeFields {
-  /** RGBA8: R = distance to the hole edge, G = distance to the outer edge, A = 255 inside the hole. */
+  /**
+   * RGBA8. R: distance to the hole edge, G: distance to the outer edge (0-1 over `range`).
+   * B: signed distance to the plate's 2D shape (metal < 0.5 < hole or outside, ±range).
+   * A: 255 inside the hole.
+   */
   data: Uint8Array;
   width: number;
   height: number;
@@ -105,6 +109,16 @@ export interface EdgeFields {
   min: Point;
   size: Point;
   range: number;
+}
+
+/** Signed distance (±range) to a byte, 128 ≈ on the surface. */
+export function encodeSigned(d: number, range: number): number {
+  return Math.round((Math.max(-1, Math.min(1, d / range)) * 0.5 + 0.5) * 255);
+}
+
+/** Inverse of encodeSigned (what the shaders do with the sampled 0-1 value). */
+export function decodeSigned(byte: number, range: number): number {
+  return (byte / 255 - 0.5) * 2 * range;
 }
 
 /** Texel centre (i, j) to plate-space coordinates. */
@@ -132,9 +146,14 @@ export function bakeEdgeFields(hole: readonly Point[], outer: readonly Point[]):
     for (let i = 0; i < width; i++) {
       const p = fieldTexelToPlate(i, j, fields);
       const k = (j * width + i) * 4;
-      fields.data[k] = quantize(polygonDistance(p, hole));
-      fields.data[k + 1] = quantize(polygonDistance(p, outer));
-      fields.data[k + 3] = isInside(p, hole) ? 255 : 0;
+      const toHole = polygonDistance(p, hole);
+      const toOuter = polygonDistance(p, outer);
+      const inHole = isInside(p, hole);
+      const inMetal = !inHole && isInside(p, outer);
+      fields.data[k] = quantize(toHole);
+      fields.data[k + 1] = quantize(toOuter);
+      fields.data[k + 2] = encodeSigned((inMetal ? -1 : 1) * Math.min(toHole, toOuter), range);
+      fields.data[k + 3] = inHole ? 255 : 0;
     }
   }
   return fields;

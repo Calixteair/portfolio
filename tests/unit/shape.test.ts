@@ -5,6 +5,7 @@ import {
   HOLE,
   PLATE,
   bakeEdgeFields,
+  decodeSigned,
   fieldTexelToPlate,
   holeOutline,
   isInside,
@@ -20,7 +21,8 @@ function texel(fields: EdgeFields, x: number, y: number) {
   const i = Math.floor(((x - fields.min.x) / fields.size.x) * fields.width);
   const j = Math.floor(((y - fields.min.y) / fields.size.y) * fields.height);
   const k = (j * fields.width + i) * 4;
-  return { hole: fields.data[k], outer: fields.data[k + 1], inside: fields.data[k + 3] };
+  const sdf = decodeSigned(fields.data[k + 2] ?? 0, fields.range);
+  return { hole: fields.data[k], outer: fields.data[k + 1], sdf, inside: fields.data[k + 3] };
 }
 
 describe('mulberry32', () => {
@@ -94,5 +96,15 @@ describe('bakeEdgeFields', () => {
 
   it('measures the outer edge distance near zero on the rim', () => {
     expect(texel(fields, PLATE.hw, 0).outer).toBeLessThan(10);
+  });
+
+  it('stores a signed distance to the plate shape: negative in the metal only', () => {
+    const metal = texel(fields, -0.25, -0.35);
+    expect(metal.sdf).toBeLessThan(-0.01);
+    expect(texel(fields, HOLE.cx, HOLE.cy).sdf).toBeGreaterThan(0.05);
+    expect(texel(fields, PLATE.hw + 0.015, 0).sdf).toBeGreaterThan(0);
+    // Magnitude: the nearest edge, within a texel of quantization error (range / 127).
+    const quantum = fields.range / 127 + 0.005;
+    expect(Math.abs(texel(fields, PLATE.hw - 0.02, 0).sdf + 0.02)).toBeLessThan(quantum);
   });
 });

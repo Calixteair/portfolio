@@ -6,6 +6,7 @@ import {
   Line,
   LineBasicNodeMaterial,
   Mesh,
+  MeshBasicNodeMaterial,
   MeshStandardNodeMaterial,
   SphereGeometry,
   Vector3,
@@ -65,6 +66,16 @@ function orbitLine(body: Body, material: LineBasicNodeMaterial): Line {
   return new Line(new BufferGeometry().setFromPoints(points), material);
 }
 
+/**
+ * Invisible, generous hit sphere: small moons 40 m away would be a few pixels wide; the
+ * SPEC wants every body easy to aim at. Not rendered (material.visible = false), still
+ * hit by the raycaster.
+ */
+function hitProxy(body: Body, material: MeshBasicNodeMaterial): Mesh {
+  const radius = Math.max(body.radius * 2.2, body.kind === 'planet' ? 0.9 : 0.55);
+  return new Mesh(new SphereGeometry(radius, 12, 8), material);
+}
+
 export interface SystemBodies {
   group: Group;
   /** slug → its object (for picking, labels and the travel). */
@@ -79,8 +90,10 @@ export function createBodies(bodies: Body[]): SystemBodies {
   const orbitMaterial = new LineBasicNodeMaterial({ transparent: true, depthWrite: false });
   orbitMaterial.colorNode = color(PALETTE_B.filament);
   orbitMaterial.opacityNode = float(0.12);
+  const hitMaterial = new MeshBasicNodeMaterial({ visible: false });
   for (const body of bodies) {
     const object = meshFor(body);
+    object.add(hitProxy(body, hitMaterial));
     object.name = body.slug;
     object.userData.slug = body.slug;
     objects.set(body.slug, object);

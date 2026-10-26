@@ -18,10 +18,23 @@ const ARROWS: Record<string, [keyof LookKeys, number]> = {
 
 /**
  * Drag anywhere to look around (with inertia), arrow keys to turn. A press that does not
- * move stays a click. Returns the held keys (read each frame) and the cleanup.
+ * move stays a click (`onClick`). Returns the held keys and the hovered pointer (read each
+ * frame), and the cleanup.
  */
-export function bindLook(element: HTMLElement, look: LookState) {
+export function bindLook(element: HTMLElement, look: LookState, onClick?: () => void) {
   const keys: LookKeys = { yaw: 0, pitch: 0 };
+  /** Pointer in normalized device coordinates, for hover picking; null when outside. */
+  const hover: { pointer: { x: number; y: number } | null } = { pointer: null };
+  const track = (e: PointerEvent) => {
+    const r = element.getBoundingClientRect();
+    hover.pointer = {
+      x: ((e.clientX - r.left) / r.width) * 2 - 1,
+      y: -((e.clientY - r.top) / r.height) * 2 + 1,
+    };
+  };
+  const leave = () => {
+    hover.pointer = null;
+  };
   let press: {
     x: number;
     y: number;
@@ -43,6 +56,7 @@ export function bindLook(element: HTMLElement, look: LookState) {
     element.setPointerCapture(e.pointerId);
   };
   const move = (e: PointerEvent) => {
+    track(e);
     if (!press) return;
     const travel = Math.hypot(e.clientX - press.startX, e.clientY - press.startY);
     if (!press.moving && travel <= CLICK_SLOP) return;
@@ -51,6 +65,7 @@ export function bindLook(element: HTMLElement, look: LookState) {
     Object.assign(press, { x: e.clientX, y: e.clientY, t: e.timeStamp });
   };
   const up = () => {
+    if (press && !press.moving) onClick?.();
     press = null;
   };
   const key = (pressed: boolean) => (e: KeyboardEvent) => {
@@ -66,6 +81,7 @@ export function bindLook(element: HTMLElement, look: LookState) {
   element.addEventListener('pointermove', move);
   element.addEventListener('pointerup', up);
   element.addEventListener('pointercancel', up);
+  element.addEventListener('pointerleave', leave);
   window.addEventListener('keydown', keydown);
   window.addEventListener('keyup', keyup);
   const dispose = () => {
@@ -73,8 +89,9 @@ export function bindLook(element: HTMLElement, look: LookState) {
     element.removeEventListener('pointermove', move);
     element.removeEventListener('pointerup', up);
     element.removeEventListener('pointercancel', up);
+    element.removeEventListener('pointerleave', leave);
     window.removeEventListener('keydown', keydown);
     window.removeEventListener('keyup', keyup);
   };
-  return { keys, isDragging: () => press?.moving === true, dispose };
+  return { keys, hover, isDragging: () => press?.moving === true, dispose };
 }

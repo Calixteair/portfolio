@@ -23,3 +23,35 @@ const entries = await systemEntries();
     inset: 0;
   }
 </style>
+
+<style is:global>
+  /* Hover label of a body in the planetary system (BodyLabel.tsx), placed by the 3D side. */
+  .body-label {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 5;
+    max-width: 18rem;
+    margin: 0.9rem 0 0 0.9rem;
+    padding: 0.5rem 0.75rem;
+    pointer-events: none;
+    color: var(--ink);
+    font:
+      400 0.85rem/1.4 system-ui,
+      sans-serif;
+    background: rgb(2 4 12 / 0.72);
+    border-left: 2px solid #2f6bff;
+    backdrop-filter: blur(6px);
+  }
+  .body-label[hidden] {
+    display: none;
+  }
+  .body-label-title {
+    display: block;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .body-label-summary {
+    opacity: 0.8;
+  }
+</style>

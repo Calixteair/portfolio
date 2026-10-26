@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
 import { useLoader } from '../loader/useLoader';
 import '../three/extend';
@@ -10,6 +10,7 @@ import Explore from '../three/scenes/portal/Explore';
 import Dive from '../three/scenes/wormhole/Dive';
 import Wormhole from '../three/scenes/wormhole/Wormhole';
 import BackendBadge from './BackendBadge';
+import BodyLabel from './BodyLabel';
 import Forge from './Forge';
 import type { SystemEntry } from '../system/layout';
 import RenderErrorBoundary from './RenderErrorBoundary';
@@ -35,6 +36,9 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
   // resources (SPEC §5.6, CLAUDE.md: dispose left scenes).
   const [arrived, setArrived] = useState(false);
   const onArrived = useCallback(() => setArrived(true), []);
+  const texts = useMemo(() => new Map(entries.map((e) => [e.slug, e])), [entries]);
+  const labelRef = useRef<HTMLDivElement>(null);
+  const onPick = useCallback((slug: string) => console.info('[system] picked', slug), []);
   const { fail, reach } = loader;
 
   useEffect(() => {
@@ -61,7 +65,15 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
         }}
       >
         {!arrived && <Forge world={world} entered={entered} />}
-        {arrived && <Explore system={system} eye={world.portalCamera} />}
+        {arrived && (
+          <Explore
+            system={system}
+            eye={world.portalCamera}
+            texts={texts}
+            label={labelRef}
+            onPick={onPick}
+          />
+        )}
         <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} readiness={world.readiness} />
         <Dive
           runtime={runtime}
@@ -91,6 +103,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
         )}
         <Precompile onStage={reach} onCompiled={startRendering} onError={fail} />
       </Canvas>
+      <BodyLabel ref={labelRef} />
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}
     </RenderErrorBoundary>
   );

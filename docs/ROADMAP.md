@@ -53,10 +53,11 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M6 — Système planétaire
 
-- [ ] Content collections + schéma zod, 3 contenus d'exemple
-- [ ] Système : étoile, orbites, planètes procédurales (TSL) dérivées du contenu, vue 360° depuis l'anneau
-- [ ] Voyage « en fusée » (allumage, croisière, mise en orbite) → panneau HTML, état dans l'URL, retour
-- [ ] Navigation clavier et variante `prefers-reduced-motion`
+- [x] Content collections + schéma zod, 39 contenus (15 projets, 14 compétences techniques, 6 savoir-être, 2 alternances, 2 formations), à relire
+- [x] Système : étoile, orbites, planètes procédurales (TSL, 5 types) dérivées du contenu, lunes, ceinture, stations, vue 360° depuis l'anneau
+- [x] Voyage « en fusée » (allumage, croisière, mise en orbite) → panneau HTML statique, état dans l'URL, retour (bouton, Échap, précédent)
+- [x] Navigation clavier (liste masquée visible au focus) et variante `prefers-reduced-motion`
+- [ ] Gyroscope sur mobile : reporté en M8
 
 ## M7 — Version HTML, SEO, accessibilité
 

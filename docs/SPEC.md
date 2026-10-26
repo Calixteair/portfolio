@@ -188,7 +188,10 @@ summary: string        # 1 ligne, affichée dans l'étiquette de la planète
 tags: string[]
 links: { label: string, url: string }[]
 order: number          # importance : influence la taille et l'orbite
-orbits: string         # compétences seulement : slug du projet dont elle est la lune (sinon ceinture d'astéroïdes)
+orbits: string[]       # compétences seulement : projets ou expériences qui la montrent ; la 1re est l'hôte de la lune (sinon ceinture)
+kind: technical | soft # compétences seulement : technique ou savoir-être
+station: work | education # expériences seulement : alternance/emploi ou formation
+period: string         # expériences seulement
 planet:                # optionnel, sinon dérivé de la catégorie
   type: rocky | gas | ice | lava | ocean
   hue: number          # 0-360, teinte dominante

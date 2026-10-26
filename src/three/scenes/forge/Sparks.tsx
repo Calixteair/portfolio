@@ -57,6 +57,7 @@ export default function Sparks({ pendant, forge, spin }: SparksProps) {
     stepSparks(gl, sparks.sim, sparks.uniforms, {
       dt,
       heat: forge.heat.value,
+      calm: forge.portal.value,
       model: pendant.group.matrixWorld,
       spin: spin.velocity,
       pool: sparks.pool,

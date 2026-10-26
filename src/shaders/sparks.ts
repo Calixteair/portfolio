@@ -220,14 +220,15 @@ export function stepSparks(
   renderer: WebGPURenderer,
   sim: ReturnType<typeof createSparkSimulation>,
   u: SparkUniforms,
-  frame: { dt: number; heat: number; model: Matrix4; spin: number; pool: number },
+  frame: { dt: number; heat: number; calm: number; model: Matrix4; spin: number; pool: number },
 ): void {
   const dt = Math.min(frame.dt, SPARK_PHYSICS.maxDt);
   u.dt.value = dt;
   u.epoch.value = (u.epoch.value + 1) % 1e6;
   // The pool is much larger than the live sparks: almost all are dead, so each one is
   // reborn with probability births-this-frame / pool.
-  const births = frame.heat ** 2 * SPARK_RATE.perSecond * dt;
+  // `calm` (0-1) thins the sparks out while the portal opens, so the eye goes to it.
+  const births = frame.heat ** 2 * SPARK_RATE.perSecond * dt * (1 - 0.85 * frame.calm);
   u.birth.value = Math.min(1, births / frame.pool);
   u.model.value.copy(frame.model);
   u.modelInverse.value.copy(frame.model).invert();

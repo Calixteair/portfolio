@@ -1,25 +1,44 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
-import type { Node } from 'three/webgpu';
+import { PointLight, type Node } from 'three/webgpu';
+import { PALETTE_B } from '../../../shaders/nebula';
 import { portalOpening } from '../../../shaders/portalOpening';
 import type { Pendant } from '../../pendant/placeholder';
+import { HOLE } from '../../pendant/shape';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
 import { createPortalSystem } from './system';
 import { createPortalWindow, renderPortal, resizePortal } from './window';
+
+/** Peak intensity of the blue light the open portal casts on the crust and the walls. */
+const SPILL_INTENSITY = 2.5;
+
+/** The portal's blue light spilling onto the crust and the hole walls, both faces (§5.5). */
+function createSpillLights(): PointLight[] {
+  return [0.12, -0.12].map((z) => {
+    const light = new PointLight(PALETTE_B.filament, 0, 0.9, 2);
+    light.position.set(HOLE.cx, HOLE.cy, z);
+    return light;
+  });
+}
+
+function setSpill(lights: PointLight[], open: number): void {
+  for (const light of lights) light.intensity = open * SPILL_INTENSITY;
+}
 
 function buildPortal(pendant: Pendant, forge: ForgeUniforms) {
   const system = createPortalSystem();
   const win = createPortalWindow(pendant.outline.hole, (view: Node<'vec4'>) =>
     portalOpening(view, forge.portal),
   );
-  pendant.group.add(win.surface);
+  const spill = createSpillLights();
+  pendant.group.add(win.surface, ...spill);
   const dispose = () => {
-    pendant.group.remove(win.surface);
+    pendant.group.remove(win.surface, ...spill);
     win.dispose();
     system.dispose();
   };
-  return { system, win, dispose };
+  return { system, win, spill, dispose };
 }
 
 /** The other side, seen through the hole once the portal opens (SPEC §5.5). */
@@ -40,6 +59,7 @@ export default function Portal({ pendant, forge }: { pendant: Pendant; forge: Fo
   );
 
   useFrame((state) => {
+    setSpill(portal.spill, forge.portal.value);
     if (forge.portal.value <= 0) return;
     renderPortal(gl, portal.win, portal.system, {
       camera: state.camera as unknown as Parameters<typeof renderPortal>[3]['camera'],

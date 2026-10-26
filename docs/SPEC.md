@@ -140,6 +140,8 @@ Timeline GSAP d'environ 3 s :
 
 Ensuite, on libère la scène du pendentif (`dispose`).
 
+_Tranché en M5_ : on entre par un clic, Espace ou Entrée sur le portail ouvert. Au départ, le pendentif revient à son angle de repos pour que le trou fasse face à la caméra et cadre l'étoile. GSAP est chargé à la demande après « Entrer » (≈ 28 Ko gzip, hors budget de démarrage). L'anneau d'arrivée est provisoire jusqu'au M6.
+
 ### 5.7 Espace du portfolio : un système planétaire
 
 Dans _The Expanse_, les anneaux mènent à d'autres systèmes stellaires. Ici, le portail est une porte : on en sort dans un **système planétaire 3D** dont chaque planète est un contenu du portfolio.

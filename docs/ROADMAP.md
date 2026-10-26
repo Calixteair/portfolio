@@ -47,8 +47,9 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M5 — Aspiration
 
-- [ ] Timeline GSAP : FOV, tunnel, zoom blur, flash, sortie par l'anneau
-- [ ] Libération de la scène du pendentif, variante `prefers-reduced-motion`
+- [x] Timeline GSAP (chargé à la demande, hors bundle de démarrage) : pendentif face au trou, attraction + FOV, tunnel, zoom blur, aberration, flash, sortie par l'anneau (provisoire)
+- [x] Libération de la scène du pendentif, variante `prefers-reduced-motion` (fondu)
+- [x] Entrée dans le portail : clic, Espace ou Entrée
 
 ## M6 — Système planétaire
 

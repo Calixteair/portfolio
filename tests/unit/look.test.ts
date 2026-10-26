@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { LOOK, createLook, dragLook, stepLook, viewDirection } from '../../src/system/look';
+import {
+  LOOK,
+  createLook,
+  dragLook,
+  lookTowards,
+  stepLook,
+  viewDirection,
+} from '../../src/system/look';
 
 describe('look', () => {
   it('looks straight ahead (-z) with no offset', () => {
@@ -38,5 +45,14 @@ describe('look', () => {
     const s = createLook();
     stepLook(s, 0.5, { yaw: 1, pitch: 0 });
     expect(s.yaw).toBeCloseTo(LOOK.keySpeed * 0.5);
+  });
+
+  it('can be pointed back at a direction (round trip with viewDirection)', () => {
+    const s = createLook();
+    const base = { yaw: 0.2, pitch: -0.1 };
+    lookTowards(s, [Math.SQRT1_2, 0.3, -Math.SQRT1_2], base);
+    const [x, y, z] = viewDirection(s, base);
+    expect(Math.atan2(-x, -z)).toBeCloseTo(Math.atan2(-Math.SQRT1_2, Math.SQRT1_2));
+    expect(y).toBeCloseTo(0.3);
   });
 });

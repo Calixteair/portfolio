@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Experience from '../islands/Experience';
 import Loader from '../components/Loader.astro';
+import SystemPanels from '../components/SystemPanels.astro';
 import { systemEntries } from '../content/entries';
 
 const entries = await systemEntries();
@@ -14,6 +15,7 @@ const entries = await systemEntries();
   <main>
     <Experience client:only="react" entries={entries} />
   </main>
+  <SystemPanels />
   <Loader />
 </Base>
 

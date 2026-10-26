@@ -1,0 +1,251 @@
+---
+/**
+ * Detail panels of the planetary system (SPEC §5.7), rendered statically: one article per
+ * body, hidden until the island opens it after the travel. Readable, accessible, indexable
+ * HTML (the M7 classic version builds on the same content). Plus the keyboard list that
+ * drives the same navigation as the clicks.
+ */
+import { getCollection, render } from 'astro:content';
+
+const entries = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const titles = new Map(entries.map((e) => [e.id, e.data.title]));
+const moonsOf = (slug: string) =>
+  entries.filter((e) => e.data.category === 'skill' && e.data.orbits.includes(slug));
+
+const KIND = {
+  project: 'Projet',
+  experience: 'Parcours',
+  skill: 'Compétence',
+} as const;
+
+const groups = [
+  { title: 'Projets', items: entries.filter((e) => e.data.category === 'project') },
+  { title: 'Parcours', items: entries.filter((e) => e.data.category === 'experience') },
+  { title: 'Compétences', items: entries.filter((e) => e.data.category === 'skill') },
+];
+
+const rendered = await Promise.all(
+  entries.map(async (e) => ({ entry: e, Content: (await render(e)).Content })),
+);
+---
+
+<section id="system-ui" class="system-ui" aria-label="Système planétaire du portfolio" hidden>
+  <nav class="system-nav" aria-label="Aller vers un astre">
+    {groups.map((g) => (
+      <div class="system-nav-group">
+        <h2>{g.title}</h2>
+        <ul>
+          {g.items.map((e) => (
+            <li>
+              <a href={`#${e.id}`} data-body={e.id}>
+                {e.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </nav>
+
+  {rendered.map(({ entry: e, Content }) => (
+    <article
+      id={`panel-${e.id}`}
+      class="system-panel"
+      data-panel={e.id}
+      aria-labelledby={`panel-title-${e.id}`}
+      hidden
+    >
+      <p class="system-panel-kind">
+        {e.data.category === 'skill' && e.data.kind === 'soft'
+          ? 'Savoir-être'
+          : KIND[e.data.category]}
+        {e.data.period && <span> · {e.data.period}</span>}
+      </p>
+      <h2 id={`panel-title-${e.id}`} tabindex="-1">
+        {e.data.title}
+      </h2>
+      <p class="system-panel-summary">{e.data.summary}</p>
+      <div class="system-panel-body">
+        <Content />
+      </div>
+      {e.data.tags.length > 0 && (
+        <ul class="system-panel-tags" aria-label="Technologies">
+          {e.data.tags.map((t) => (
+            <li>{t}</li>
+          ))}
+        </ul>
+      )}
+      {e.data.category === 'skill' && e.data.orbits.length > 0 && (
+        <p class="system-panel-related">
+          Visible dans :{' '}
+          {e.data.orbits.map((slug, i) => (
+            <>
+              {i > 0 && ', '}
+              <a href={`#${slug}`} data-body={slug}>
+                {titles.get(slug)}
+              </a>
+            </>
+          ))}
+        </p>
+      )}
+      {e.data.category !== 'skill' && moonsOf(e.id).length > 0 && (
+        <p class="system-panel-related">
+          Compétences :{' '}
+          {moonsOf(e.id).map((m, i) => (
+            <>
+              {i > 0 && ', '}
+              <a href={`#${m.id}`} data-body={m.id}>
+                {m.data.title}
+              </a>
+            </>
+          ))}
+        </p>
+      )}
+      {e.data.links.length > 0 && (
+        <ul class="system-panel-links">
+          {e.data.links.map((l) => (
+            <li>
+              <a href={l.url} rel="noopener" target="_blank">
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" class="system-panel-back" data-back>
+        Retour au système <kbd>Échap</kbd>
+      </button>
+    </article>
+  ))}
+</section>
+
+<style>
+  .system-ui {
+    position: fixed;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    color: var(--ink);
+    font:
+      400 0.95rem/1.55 system-ui,
+      sans-serif;
+  }
+
+  /* Keyboard list: visually hidden until it receives focus (skip-link pattern). */
+  .system-nav {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    max-height: calc(100% - 2rem);
+    overflow: auto;
+    padding: 0.75rem 1rem;
+    background: rgb(2 4 12 / 0.85);
+    border-left: 2px solid #2f6bff;
+    clip-path: inset(50%);
+    pointer-events: auto;
+  }
+  .system-nav:focus-within {
+    clip-path: none;
+  }
+  .system-nav h2 {
+    margin: 0.5rem 0 0.25rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .system-nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .system-nav a {
+    color: inherit;
+  }
+
+  .system-panel {
+    position: absolute;
+    top: 50%;
+    right: clamp(1rem, 5vw, 4rem);
+    translate: 0 -50%;
+    width: min(28rem, calc(100% - 2rem));
+    max-height: calc(100% - 4rem);
+    overflow: auto;
+    padding: 1.5rem 1.75rem;
+    background: rgb(2 4 12 / 0.8);
+    border-left: 2px solid #2f6bff;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    animation: panel-in 0.5s ease both;
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      translate: 1rem -50%;
+    }
+  }
+  .system-panel h2 {
+    margin: 0.1rem 0 0.4rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    outline: none;
+  }
+  .system-panel-kind {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #b4e0ff;
+  }
+  .system-panel-summary {
+    margin: 0 0 0.75rem;
+    opacity: 0.85;
+  }
+  .system-panel-body :global(ul) {
+    padding-left: 1.1rem;
+  }
+  .system-panel-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.75rem 0;
+    padding: 0;
+    list-style: none;
+  }
+  .system-panel-tags li {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid rgb(47 107 255 / 0.5);
+  }
+  .system-panel a {
+    color: #b4e0ff;
+  }
+  .system-panel-links {
+    padding-left: 1.1rem;
+  }
+  .system-panel-back {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid rgb(180 224 255 / 0.4);
+    cursor: pointer;
+  }
+  .system-panel-back:hover,
+  .system-panel-back:focus-visible {
+    background: rgb(47 107 255 / 0.2);
+    outline: none;
+  }
+  kbd {
+    margin-left: 0.4rem;
+    font-size: 0.75rem;
+    opacity: 0.6;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .system-panel {
+      animation: none;
+    }
+  }
+</style>

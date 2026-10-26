@@ -80,6 +80,8 @@ export interface SystemBodies {
   group: Group;
   /** slug → its object (for picking, labels and the travel). */
   objects: Map<string, Object3D>;
+  /** slug → its radius (orbit distance of the travel). */
+  radii: Map<string, number>;
   update: (elapsed: number) => void;
 }
 
@@ -109,5 +111,6 @@ export function createBodies(bodies: Body[]): SystemBodies {
     }
   };
   update(0);
-  return { group, objects, update };
+  const radii = new Map(bodies.map((b) => [b.slug, b.radius]));
+  return { group, objects, radii, update };
 }

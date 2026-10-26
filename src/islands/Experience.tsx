@@ -38,7 +38,6 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
   const onArrived = useCallback(() => setArrived(true), []);
   const texts = useMemo(() => new Map(entries.map((e) => [e.slug, e])), [entries]);
   const labelRef = useRef<HTMLDivElement>(null);
-  const onPick = useCallback((slug: string) => console.info('[system] picked', slug), []);
   const { fail, reach } = loader;
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
             eye={world.portalCamera}
             texts={texts}
             label={labelRef}
-            onPick={onPick}
+            lens={lens}
           />
         )}
         <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} readiness={world.readiness} />

@@ -63,3 +63,16 @@ export function viewDirection(
   const pitch = clamp(base.pitch + state.pitch, LOOK.maxPitch);
   return [-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)];
 }
+
+/** Point the look at a direction (after a travel), so the view does not jump back. */
+export function lookTowards(
+  state: LookState,
+  dir: [number, number, number],
+  base: { yaw: number; pitch: number },
+): void {
+  const [x, y, z] = dir;
+  state.yaw = Math.atan2(-x, -z) - base.yaw;
+  state.pitch = clamp(Math.asin(Math.max(-1, Math.min(1, y))) - base.pitch, LOOK.maxPitch);
+  state.yawSpeed = 0;
+  state.pitchSpeed = 0;
+}

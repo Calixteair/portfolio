@@ -1,49 +1,95 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
-import type { PerspectiveCamera } from 'three/webgpu';
-import { createLook, stepLook, viewDirection, type LookState } from '../../../system/look';
+import { Vector3, type PerspectiveCamera } from 'three/webgpu';
+import {
+  createLook,
+  lookTowards,
+  stepLook,
+  viewDirection,
+  type LookState,
+} from '../../../system/look';
 import { bindLook } from '../../../system/lookInput';
 import type { PortalSystem } from './system';
+import type { LensUniforms } from '../../post/lens';
 import { hideLabel, showLabel, type LabelText } from './label';
+import { createNavigation } from './navigation';
 import { pickBody, screenPoint } from './picking';
+import { holdOrbit, type Travel } from './travel';
 import { ARRIVAL } from './window';
 
 const MAX_FRAME_DT = 0.05;
 
 /** The arrival view looks at the star: its yaw and pitch, the base of the 360° look. */
 const BASE = { yaw: 0, pitch: Math.atan2(-ARRIVAL.y, ARRIVAL.toZ) };
+const ARRIVAL_POINT = new Vector3(0, ARRIVAL.y, ARRIVAL.toZ);
 
 type LookBinding = ReturnType<typeof bindLook>;
 
-/** Binds the look input in an effect, exposing it to the frame loop through a holder. */
-function attachLook(
-  holder: { binding: LookBinding | null; hovered: string | null },
-  canvas: HTMLElement,
-  look: LookState,
-  onPick: (slug: string) => void,
+type Navigation = ReturnType<typeof createNavigation>;
+
+interface Holder {
+  binding: LookBinding | null;
+  nav: Navigation | null;
+  hovered: string | null;
+}
+
+/**
+ * Wires the look input and the navigation in an effect, exposing them to the frame loop
+ * through a holder (nothing is created during render).
+ */
+function attachExplore(
+  holder: Holder,
+  setup: { canvas: HTMLElement; look: LookState; camera: PerspectiveCamera | null },
+  deps: { lens: LensUniforms; system: PortalSystem },
 ) {
-  const binding = bindLook(canvas, look, () => {
-    if (holder.hovered) onPick(holder.hovered);
+  if (!setup.camera) return undefined;
+  const nav = createNavigation({
+    camera: setup.camera,
+    lens: deps.lens,
+    objects: deps.system.bodies.objects,
+    radii: deps.system.bodies.radii,
+    home: ARRIVAL_POINT,
   });
-  holder.binding = binding;
+  const stopNav = nav.start();
+  const binding = bindLook(setup.canvas, setup.look, () => {
+    if (holder.hovered) nav.open(holder.hovered);
+  });
+  Object.assign(holder, { binding, nav });
   return () => {
     binding.dispose();
-    holder.binding = null;
+    stopNav();
+    Object.assign(holder, { binding: null, nav: null });
   };
 }
 
-/** One frame: orbits advance, the look coasts (unless dragged), the eye turns accordingly. */
+const forward = new Vector3();
+
+/**
+ * One frame: orbits advance; at home the look coasts (unless dragged) and turns the eye;
+ * in orbit the eye circles the body; during a flight GSAP drives it.
+ */
 function exploreFrame(
   frame: { elapsed: number; dt: number; aspect: number },
   system: PortalSystem,
   camera: PerspectiveCamera,
-  look: LookState,
-  binding: LookBinding,
+  view: { look: LookState; binding: LookBinding; travel: Travel; wasFree: { value: boolean } },
 ): void {
+  const { look, binding, travel, wasFree } = view;
+  const dt = Math.min(frame.dt, MAX_FRAME_DT);
   system.update(frame.elapsed);
-  if (!binding.isDragging()) stepLook(look, Math.min(frame.dt, MAX_FRAME_DT), binding.keys);
-  const [x, y, z] = viewDirection(look, BASE);
-  camera.lookAt(camera.position.x + x, camera.position.y + y, camera.position.z + z);
+  const free = travel.phase === 'free';
+  if (free && !wasFree.value) {
+    // Back home: continue from where the camera looks, no jump.
+    camera.getWorldDirection(forward);
+    lookTowards(look, [forward.x, forward.y, forward.z], BASE);
+  }
+  wasFree.value = free;
+  if (travel.phase === 'orbit') holdOrbit(camera, travel, ARRIVAL_POINT, dt);
+  if (free) {
+    if (!binding.isDragging()) stepLook(look, dt, binding.keys);
+    const [x, y, z] = viewDirection(look, BASE);
+    camera.lookAt(camera.position.x + x, camera.position.y + y, camera.position.z + z);
+  }
   if (Math.abs(camera.aspect - frame.aspect) > 1e-3) {
     camera.aspect = frame.aspect;
     camera.updateProjectionMatrix();
@@ -52,7 +98,7 @@ function exploreFrame(
 
 /** Hover: pick the body under the pointer, label it, show a pointer cursor. */
 function hoverFrame(
-  holder: { binding: LookBinding | null; hovered: string | null },
+  holder: Holder,
   scene: {
     system: PortalSystem;
     camera: PerspectiveCamera;
@@ -60,7 +106,11 @@ function hoverFrame(
   },
   ui: { label: HTMLElement | null; canvas: HTMLElement; texts: ReadonlyMap<string, LabelText> },
 ): void {
-  const pointer = holder.binding?.isDragging() ? null : holder.binding?.hover.pointer;
+  // Only while exploring freely: in orbit the panel speaks, in flight nothing is aimed.
+  const exploring =
+    holder.nav?.travel.phase !== 'outbound' && holder.nav?.travel.phase !== 'inbound';
+  const dragging = holder.binding?.isDragging() ?? false;
+  const pointer = exploring && !dragging ? holder.binding?.hover.pointer : null;
   const objects = scene.system.bodies.objects;
   const slug = pointer ? pickBody(pointer, scene.camera, objects.values()) : null;
   holder.hovered = slug;
@@ -69,7 +119,8 @@ function hoverFrame(
   const text = slug ? ui.texts.get(slug) : undefined;
   const at = object ? screenPoint(object, scene.camera, scene.size) : null;
   if (!ui.label) return;
-  if (slug && text && at) showLabel(ui.label, slug, text, at);
+  const inOrbit = holder.nav?.travel.phase === 'orbit';
+  if (slug && text && at && !inOrbit) showLabel(ui.label, slug, text, at);
   else hideLabel(ui.label);
 }
 
@@ -78,30 +129,31 @@ interface ExploreProps {
   /** Titles and summaries by slug, for the hover label. */
   texts: ReadonlyMap<string, LabelText>;
   label: { current: HTMLElement | null };
-  onPick: (slug: string) => void;
+  lens: LensUniforms;
   /** The portal camera, now the visitor's eye in the system. */
   eye: { current: PerspectiveCamera | null };
 }
 
 /** Once arrived: the system keeps orbiting, and the visitor looks around 360° (SPEC §5.7). */
-export default function Explore({ system, eye, texts, label, onPick }: ExploreProps) {
+export default function Explore({ system, eye, texts, label, lens }: ExploreProps) {
   const canvas = useThree((s) => s.gl.domElement);
   const look = useMemo(() => createLook(), []);
-  const input = useMemo(
-    () => ({ binding: null as LookBinding | null, hovered: null as string | null }),
-    [],
+  const input = useMemo<Holder>(() => ({ binding: null, nav: null, hovered: null }), []);
+  const wasFree = useMemo(() => ({ value: true }), []);
+  useEffect(
+    () => attachExplore(input, { canvas, look, camera: eye.current }, { lens, system }),
+    [input, canvas, look, eye, lens, system],
   );
-  useEffect(() => attachLook(input, canvas, look, onPick), [input, canvas, look, onPick]);
 
   useFrame((state, dt) => {
-    const binding = input.binding;
-    if (!eye.current || !binding) return;
+    const { binding, nav } = input;
+    if (!eye.current || !binding || !nav) return;
     const frame = {
       elapsed: state.clock.elapsedTime,
       dt,
       aspect: state.size.width / state.size.height,
     };
-    exploreFrame(frame, system, eye.current, look, binding);
+    exploreFrame(frame, system, eye.current, { look, binding, travel: nav.travel, wasFree });
     hoverFrame(
       input,
       { system, camera: eye.current, size: state.size },

@@ -15,7 +15,7 @@ RUN npm run build \
       -o -name '*.json' -o -name '*.wasm' -o -name '*.glb' \) -exec gzip -9 -k {} +
 
 # --- Runtime: unprivileged nginx (uid 101, port 8080) ---
-FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
+FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03 AS runtime
 
 # Alpine security fixes published after the base image was built (e.g. brotli-libs 1.2.1):
 # Trivy blocks fixable HIGH/CRITICAL. The pinned digest keeps the rest reproducible.

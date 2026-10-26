@@ -17,3 +17,16 @@ export function showStage(view: StageView, scene: Scene | null, camera: Camera |
   view.scene = scene;
   view.camera = camera;
 }
+
+/**
+ * Where the dive is (SPEC §5.6, no cut), for the two windows that bridge its scenes:
+ * during the `pull` the portal's hole shows the tunnel's entrance; in the `tunnel`
+ * its mouth shows the planetary system. Before (`idle`) the hole shows the system.
+ */
+export interface DiveView {
+  phase: 'idle' | 'pull' | 'tunnel' | 'done';
+}
+
+export function createDiveView(): DiveView {
+  return { phase: 'idle' };
+}

@@ -14,6 +14,7 @@ import {
   type Camera,
   type Node,
   type Object3D,
+  type Scene,
   type WebGPURenderer,
 } from 'three/webgpu';
 import type { Point } from '../../pendant/shape';
@@ -34,6 +35,8 @@ export const ARRIVAL = {
   from: 56,
   to: 44,
   ring: 47.5,
+  /** Field of view once settled in the system. */
+  fov: 50,
 } as const;
 
 /** A point on the arrival axis, `distance` from the star. */
@@ -93,11 +96,11 @@ const relative = new Matrix4();
 const inverse = new Matrix4();
 const pose = new Matrix4();
 
-/** Size the target at half the drawing buffer. */
-export function resizePortal(win: PortalWindow, width: number, height: number): void {
+/** Size a window's target at half the drawing buffer. */
+export function resizeTarget(target: RenderTarget, width: number, height: number): void {
   const w = Math.max(2, Math.round(width * SCALE));
   const h = Math.max(2, Math.round(height * SCALE));
-  if (win.target.width !== w || win.target.height !== h) win.target.setSize(w, h);
+  if (target.width !== w || target.height !== h) target.setSize(w, h);
 }
 
 /** Render the portal world as seen through the hole, into the target. */
@@ -123,14 +126,37 @@ export function renderPortal(
 }
 
 /**
- * Arrival pose (SPEC §5.6, end of the dive): on the axis through the ring, facing the star
- * with a natural field of view (the vertigo FOV of the dive is left behind).
+ * Arrival pose (SPEC §5.6, end of the dive): on the axis through the ring, facing the star.
+ * `fov` lets the exit start from the tunnel's field of view, then settle to a natural one.
  */
-export function poseArrival(camera: PerspectiveCamera, aspect: number, distance: number): void {
+export function poseArrival(
+  camera: PerspectiveCamera,
+  aspect: number,
+  distance: number,
+  fov: number = ARRIVAL.fov,
+): void {
   arrivalPoint(distance, camera.position);
   camera.lookAt(0, 0, 0);
-  camera.fov = 50;
+  camera.fov = fov;
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
+}
+
+/**
+ * Render `scene` from `camera` into `target`, with the projection of `lens` (the camera
+ * whose screen the target is sampled in): a window shows exactly what full screen would.
+ */
+export function renderView(
+  renderer: WebGPURenderer,
+  target: RenderTarget,
+  view: { scene: Scene; camera: PerspectiveCamera },
+  lens: Camera,
+): void {
+  view.camera.projectionMatrix.copy(lens.projectionMatrix);
+  view.camera.projectionMatrixInverse.copy(lens.projectionMatrixInverse);
+  const previous = renderer.getRenderTarget();
+  renderer.setRenderTarget(target);
+  renderer.render(view.scene, view.camera);
+  renderer.setRenderTarget(previous);
 }

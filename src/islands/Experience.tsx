@@ -73,7 +73,15 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
             lens={lens}
           />
         )}
-        <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} readiness={world.readiness} />
+        <Wormhole
+          runtime={runtime}
+          stage={stage}
+          tunnel={tunnel}
+          readiness={world.readiness}
+          system={system}
+          eye={world.portalCamera}
+          dive={world.dive}
+        />
         <Dive
           runtime={runtime}
           pendant={pendant}
@@ -84,12 +92,13 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           portalCamera={world.portalCamera}
           frozen={world.frozen}
           readiness={world.readiness}
+          view={world.dive}
           portalOpen={world.forge.portal}
           loadAnimation={entered}
           bind={world.bindDive}
           onArrived={onArrived}
         />
-        <LensEffects uniforms={lens} stage={stage} />
+        <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} />
         {DevControls && (
           <Suspense fallback={null}>
             <DevControls

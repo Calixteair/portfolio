@@ -9,7 +9,7 @@ import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import { createPortalSystem } from '../three/scenes/portal/system';
 import { createTunnel } from '../three/scenes/wormhole/tunnel';
 import { createDiveReadiness } from '../three/readiness';
-import { createStageView } from '../three/stage';
+import { createDiveView, createStageView } from '../three/stage';
 import type { SystemEntry } from '../system/layout';
 
 /**
@@ -23,12 +23,23 @@ export function useWorld(entries: SystemEntry[]) {
   const pendant = useMemo(() => createPendant(forge), [forge]);
   const runtime = useMemo(() => createForgeRuntime(), []);
   const stage = useMemo(() => createStageView(), []);
+  const dive = useMemo(() => createDiveView(), []);
   const system = useMemo(() => createPortalSystem(entries), [entries]);
   const tunnel = useMemo(() => createTunnel(), []);
   const portalCamera = useRef<PerspectiveCamera | null>(null);
   const frozen = useMemo(() => ({ value: false }), []);
   const readiness = useMemo(() => createDiveReadiness(), []);
-  const dive = useRef<(() => void) | null>(null);
+  const warmUp = useMemo(
+    () => ({
+      views: [
+        { scene: system.scene, camera: portalCamera },
+        { scene: tunnel.scene, camera: { current: tunnel.camera } },
+      ],
+      readiness,
+    }),
+    [system, tunnel, readiness, portalCamera],
+  );
+  const startDive = useRef<(() => void) | null>(null);
 
   useEffect(
     () => () => {
@@ -40,11 +51,11 @@ export function useWorld(entries: SystemEntry[]) {
 
   /** Click or Space on the pendant: heat it, or dive in once the portal is open. */
   const onStrike = useCallback(() => {
-    if (runtime.journey.phase === 'portalOpen') dive.current?.();
+    if (runtime.journey.phase === 'portalOpen') startDive.current?.();
     else strike(runtime.journey, runtime.rules);
   }, [runtime]);
   const bindDive = useCallback((start: () => void) => {
-    dive.current = start;
+    startDive.current = start;
   }, []);
   const setPortalCamera = useCallback((camera: PerspectiveCamera) => {
     portalCamera.current = camera;
@@ -57,11 +68,13 @@ export function useWorld(entries: SystemEntry[]) {
     pendant,
     runtime,
     stage,
+    dive,
     system,
     tunnel,
     portalCamera,
     frozen,
     readiness,
+    warmUp,
     onStrike,
     bindDive,
     setPortalCamera,

@@ -11,11 +11,21 @@ import type { DiveReadiness } from '../../readiness';
 import type { PortalSystem } from '../portal/system';
 import { ARRIVAL, poseArrival } from '../portal/window';
 import type { LensUniforms } from '../../post/lens';
-import { showStage, type StageView } from '../../stage';
+import { showStage, type DiveView, type StageView } from '../../stage';
 import type { Tunnel } from './tunnel';
 
-/** Timeline beats, in seconds (SPEC §5.6: about 3 s). */
-const BEATS = { pull: 0.8, tunnel: 2.4, flash: 2.45, end: 3 } as const;
+/**
+ * Timeline beats, in seconds (SPEC §5.6): pulled through the hole until 0.8 s, through the
+ * tunnel until 2.5 s, out of its mouth into the system, then a 1.6 s glide through the ring.
+ */
+const BEATS = { pull: 0.8, land: 2.5, glide: 1.6 } as const;
+
+/** How close the camera gets to the hole: it then fills the screen, and the cut is unseen. */
+const THROUGH = 0.025;
+/** The tunnel's field of view, eased to from the pull's vertigo FOV. */
+const TUNNEL_FOV = 60;
+/** Where along the tunnel (0-1) the mouth fills the screen: the cut to the system. */
+const MOUTH_FILLS = 0.99;
 
 /** What the dive moves: forge camera, lens, tunnel, and where to land. */
 export interface DiveCast {
@@ -27,19 +37,22 @@ export interface DiveCast {
   lens: LensUniforms;
   tunnel: Tunnel;
   stage: StageView;
+  /** What the hole and the tunnel's mouth show. */
+  view: DiveView;
   /** Shows the planetary system full screen, from the portal camera (seamless arrival). */
   land: () => void;
-  /** That camera: after the flash it glides out through the ring. */
+  /** That camera: after the cut it glides out through the ring. */
   arrival: PerspectiveCamera;
 }
 
-/** 0 → 1 → back, for the camera pull: lerps the camera position towards the portal. */
+/** 0 → 1: the camera moves towards the portal, stopping just short of the hole's plane. */
 function pullTowards(camera: PerspectiveCamera, target: Vector3) {
   const from = camera.position.clone();
+  const reach = 1 - THROUGH / from.distanceTo(target);
   const state = { t: 0 };
   return {
     state,
-    apply: () => camera.position.lerpVectors(from, target, state.t * 0.85),
+    apply: () => camera.position.lerpVectors(from, target, state.t * reach),
   };
 }
 
@@ -49,9 +62,18 @@ function restingYaw(from: number): number {
   return REST_ANGLE + Math.round((from - REST_ANGLE) / turn) * turn;
 }
 
-/** Stage 1 (0-0.8 s): pulled towards the portal, the FOV widens abruptly (vertigo). */
+const updateProjection = (camera: PerspectiveCamera) => () => camera.updateProjectionMatrix();
+
+/**
+ * Stage 1 (0-0.8 s): pulled into the portal, the FOV widens abruptly (vertigo). The hole
+ * already shows the tunnel's entrance, and ends up filling the screen.
+ */
 function addPull(tl: Timeline, cast: DiveCast) {
   cast.spin.velocity = 0;
+  cast.view.phase = 'pull';
+  cast.tunnel.fly(0, 0);
+  // The camera gets closer to the hole than the default near plane.
+  cast.forgeCamera.near = THROUGH / 5;
   tl.to(
     cast.spin,
     { angle: restingYaw(cast.spin.angle), duration: BEATS.pull * 0.6, ease: 'power2.out' },
@@ -59,91 +81,94 @@ function addPull(tl: Timeline, cast: DiveCast) {
   );
   const pull = pullTowards(cast.forgeCamera, cast.portalCentre);
   tl.to(pull.state, { t: 1, duration: BEATS.pull, ease: 'power3.in', onUpdate: pull.apply }, 0);
-  tl.to(
-    cast.forgeCamera,
-    {
-      fov: 95,
-      duration: BEATS.pull,
-      ease: 'expo.in',
-      onUpdate: () => cast.forgeCamera.updateProjectionMatrix(),
-    },
-    0,
-  );
+  const onUpdate = updateProjection(cast.forgeCamera);
+  tl.to(cast.forgeCamera, { fov: 95, duration: BEATS.pull, ease: 'expo.in', onUpdate }, 0);
   tl.to(cast.lens.zoomBlur, { value: 0.35, duration: BEATS.pull, ease: 'power2.in' }, 0);
   tl.to(cast.lens.aberration, { value: 0.012, duration: BEATS.pull, ease: 'power2.in' }, 0);
 }
 
-/** Stage 2 (0.8-2.4 s): through the tunnel, rising blur and aberration, slight roll. */
+/** The hole fills the screen: the tunnel takes over, with the same lens (same image). */
+function enterTunnel(cast: DiveCast) {
+  const { camera } = cast.tunnel;
+  camera.fov = cast.forgeCamera.fov;
+  camera.updateProjectionMatrix();
+  cast.view.phase = 'tunnel';
+  showStage(cast.stage, cast.tunnel.scene, camera);
+}
+
+/**
+ * Stage 2 (0.8-2.5 s): through the tunnel. It slows down before the exit and the roll
+ * settles back to level, so the mouth (the system, upright) can take over.
+ */
 function addTunnel(tl: Timeline, cast: DiveCast) {
-  const flight = { t: 0, roll: 0 };
-  tl.call(() => showStage(cast.stage, cast.tunnel.scene, cast.tunnel.camera), [], BEATS.pull);
+  const span = BEATS.land - BEATS.pull;
+  const flight = { p: 0 };
+  tl.call(enterTunnel, [cast], BEATS.pull);
   tl.to(
     flight,
     {
-      t: 1,
-      roll: 0.6,
-      duration: BEATS.tunnel - BEATS.pull,
-      ease: 'power1.inOut',
-      onUpdate: () => cast.tunnel.fly(flight.t, flight.roll),
+      p: 1,
+      duration: span,
+      ease: 'sine.inOut',
+      onUpdate: () => cast.tunnel.fly(flight.p * MOUTH_FILLS, 0.5 * Math.sin(Math.PI * flight.p)),
     },
+    BEATS.pull,
+  );
+  const onUpdate = updateProjection(cast.tunnel.camera);
+  tl.to(
+    cast.tunnel.camera,
+    { fov: TUNNEL_FOV, duration: span * 0.6, ease: 'power2.out', onUpdate },
     BEATS.pull,
   );
   tl.fromTo(
     cast.tunnel.rush,
     { value: 2 },
-    { value: 9, duration: BEATS.tunnel - BEATS.pull, ease: 'power2.in' },
+    { value: 7, duration: span, ease: 'power1.inOut' },
     BEATS.pull,
   );
-  tl.to(
-    cast.lens.zoomBlur,
-    { value: 0.9, duration: BEATS.tunnel - BEATS.pull, ease: 'power2.in' },
-    BEATS.pull,
-  );
-  tl.to(cast.lens.aberration, { value: 0.025, duration: BEATS.tunnel - BEATS.pull }, BEATS.pull);
+  tl.to(cast.lens.zoomBlur, { value: 0.7, duration: span * 0.5, ease: 'power2.in' }, BEATS.pull);
+  tl.to(cast.lens.zoomBlur, { value: 0.25, duration: span * 0.5 }, BEATS.pull + span * 0.5);
+  tl.to(cast.lens.aberration, { value: 0.02, duration: span * 0.5 }, BEATS.pull);
 }
 
-/** Stage 3 (2.4-3 s): flash, then out through the ring into the planetary system. */
-function addArrival(tl: Timeline, cast: DiveCast, rest: { aberration: number }) {
-  tl.to(
-    cast.lens.flash,
-    { value: 1, duration: BEATS.flash - BEATS.tunnel, ease: 'power4.in' },
-    BEATS.tunnel,
+/**
+ * Stage 3 (2.5 s →): the mouth fills the screen, the system takes over with a faint glint
+ * and its bloom fading in, then the camera glides out through the ring as the FOV settles.
+ */
+function addArrival(tl: Timeline, cast: DiveCast, rest: { aberration: number; bloom: number }) {
+  tl.to(cast.lens.flash, { value: 0.06, duration: 0.15, ease: 'power2.in' }, BEATS.land - 0.15);
+  tl.call(cast.land, [], BEATS.land);
+  // The mouth showed the system without bloom: it comes back gradually, no pop at the cut.
+  tl.fromTo(
+    cast.lens.bloomStrength,
+    { value: 0 },
+    { value: rest.bloom, duration: 1.2, ease: 'power1.inOut' },
+    BEATS.land,
   );
-  tl.call(cast.land, [], BEATS.flash);
-  const glide = { d: ARRIVAL.from };
+  const glide = { d: ARRIVAL.from, fov: TUNNEL_FOV };
   tl.to(
     glide,
     {
       d: ARRIVAL.to,
-      duration: 1.6,
+      fov: ARRIVAL.fov,
+      duration: BEATS.glide,
       ease: 'power2.out',
-      onUpdate: () => poseArrival(cast.arrival, cast.arrival.aspect, glide.d),
+      onUpdate: () => poseArrival(cast.arrival, cast.arrival.aspect, glide.d, glide.fov),
     },
-    BEATS.flash,
+    BEATS.land,
   );
-  tl.to(
-    cast.lens.flash,
-    { value: 0, duration: BEATS.end - BEATS.flash, ease: 'power2.out' },
-    BEATS.flash,
-  );
-  tl.to(
-    cast.lens.zoomBlur,
-    { value: 0, duration: BEATS.end - BEATS.flash, ease: 'power2.out' },
-    BEATS.flash,
-  );
-  tl.to(
-    cast.lens.aberration,
-    { value: rest.aberration, duration: BEATS.end - BEATS.flash },
-    BEATS.flash,
-  );
+  tl.to(cast.lens.flash, { value: 0, duration: 0.5, ease: 'power2.out' }, BEATS.land);
+  tl.to(cast.lens.zoomBlur, { value: 0, duration: 0.8, ease: 'power2.out' }, BEATS.land);
+  tl.to(cast.lens.aberration, { value: rest.aberration, duration: 0.8 }, BEATS.land);
 }
 
 /**
- * The wormhole dive (SPEC §5.6) as a GSAP timeline: vertigo pull, tunnel, flash, arrival.
+ * The wormhole dive (SPEC §5.6) as a GSAP timeline: vertigo pull, tunnel, arrival. No cut
+ * is visible: each scene is first seen through a window (the hole, then the tunnel's mouth).
  * Resolves when the visitor is in the planetary system.
  */
 export function playDive(gsap: typeof Gsap, cast: DiveCast): Promise<void> {
-  const rest = { aberration: cast.lens.aberration.value };
+  const rest = { aberration: cast.lens.aberration.value, bloom: cast.lens.bloomStrength.value };
   return new Promise((resolve) => {
     const tl = gsap.timeline({ onComplete: resolve });
     addPull(tl, cast);
@@ -175,6 +200,7 @@ export interface DiveSetup {
   lens: LensUniforms;
   tunnel: Tunnel;
   stage: StageView;
+  view: DiveView;
   system: PortalSystem;
   portalCamera: { current: PerspectiveCamera | null };
   /** Set on arrival: the portal stops re-posing its camera. */
@@ -209,8 +235,8 @@ export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera
   let started = false;
   const start = () => {
     const eye = setup.portalCamera.current;
-    const { system, tunnel } = setup.readiness;
-    const ready = system && tunnel && setup.portalOpen.value >= 1;
+    const { system, tunnel, lens } = setup.readiness;
+    const ready = system && tunnel && lens && setup.portalOpen.value >= 1;
     if (!ready || !gsap || !eye || started || !enterPortal(setup.runtime.journey)) return;
     started = true;
     mirrorState('wormhole');
@@ -221,11 +247,14 @@ export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera
       lens: setup.lens,
       tunnel: setup.tunnel,
       stage: setup.stage,
+      view: setup.view,
       arrival: eye,
       land: () => {
         // From here the portal camera is the visitor's: the portal stops re-posing it.
         setup.frozen.value = true;
-        poseArrival(eye, camera.aspect, ARRIVAL.from);
+        setup.view.phase = 'done';
+        // Same lens as the tunnel camera, which the mouth was showing the system through.
+        poseArrival(eye, camera.aspect, ARRIVAL.from, setup.tunnel.camera.fov);
         showStage(setup.stage, setup.system.scene, eye);
       },
     };

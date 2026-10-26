@@ -42,8 +42,11 @@ export function glowIntensity(heat: number): number {
 const PORTAL_OPENING_SECONDS = 2.2;
 
 /** Opens the portal at a steady pace once portalOpen is reached (eased in the shader). */
+/** The portal stays open while the visitor dives through it. */
+const PORTAL_HELD = new Set(['portalOpen', 'wormhole']);
+
 export function advancePortal(uniforms: ForgeUniforms, phase: string, dt: number): void {
-  const opening = phase === 'portalOpen' ? dt / PORTAL_OPENING_SECONDS : -dt;
+  const opening = PORTAL_HELD.has(phase) ? dt / PORTAL_OPENING_SECONDS : -dt;
   uniforms.portal.value = Math.min(1, Math.max(0, uniforms.portal.value + opening));
 }
 

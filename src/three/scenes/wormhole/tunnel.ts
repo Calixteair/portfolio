@@ -8,8 +8,10 @@ import {
   mix,
   mx_fractal_noise_float,
   pow,
+  screenUV,
   sin,
   smoothstep,
+  texture,
   time,
   uniform,
   uv,
@@ -18,10 +20,13 @@ import {
 } from 'three/tsl';
 import {
   BackSide,
+  CircleGeometry,
   CatmullRomCurve3,
+  HalfFloatType,
   Mesh,
   MeshBasicNodeMaterial,
   PerspectiveCamera,
+  RenderTarget,
   Scene,
   TubeGeometry,
   Vector3,
@@ -73,9 +78,36 @@ function wallMaterial(rush: UniformNode<'float', number>): MeshBasicNodeMaterial
   return material;
 }
 
+/** Tube radius; the mouth at the far end has the same size. */
+const RADIUS = 2.2;
+
+/**
+ * The tunnel's far end opens onto the other side (SPEC §5.6, no cut): a disc that shows,
+ * in screen space, the planetary system rendered live into `target`. When the disc fills
+ * the screen, the full-screen system takes over with the very same image.
+ */
+function createMouth(target: RenderTarget): Mesh {
+  const material = new MeshBasicNodeMaterial({ fog: false, transparent: true, depthWrite: false });
+  const centred = uv().sub(0.5).length().mul(2);
+  // Soft rim: the walls' glow bleeds into the opening instead of a hard circle.
+  const edge = float(1).sub(smoothstep(0.75, 1, centred));
+  const rim = smoothstep(0.82, 0.95, centred).mul(float(1).sub(smoothstep(0.95, 1, centred)));
+  material.colorNode = texture(target.texture, screenUV)
+    .rgb.mul(edge)
+    .add(rgb(PALETTE_B.filament).mul(rim.mul(0.8)));
+  material.opacityNode = edge.max(rim);
+  const mouth = new Mesh(new CircleGeometry(RADIUS * 0.98, 64), material);
+  PATH.getPointAt(1, mouth.position);
+  PATH.getPointAt(0.99, ahead);
+  mouth.lookAt(ahead); // faces back towards the visitor coming through
+  return mouth;
+}
+
 export interface Tunnel {
   scene: Scene;
   camera: PerspectiveCamera;
+  /** What the mouth shows: the planetary system, rendered here while diving. */
+  mouthTarget: RenderTarget;
   /** Uniform: how fast the walls stream past (1 = cruising). */
   rush: UniformNode<'float', number>;
   /** Place the camera at `t` (0-1) along the path, looking ahead, with a slight roll. */
@@ -89,8 +121,9 @@ const ahead = new Vector3();
 export function createTunnel(): Tunnel {
   const scene = new Scene();
   const rush = uniform(1);
-  const tube = new Mesh(new TubeGeometry(PATH, 400, 2.2, 48, false), wallMaterial(rush));
-  scene.add(tube);
+  const tube = new Mesh(new TubeGeometry(PATH, 400, RADIUS, 48, false), wallMaterial(rush));
+  const mouthTarget = new RenderTarget(2, 2, { type: HalfFloatType, depthBuffer: true });
+  scene.add(tube, createMouth(mouthTarget));
   const camera = new PerspectiveCamera(60, 1, 0.05, 200);
   const fly = (t: number, roll: number) => {
     const at = Math.min(0.995, Math.max(0, t));
@@ -105,5 +138,9 @@ export function createTunnel(): Tunnel {
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
   };
-  return { scene, camera, rush, fly, resize, dispose: () => disposeMeshes(scene) };
+  const dispose = () => {
+    disposeMeshes(scene);
+    mouthTarget.dispose();
+  };
+  return { scene, camera, mouthTarget, rush, fly, resize, dispose };
 }

@@ -18,8 +18,12 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import type { PerspectiveCamera } from 'three/webgpu';
 import {
+  Box3,
   RenderPipeline,
+  Sphere,
+  Vector3,
   type Camera,
   type Node,
   type TextureNode,
@@ -123,4 +127,43 @@ export function renderLens(
   lens.scenePass.scene = stage.scene ?? fallback.scene;
   lens.scenePass.camera = stage.camera ?? fallback.camera;
   lens.pipeline.render();
+}
+
+/**
+ * Pose `camera` to see the whole scene from outside (nothing culled while warming up);
+ * returns the restore.
+ */
+function overview(scene: Scene, camera: PerspectiveCamera): () => void {
+  const saved = camera.clone();
+  const bounds = new Box3().setFromObject(scene).getBoundingSphere(new Sphere());
+  const r = Math.max(bounds.radius, 1);
+  Object.assign(camera, { fov: 60, near: r * 0.01, far: r * 6 });
+  camera.position.copy(bounds.center).add(new Vector3(0, 1, 2).setLength(r * 2.5));
+  camera.lookAt(bounds.center);
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  return () => {
+    camera.copy(saved);
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+  };
+}
+
+/**
+ * One hidden frame (under the loader) that renders `view` through the lens pipeline, with
+ * its camera posed to see everything. Only this exact path builds what the dive will need
+ * full screen: three.js keys shaders and render objects by camera, render target, MRT,
+ * tone mapping and even the nesting of the render call (the pass renders inside the
+ * pipeline's own), so a separate compile or render still left a stall on the first frame.
+ */
+export function warmFrame(
+  lens: ReturnType<typeof createLensPipeline>,
+  view: { scene: Scene; camera: PerspectiveCamera },
+): void {
+  const restore = overview(view.scene, view.camera);
+  try {
+    renderLens(lens, view, view);
+  } finally {
+    restore();
+  }
 }

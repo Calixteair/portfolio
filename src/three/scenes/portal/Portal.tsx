@@ -9,7 +9,15 @@ import { HOLE } from '../../pendant/shape';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
 import type { PortalSystem } from './system';
-import { createPortalWindow, renderPortal, resizePortal, type PortalWindow } from './window';
+import type { DiveView } from '../../stage';
+import type { Tunnel } from '../wormhole/tunnel';
+import {
+  createPortalWindow,
+  renderPortal,
+  renderView,
+  resizeTarget,
+  type PortalWindow,
+} from './window';
 
 /** Peak intensity of the blue light the open portal casts on the crust and the walls. */
 const SPILL_INTENSITY = 2.5;
@@ -49,11 +57,14 @@ interface PortalProps {
   frozen: { value: boolean };
   onReady: (camera: PortalWindow['camera']) => void;
   readiness: DiveReadiness;
+  /** While pulled in, the hole shows the tunnel's entrance (no cut, SPEC §5.6). */
+  tunnel: Tunnel;
+  dive: DiveView;
 }
 
 /** The other side, seen through the hole once the portal opens (SPEC §5.5). */
 export default function Portal(props: PortalProps) {
-  const { pendant, forge, system, frozen, onReady, readiness } = props;
+  const { pendant, forge, system, frozen, onReady, readiness, tunnel, dive } = props;
   const { gl } = useWebGPU();
   const size = useThree((s) => s.size);
   const dpr = useThree((s) => s.viewport.dpr);
@@ -68,15 +79,17 @@ export default function Portal(props: PortalProps) {
     return portal.dispose;
   }, [gl, portal, system, onReady, readiness]);
   useEffect(
-    () => resizePortal(portal.win, size.width * dpr, size.height * dpr),
+    () => resizeTarget(portal.win.target, size.width * dpr, size.height * dpr),
     [portal, size, dpr],
   );
 
   useFrame((state) => {
     setSpill(portal.spill, forge.portal.value);
-    if (forge.portal.value <= 0 || frozen.value) return;
+    const camera = state.camera as unknown as Parameters<typeof renderPortal>[3]['camera'];
+    if (dive.phase === 'pull') renderView(gl, portal.win.target, tunnel, camera);
+    if (dive.phase !== 'idle' || forge.portal.value <= 0 || frozen.value) return;
     renderPortal(gl, portal.win, system, {
-      camera: state.camera as unknown as Parameters<typeof renderPortal>[3]['camera'],
+      camera,
       pendant: pendant.group,
       elapsed: state.clock.elapsedTime,
     });

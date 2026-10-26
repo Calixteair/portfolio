@@ -17,10 +17,11 @@ function trackPageErrors(page: Page): string[] {
  * SwiftShader (CPU-emulated GPU in CI) that alone takes several seconds, hence the timeout.
  */
 async function enterScene(page: Page) {
-  // The wait below alone can exceed the default 30 s test budget on CI.
-  test.setTimeout(90_000);
+  // SwiftShader compiles the forge's render and compute shaders on the CPU: the wait below
+  // takes ~35 s locally, more on CI, far beyond the default 30 s test budget.
+  test.setTimeout(180_000);
   const enter = page.getByRole('button', { name: 'Entrer' });
-  await expect(enter).toBeVisible({ timeout: 60_000 });
+  await expect(enter).toBeVisible({ timeout: 120_000 });
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
   await enter.click();
   await expect(page.locator('#loader')).toBeHidden();
@@ -40,6 +41,37 @@ test('loads, then enters the scene on WebGPU @webgpu', async ({ page }) => {
   await page.goto('/');
   await enterScene(page);
   await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgpu');
+  expect(errors).toEqual([]);
+});
+
+/** Clicks the lower band of the plate (below the hole) until `done` or `max` clicks. */
+async function strikePendant(page: Page, done: (state: string) => boolean, max: number) {
+  const size = page.viewportSize() ?? { width: 1280, height: 720 };
+  let state = '';
+  for (let i = 0; i < max && !done(state); i++) {
+    await page.mouse.click(size.width * 0.47, size.height * 0.69);
+    await page.waitForTimeout(60);
+    state = (await page.locator('html').getAttribute('data-state')) ?? '';
+  }
+  return state;
+}
+
+// Overheating needs real time (cumulated turns at a capped time step): headless SwiftShader
+// is far too slow, so CI checks the first state change; the full path runs on a real GPU.
+test('a click on the pendant starts heating it', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/?gl=webgl2');
+  await enterScene(page);
+  expect(await strikePendant(page, (s) => s === 'heating', 20)).toBe('heating');
+  expect(errors).toEqual([]);
+});
+
+test('repeated clicks overheat the pendant @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/');
+  await enterScene(page);
+  const state = await strikePendant(page, (s) => s === 'overheated' || s === 'portalOpen', 120);
+  expect(['overheated', 'portalOpen']).toContain(state);
   expect(errors).toEqual([]);
 });
 

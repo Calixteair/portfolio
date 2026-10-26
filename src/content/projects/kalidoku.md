@@ -4,7 +4,11 @@ category: 'project'
 summary: "Jeu quotidien d'association avec classement : Rust (Axum) et Astro/Svelte, en PWA."
 tags: ['Rust', 'Axum', 'Svelte', 'PWA', 'PostgreSQL']
 order: 4
-links: [{ 'label': 'Code source (GitHub)', 'url': 'https://github.com/Calixteair/kalidoku' }]
+links:
+  [
+    { label: 'Jouer (site en ligne)', url: 'https://kalidoku.calixteair.fr' },
+    { 'label': 'Code source (GitHub)', 'url': 'https://github.com/Calixteair/kalidoku' },
+  ]
 planet: { 'type': 'gas', 'hue': 30 }
 ---
 

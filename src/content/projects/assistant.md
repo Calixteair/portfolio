@@ -5,6 +5,7 @@ summary: 'Assistant personnel auto-hébergé : mails, messageries, agenda et wik
 tags: ['Python', 'SvelteKit', 'Kotlin', 'Matrix', 'LLM']
 order: 5
 planet: { 'type': 'ocean', 'hue': 175 }
+links: [{ label: 'Page publique', url: 'https://assistant.calixteair.fr' }]
 ---
 
 Un assistant personnel auto-hébergé qui centralise mes mails, mes messageries, mon agenda et mon wiki.

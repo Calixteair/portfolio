@@ -4,7 +4,11 @@ category: 'project'
 summary: 'Coffre-fort web pour pros de la cyber : payloads chiffrés et partage de secrets zero-knowledge.'
 tags: ['Angular', 'Symfony', 'Keycloak', 'AES-256-GCM', 'E2E']
 order: 3
-links: [{ 'label': 'Code source (GitHub)', 'url': 'https://github.com/Calixteair/DevSecVault' }]
+links:
+  [
+    { label: 'Site en ligne', url: 'https://vault.calixteair.fr' },
+    { 'label': 'Code source (GitHub)', 'url': 'https://github.com/Calixteair/DevSecVault' },
+  ]
 planet: { 'type': 'ice', 'hue': 195 }
 ---
 

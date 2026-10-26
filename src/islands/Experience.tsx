@@ -16,6 +16,7 @@ import ForgeWorld from '../three/scenes/forge/ForgeWorld';
 import { createForgeLights } from '../three/scenes/forge/lighting';
 import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import Pendant from '../three/scenes/forge/Pendant';
+import Sparks from '../three/scenes/forge/Sparks';
 import BackendBadge from './BackendBadge';
 import RenderErrorBoundary from './RenderErrorBoundary';
 
@@ -69,6 +70,7 @@ export default function Experience() {
         <ForgeWorld uniforms={forge} />
         <ForgeDirector runtime={runtime} uniforms={forge} active={entered} />
         <Pendant pendant={pendant} spin={runtime.spin} interactive={entered} onStrike={onStrike} />
+        <Sparks pendant={pendant} forge={forge} />
         <LensEffects uniforms={lens} />
         {DevControls && (
           <Suspense fallback={null}>

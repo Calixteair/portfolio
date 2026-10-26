@@ -8,9 +8,12 @@ export interface NavigationSetup {
   camera: PerspectiveCamera;
   lens: LensUniforms;
   objects: ReadonlyMap<string, Object3D>;
-  radii: ReadonlyMap<string, number>;
+  /** Orbit distance per body (frames its moons). */
+  reach: ReadonlyMap<string, number>;
   /** The arrival point, where "back" returns. */
   home: Vector3;
+  /** Highlights the moons of the visited body. */
+  focus: (slug: string | null) => void;
 }
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -41,8 +44,10 @@ export function createNavigation(setup: NavigationSetup) {
     if (!object || !l || busy || travel.target === object) return;
     busy = true;
     hidePanels();
-    await flyTo(l, object, setup.radii.get(slug) ?? 1);
+    setup.focus(null);
+    await flyTo(l, object, setup.reach.get(slug) ?? 3);
     busy = false;
+    setup.focus(slug);
     showPanel(slug);
   };
   const goHome = async () => {
@@ -50,6 +55,7 @@ export function createNavigation(setup: NavigationSetup) {
     if (!l || busy || travel.phase === 'free') return;
     busy = true;
     hidePanels();
+    setup.focus(null);
     await flyHome(l);
     busy = false;
   };
@@ -59,13 +65,14 @@ export function createNavigation(setup: NavigationSetup) {
     if (slugFromHash() !== slug) history.pushState({ body: slug }, '', `#${slug}`);
     void goTo(slug);
   };
+  /**
+   * Back button or Escape: always to the whole system, not to the previous body. A new
+   * history entry, so the browser's back button still walks back through the bodies.
+   */
   const back = () => {
     if (travel.phase === 'free') return;
-    if (history.state?.body) history.back();
-    else {
-      history.replaceState(null, '', location.pathname);
-      void goHome();
-    }
+    history.pushState(null, '', location.pathname);
+    void goHome();
   };
   /** The URL is the source of truth when the history moves. */
   const sync = () => {

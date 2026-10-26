@@ -133,11 +133,11 @@ function play(
   });
 }
 
-/** Fly into orbit around `target` (from home or another orbit); resolves once in orbit. */
-export function flyTo(leg: Leg, target: Object3D, radius: number): Promise<void> {
+/** Fly into orbit around `target`, `distance` away (from home or another orbit). */
+export function flyTo(leg: Leg, target: Object3D, distance: number): Promise<void> {
   const { travel } = leg;
   travel.target = target;
-  travel.distance = Math.max(2.2, radius * 4.5);
+  travel.distance = distance;
   travel.orbitAngle = 0;
   travel.phase = 'outbound';
   return play(

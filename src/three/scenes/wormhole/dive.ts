@@ -110,14 +110,14 @@ function addArrival(tl: Timeline, cast: DiveCast, rest: { aberration: number }) 
     BEATS.tunnel,
   );
   tl.call(cast.land, [], BEATS.flash);
-  const glide = { z: ARRIVAL.fromZ };
+  const glide = { d: ARRIVAL.from };
   tl.to(
     glide,
     {
-      z: ARRIVAL.toZ,
+      d: ARRIVAL.to,
       duration: 1.6,
       ease: 'power2.out',
-      onUpdate: () => poseArrival(cast.arrival, cast.arrival.aspect, glide.z),
+      onUpdate: () => poseArrival(cast.arrival, cast.arrival.aspect, glide.d),
     },
     BEATS.flash,
   );
@@ -159,7 +159,7 @@ export function playFade(gsap: typeof Gsap, cast: DiveCast): Promise<void> {
     tl.to(cast.lens.flash, { value: 1, duration: 0.4, ease: 'power1.in' });
     tl.call(cast.land);
     // No glide: straight to the arrival point, in front of the ring.
-    tl.call(() => poseArrival(cast.arrival, cast.arrival.aspect, ARRIVAL.toZ));
+    tl.call(() => poseArrival(cast.arrival, cast.arrival.aspect, ARRIVAL.to));
     tl.to(cast.lens.flash, { value: 0, duration: 0.5, ease: 'power1.out' });
   });
 }
@@ -225,7 +225,7 @@ export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera
       land: () => {
         // From here the portal camera is the visitor's: the portal stops re-posing it.
         setup.frozen.value = true;
-        poseArrival(eye, camera.aspect, ARRIVAL.fromZ);
+        poseArrival(eye, camera.aspect, ARRIVAL.from);
         showStage(setup.stage, setup.system.scene, eye);
       },
     };

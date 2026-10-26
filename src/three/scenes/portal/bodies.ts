@@ -11,8 +11,9 @@ import {
   SphereGeometry,
   Vector3,
   type Object3D,
+  type UniformNode,
 } from 'three/webgpu';
-import { color, float } from 'three/tsl';
+import { color, float, uniform } from 'three/tsl';
 import { PALETTE_B } from '../../../shaders/nebula';
 import { createMoonMaterial, createPlanetMaterial } from '../../../shaders/planets';
 import { mulberry32 } from '../../random';
@@ -43,7 +44,7 @@ function station(body: Body): Group {
   return group;
 }
 
-function meshFor(body: Body): Object3D {
+function meshFor(body: Body, highlight?: UniformNode<'float', number>): Object3D {
   const { kind, radius, look } = body;
   if (kind === 'station') return station(body);
   if (kind === 'asteroid') {
@@ -53,7 +54,7 @@ function meshFor(body: Body): Object3D {
   const material =
     kind === 'planet'
       ? createPlanetMaterial(look.type, look.hue)
-      : createMoonMaterial(look.soft, look.hue);
+      : createMoonMaterial(look.soft, look.hue, highlight);
   return new Mesh(new SphereGeometry(radius, detail, detail / 2), material);
 }
 
@@ -76,12 +77,20 @@ function hitProxy(body: Body, material: MeshBasicNodeMaterial): Mesh {
   return new Mesh(new SphereGeometry(radius, 12, 8), material);
 }
 
+/** Camera distance in orbit: a few radii, and far enough to frame all of its moons. */
+function reachOf(body: Body, bodies: Body[]): number {
+  const moons = bodies.filter((b) => b.host === body.slug).map((b) => b.orbit);
+  return Math.max(2.2, body.radius * 4.5, Math.max(0, ...moons) * 2.2);
+}
+
 export interface SystemBodies {
   group: Group;
   /** slug → its object (for picking, labels and the travel). */
   objects: Map<string, Object3D>;
-  /** slug → its radius (orbit distance of the travel). */
-  radii: Map<string, number>;
+  /** slug → how far the travel stays from it: its moons must fit in the frame. */
+  reach: Map<string, number>;
+  /** Visiting this body (or none): its moons glow faintly, easing in and out. */
+  focus: (slug: string | null) => void;
   update: (elapsed: number) => void;
 }
 
@@ -93,8 +102,11 @@ export function createBodies(bodies: Body[]): SystemBodies {
   orbitMaterial.colorNode = color(PALETTE_B.filament);
   orbitMaterial.opacityNode = float(0.12);
   const hitMaterial = new MeshBasicNodeMaterial({ visible: false });
+  const glows = new Map<string, UniformNode<'float', number>>();
   for (const body of bodies) {
-    const object = meshFor(body);
+    const glow = body.kind === 'moon' ? uniform(0) : undefined;
+    if (glow) glows.set(body.slug, glow);
+    const object = meshFor(body, glow);
     object.add(hitProxy(body, hitMaterial));
     object.name = body.slug;
     object.userData.slug = body.slug;
@@ -103,7 +115,18 @@ export function createBodies(bodies: Body[]): SystemBodies {
     if (body.kind === 'planet' || body.kind === 'station')
       group.add(orbitLine(body, orbitMaterial));
   }
+  let focused: string | null = null;
+  let last = 0;
+  const easeGlows = (elapsed: number) => {
+    const k = 1 - Math.exp(-(elapsed - last) * 3);
+    last = elapsed;
+    for (const body of bodies) {
+      const glow = glows.get(body.slug);
+      if (glow) glow.value += ((body.host === focused ? 1 : 0) - glow.value) * k;
+    }
+  };
   const update = (elapsed: number) => {
+    easeGlows(elapsed);
     for (const body of bodies) {
       const object = objects.get(body.slug);
       object?.position.set(...positionAt(body, elapsed, lookup));
@@ -111,6 +134,9 @@ export function createBodies(bodies: Body[]): SystemBodies {
     }
   };
   update(0);
-  const radii = new Map(bodies.map((b) => [b.slug, b.radius]));
-  return { group, objects, radii, update };
+  const reach = new Map(bodies.map((b) => [b.slug, reachOf(b, bodies)]));
+  const focus = (slug: string | null) => {
+    focused = slug;
+  };
+  return { group, objects, reach, focus, update };
 }

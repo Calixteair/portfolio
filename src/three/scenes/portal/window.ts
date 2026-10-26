@@ -10,6 +10,7 @@ import {
   Shape,
   ShapeGeometry,
   Vector2,
+  Vector3,
   type Camera,
   type Node,
   type Object3D,
@@ -23,19 +24,32 @@ import type { PortalSystem } from './system';
 const SCALE = 0.5;
 
 /**
- * Where the hole "is" in the portal world: about 45 m off the star, slightly above the
- * orbital plane, turned by the pendant's resting yaw so that at rest the hole frames the
- * star (turning the pendant then pans the view, as a real opening would).
+ * The arrival axis: the visitor exits the wormhole through the ring (SPEC §5.6) along this
+ * line of sight to the star, ~25° above the orbital plane so the orbits spread out instead
+ * of stacking on the horizon. Distances from the star: glide from `from` to `to`; the ring
+ * stands at `ring`.
  */
-const ANCHOR = new Matrix4()
-  .makeTranslation(0, 2.5, 45)
-  .multiply(new Matrix4().makeRotationY(REST_ANGLE));
+export const ARRIVAL = {
+  axis: new Vector3(0, 0.42, 0.91).normalize(),
+  from: 56,
+  to: 44,
+  ring: 47.5,
+} as const;
+
+/** A point on the arrival axis, `distance` from the star. */
+export function arrivalPoint(distance: number, out = new Vector3()): Vector3 {
+  return out.copy(ARRIVAL.axis).multiplyScalar(distance);
+}
 
 /**
- * The visitor exits the wormhole through the ring (SPEC §5.6): from just behind it to the
- * arrival point in front of it, along the line of sight to the star. Ring at z = 47.5.
+ * Where the hole "is" in the portal world: on the arrival axis, facing the star, turned by
+ * the pendant's resting yaw so that at rest the hole frames the star (turning the pendant
+ * then pans the view, as a real opening would).
  */
-export const ARRIVAL = { y: 2.5, fromZ: 56, toZ: 44 } as const;
+const ANCHOR = new Matrix4()
+  .lookAt(arrivalPoint(45), new Vector3(), new Vector3(0, 1, 0))
+  .setPosition(arrivalPoint(45))
+  .multiply(new Matrix4().makeRotationY(REST_ANGLE));
 
 export interface PortalWindow {
   surface: Mesh;
@@ -112,8 +126,8 @@ export function renderPortal(
  * Arrival pose (SPEC §5.6, end of the dive): on the axis through the ring, facing the star
  * with a natural field of view (the vertigo FOV of the dive is left behind).
  */
-export function poseArrival(camera: PerspectiveCamera, aspect: number, z: number): void {
-  camera.position.set(0, ARRIVAL.y, z);
+export function poseArrival(camera: PerspectiveCamera, aspect: number, distance: number): void {
+  arrivalPoint(distance, camera.position);
   camera.lookAt(0, 0, 0);
   camera.fov = 50;
   camera.aspect = aspect;

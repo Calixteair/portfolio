@@ -32,6 +32,7 @@ import { disposeMeshes } from '../../dispose';
 import { mulberry32 } from '../../random';
 import { layoutSystem, type SystemEntry } from '../../../system/layout';
 import { createBodies, type SystemBodies } from './bodies';
+import { ARRIVAL, arrivalPoint } from './window';
 
 /**
  * The planetary system on the other side (SPEC §5.7), palette B, built from the content:
@@ -98,7 +99,9 @@ function arrivalRing(): Mesh {
   material.roughnessNode = flow.mul(0.12).add(0.18);
   material.emissiveNode = color(PALETTE_B.filament).mul(flow.mul(0.5).add(0.5).pow(4).mul(0.6));
   const ring = new Mesh(new TorusGeometry(2.2, 0.16, 32, 160), material);
-  ring.position.set(0, 2.5, 47.5);
+  // On the arrival axis, facing the star: the visitor came through it.
+  arrivalPoint(ARRIVAL.ring, ring.position);
+  ring.lookAt(0, 0, 0);
   return ring;
 }
 

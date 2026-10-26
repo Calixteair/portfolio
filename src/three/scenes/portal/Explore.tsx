@@ -15,13 +15,13 @@ import { hideLabel, showLabel, type LabelText } from './label';
 import { createNavigation } from './navigation';
 import { pickBody, screenPoint } from './picking';
 import { holdOrbit, type Travel } from './travel';
-import { ARRIVAL } from './window';
+import { ARRIVAL, arrivalPoint } from './window';
 
 const MAX_FRAME_DT = 0.05;
 
 /** The arrival view looks at the star: its yaw and pitch, the base of the 360° look. */
-const BASE = { yaw: 0, pitch: Math.atan2(-ARRIVAL.y, ARRIVAL.toZ) };
-const ARRIVAL_POINT = new Vector3(0, ARRIVAL.y, ARRIVAL.toZ);
+const ARRIVAL_POINT = arrivalPoint(ARRIVAL.to);
+const BASE = { yaw: 0, pitch: Math.atan2(-ARRIVAL_POINT.y, ARRIVAL_POINT.z) };
 
 type LookBinding = ReturnType<typeof bindLook>;
 
@@ -47,8 +47,9 @@ function attachExplore(
     camera: setup.camera,
     lens: deps.lens,
     objects: deps.system.bodies.objects,
-    radii: deps.system.bodies.radii,
+    reach: deps.system.bodies.reach,
     home: ARRIVAL_POINT,
+    focus: deps.system.bodies.focus,
   });
   const stopNav = nav.start();
   const binding = bindLook(setup.canvas, setup.look, () => {

@@ -121,6 +121,23 @@ test.describe('with reduced motion', () => {
   });
 });
 
+test('travels to a body from the keyboard list, then back @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await diveThroughPortal(page);
+  await page.locator('nav.system-nav a[data-body="vps"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#panel-vps')).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('#panel-title-vps')).toBeFocused();
+  expect(page.url()).toContain('#vps');
+  await page.locator('#panel-vps a[data-body="skill-docker"]').click();
+  await expect(page.locator('#panel-skill-docker')).toBeVisible({ timeout: 10_000 });
+  await page.goBack();
+  await expect(page.locator('#panel-vps')).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press('Escape');
+  await expect(page.locator('[data-panel]:not([hidden])')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
@@ -128,5 +145,11 @@ test.describe('without JavaScript', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Calixte Reymond' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
+  });
+
+  test('ships every panel as static HTML (indexable)', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-panel]')).toHaveCount(39);
+    await expect(page.locator('#panel-title-ratp')).toHaveText('RATP : alternance cybersécurité');
   });
 });

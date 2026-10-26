@@ -21,7 +21,14 @@ const KIND = {
 const groups = [
   { title: 'Projets', items: entries.filter((e) => e.data.category === 'project') },
   { title: 'Parcours', items: entries.filter((e) => e.data.category === 'experience') },
-  { title: 'Compétences', items: entries.filter((e) => e.data.category === 'skill') },
+  {
+    title: 'Compétences techniques',
+    items: entries.filter((e) => e.data.category === 'skill' && e.data.kind === 'technical'),
+  },
+  {
+    title: 'Savoir-être',
+    items: entries.filter((e) => e.data.category === 'skill' && e.data.kind === 'soft'),
+  },
 ];
 
 const rendered = await Promise.all(

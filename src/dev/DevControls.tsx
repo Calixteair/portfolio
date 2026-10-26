@@ -112,6 +112,8 @@ export default function DevControls({ runtime, lens, lights, steel }: DevControl
       vignette: uniformSlider(lens.vignette, [0, 3, 0.01]),
       grain: uniformSlider(lens.grain, [0, 0.15, 0.001]),
       haze: uniformSlider(lens.haze, [0, 0.03, 0.0005]),
+      zoomBlur: uniformSlider(lens.zoomBlur, [0, 1, 0.01]),
+      flash: uniformSlider(lens.flash, [0, 1, 0.01]),
     }),
     // leva rounds the displayed numbers: this copies the exact live values.
     'Copier les valeurs': button(() => {

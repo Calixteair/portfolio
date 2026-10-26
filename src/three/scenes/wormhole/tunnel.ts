@@ -1,5 +1,6 @@
 import {
   abs,
+  cos,
   float,
   floor,
   fract,
@@ -7,6 +8,7 @@ import {
   mix,
   mx_fractal_noise_float,
   pow,
+  sin,
   smoothstep,
   time,
   uniform,
@@ -23,7 +25,6 @@ import {
   Scene,
   TubeGeometry,
   Vector3,
-  type Node,
   type UniformNode,
 } from 'three/webgpu';
 import { PALETTE_B, rgb } from '../../../shaders/nebula';
@@ -44,13 +45,21 @@ const PATH = new CatmullRomCurve3([
  * filaments over the void, with sparse embers (palette B). `rush` speeds the flow up.
  */
 function wallMaterial(rush: UniformNode<'float', number>): MeshBasicNodeMaterial {
-  const flow = vec2(uv().x.mul(40).sub(time.mul(rush)), uv().y.mul(6)) as Node<'vec2'>;
-  const warp = mx_fractal_noise_float(vec3(flow.mul(0.35), time.mul(0.2)), 3, 2, 0.5);
-  const veins = pow(
-    float(1).sub(abs(mx_fractal_noise_float(vec3(flow.add(warp), 0), 4, 2.1, 0.5))),
-    5,
+  // Around the tube, noise is sampled on a circle (cos, sin of the angle): no seam where
+  // the tube's uv.y wraps from 1 back to 0.
+  const angle = uv().y.mul(Math.PI * 2);
+  const along = uv().x.mul(40).sub(time.mul(rush));
+  const around = vec2(cos(angle), sin(angle)).mul(6 / (Math.PI * 2));
+  const flow = vec3(along, around);
+  const warp = mx_fractal_noise_float(
+    vec3(flow.mul(0.35)).add(vec3(0, 0, time.mul(0.2))),
+    3,
+    2,
+    0.5,
   );
-  const cell = vec2(flow.x.mul(3), flow.y.mul(4));
+  const veins = pow(float(1).sub(abs(mx_fractal_noise_float(flow.add(warp), 4, 2.1, 0.5))), 5);
+  // Ember cells: 24 around the tube, a whole number, so they tile across the wrap too.
+  const cell = vec2(along.mul(3), uv().y.mul(24));
   // 1 - smoothstep: WGSL leaves smoothstep with reversed edges undefined.
   const ember = smoothstep(0.985, 1, hash21(floor(cell))).mul(
     float(1).sub(smoothstep(0, 0.45, length(fract(cell).sub(0.5)))),

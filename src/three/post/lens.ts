@@ -5,6 +5,7 @@ import {
   float,
   fract,
   luminance,
+  mix,
   mrt,
   mx_noise_float,
   output,
@@ -38,6 +39,9 @@ export function createLensUniforms() {
     grain: uniform(0.045),
     /** Heat haze: UV shift (screen fraction) above glowing surfaces. */
     haze: uniform(0.006),
+    /** Wormhole dive (SPEC §5.6): radial zoom blur (0-1) and white flash (0-1). */
+    zoomBlur: uniform(0),
+    flash: uniform(0),
   };
 }
 
@@ -61,10 +65,24 @@ function hazeUv(heatGlow: TextureNode, strength: Node<'float'>): Node<'vec2'> {
   return screenUV.add(wobble.mul(strength).mul(mask.mul(0.25).clamp(0, 1)));
 }
 
+const ZOOM_TAPS = 8;
+
+/** Radial zoom blur: average of taps pulled towards the screen centre (0 = sharp). */
+function zoomBlur(color: TextureNode, uv: Node<'vec2'>, strength: Node<'float'>): Node<'vec3'> {
+  // Per-pixel jitter of the taps: smooth streaks instead of 8 stacked ghost copies.
+  const jitter = hash21(screenUV.mul(vec2(911, 577)).add(fract(time)));
+  let sum: Node<'vec3'> = vec3(0);
+  for (let i = 0; i < ZOOM_TAPS; i++) {
+    const pull = strength.mul(jitter.add(i).div(ZOOM_TAPS).mul(0.25));
+    sum = sum.add(color.sample(mix(uv, vec2(0.5), pull)).rgb);
+  }
+  return sum.div(ZOOM_TAPS);
+}
+
 /**
- * Scene → heat haze → slight chromatic aberration (in HDR) + bloom → AgX tone mapping and
- * sRGB (renderOutput) → vignette and film grain in display space, like a real lens and
- * sensor. Depth of field is left to M8, with the quality levels.
+ * Scene → heat haze → slight chromatic aberration and dive zoom blur (in HDR) + bloom → AgX
+ * tone mapping and sRGB (renderOutput) → vignette, film grain and dive flash in display
+ * space, like a real lens and sensor. Depth of field is left to M8, with quality levels.
  */
 export function createLensPipeline(
   renderer: WebGPURenderer,
@@ -84,13 +102,15 @@ export function createLensPipeline(
     color.sample(uv.sub(offset)).b,
     1,
   );
+  const sharp = mix(split.rgb, zoomBlur(color, uv, u.zoomBlur), u.zoomBlur.clamp(0, 1));
   const glow = bloom(color, u.bloomStrength, u.bloomRadius, u.bloomThreshold);
-  const display = renderOutput(split.add(glow));
+  const display = renderOutput(vec4(sharp, 1).add(glow));
   const vignette = float(1).sub(dot(centred, centred).mul(u.vignette));
   const noise = hash21(screenUV.mul(vec2(1717, 913)).add(fract(time).mul(37)));
   const pipeline = new RenderPipeline(renderer);
   pipeline.outputColorTransform = false;
-  pipeline.outputNode = vec4(display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain)), 1);
+  const film = display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain));
+  pipeline.outputNode = vec4(mix(film, vec3(1), u.flash.clamp(0, 1)), 1);
   return { pipeline, scenePass };
 }
 

@@ -71,7 +71,7 @@ export function createLensPipeline(
   scene: Scene,
   camera: Camera,
   u: LensUniforms,
-): RenderPipeline {
+): { pipeline: RenderPipeline; scenePass: ReturnType<typeof pass> } {
   const scenePass = pass(scene, camera);
   scenePass.setMRT(mrt({ output, emissive }));
   const color = scenePass.getTextureNode('output');
@@ -91,5 +91,16 @@ export function createLensPipeline(
   const pipeline = new RenderPipeline(renderer);
   pipeline.outputColorTransform = false;
   pipeline.outputNode = vec4(display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain)), 1);
-  return pipeline;
+  return { pipeline, scenePass };
+}
+
+/** Renders the stage's scene and camera, or the defaults (R3F's forge) when it has none. */
+export function renderLens(
+  lens: ReturnType<typeof createLensPipeline>,
+  stage: { scene: Scene | null; camera: Camera | null },
+  fallback: { scene: Scene; camera: Camera },
+): void {
+  lens.scenePass.scene = stage.scene ?? fallback.scene;
+  lens.scenePass.camera = stage.camera ?? fallback.camera;
+  lens.pipeline.render();
 }

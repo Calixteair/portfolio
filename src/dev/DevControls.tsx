@@ -66,6 +66,13 @@ export default function DevControls({ runtime, lens, lights, steel }: DevControl
       heat: slider(runtime.manual.heat, [0, 1, 0.01], (v) => setManualHeat(runtime, { heat: v })),
     }),
     Journey: rulesFolder(runtime.rules),
+    Dive: folder({
+      previewTunnel: {
+        value: runtime.manual.previewTunnel,
+        onChange: (on: boolean) => setManualHeat(runtime, { previewTunnel: on }),
+        transient: true as const,
+      },
+    }),
     Portal: folder({
       scrub: {
         value: runtime.manual.scrubPortal,

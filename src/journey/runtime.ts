@@ -14,7 +14,13 @@ export interface ForgeRuntime {
   /** Mutable copy: tunable in the dev panel. */
   rules: JourneyRules;
   /** Dev panel overrides: heat seen by the shaders, and portal opening scrubbed by hand. */
-  manual: { enabled: boolean; heat: number; scrubPortal: boolean; portal: number };
+  manual: {
+    enabled: boolean;
+    heat: number;
+    scrubPortal: boolean;
+    portal: number;
+    previewTunnel: boolean;
+  };
 }
 
 export function createForgeRuntime(): ForgeRuntime {
@@ -23,7 +29,7 @@ export function createForgeRuntime(): ForgeRuntime {
     // Face-on under the loader, to match its outline (SPEC §4 handoff).
     spin: createSpin(0),
     rules: { ...DEFAULT_RULES },
-    manual: { enabled: false, heat: 0, scrubPortal: false, portal: 0 },
+    manual: { enabled: false, heat: 0, scrubPortal: false, portal: 0, previewTunnel: false },
   };
 }
 

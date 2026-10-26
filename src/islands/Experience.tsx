@@ -19,6 +19,8 @@ import Pendant from '../three/scenes/forge/Pendant';
 import Sparks from '../three/scenes/forge/Sparks';
 import Swarm from '../three/scenes/forge/Swarm';
 import Portal from '../three/scenes/portal/Portal';
+import Wormhole from '../three/scenes/wormhole/Wormhole';
+import { createStageView } from '../three/stage';
 import BackendBadge from './BackendBadge';
 import RenderErrorBoundary from './RenderErrorBoundary';
 
@@ -40,6 +42,7 @@ export default function Experience() {
   const lights = useMemo(() => createForgeLights(), []);
   const pendant = useMemo(() => createPendant(forge), [forge]);
   const runtime = useMemo(() => createForgeRuntime(), []);
+  const stage = useMemo(() => createStageView(), []);
   const onStrike = useCallback(() => strike(runtime.journey, runtime.rules), [runtime]);
   const entered = loader.phase === 'entered';
   const startRendering = useCallback(() => setFrameloop('always'), []);
@@ -81,7 +84,8 @@ export default function Experience() {
         <Sparks pendant={pendant} forge={forge} spin={runtime.spin} />
         <Swarm pendant={pendant} forge={forge} />
         <Portal pendant={pendant} forge={forge} />
-        <LensEffects uniforms={lens} />
+        <Wormhole runtime={runtime} stage={stage} />
+        <LensEffects uniforms={lens} stage={stage} />
         {DevControls && (
           <Suspense fallback={null}>
             <DevControls

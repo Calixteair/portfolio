@@ -24,7 +24,8 @@ async function enterScene(page: Page) {
   await expect(enter).toBeVisible({ timeout: 120_000 });
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
   await enter.click();
-  await expect(page.locator('#loader')).toBeHidden();
+  // 1.6 s fade, but under SwiftShader each frame can take seconds (CI): be patient.
+  await expect(page.locator('#loader')).toBeHidden({ timeout: 30_000 });
   await expect(page.locator('canvas')).toBeVisible();
 }
 

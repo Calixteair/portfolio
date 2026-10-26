@@ -1,6 +1,7 @@
 import {
   Fn,
   If,
+  dot,
   exp,
   float,
   floor,
@@ -10,7 +11,9 @@ import {
   uint,
   instancedArray,
   ivec2,
+  length,
   mix,
+  normalize,
   textureLoad,
   uniform,
   vec3,
@@ -22,10 +25,13 @@ import {
   Matrix4,
   NearestFilter,
   RGBAFormat,
+  Vector3,
   type Node,
   type WebGPURenderer,
 } from 'three/webgpu';
 import { PLATE } from '../three/pendant/shape';
+import { plateNormal, plateSdf } from './plateSdf';
+import type { EdgeMaskInfo } from './steel';
 
 /** Physics of molten-metal sparks (scene units ≈ metres, the pendant is ~0.9 tall). */
 export const SPARK_PHYSICS = {
@@ -40,6 +46,13 @@ export const SPARK_PHYSICS = {
   outerShare: 0.25,
   /** Births per second at full heat, per simulated spark. */
   birthRate: 0.8,
+  /** Bounce on the pendant: kept normal speed, lost tangential speed. */
+  pendantRestitution: 0.4,
+  pendantFriction: 0.25,
+  /** Sparks are born and pushed this far off the surface (avoids instant re-collision). */
+  skin: 0.003,
+  /** Beyond this distance from the pendant's centre, no collision test (broad phase). */
+  reach: 0.62,
   maxDt: 1 / 30,
 } as const;
 
@@ -69,8 +82,12 @@ export function createSparkUniforms() {
     epoch: uniform(0),
     /** Probability for a dead spark to be reborn this frame. */
     birth: uniform(0),
-    /** Pendant local → world. */
+    /** Pendant local → world, and back (collisions are tested in pendant space). */
     model: uniform(new Matrix4()),
+    modelInverse: uniform(new Matrix4()),
+    /** Pendant centre (world) and spin around the vertical axis (rad/s). */
+    center: uniform(new Vector3()),
+    spin: uniform(0),
     groundY: uniform(0),
   };
 }
@@ -95,9 +112,12 @@ function emitter(seed: Node<'uint'>, emitters: DataTexture, holeCount: number, o
     .sub(0.5)
     .mul(PLATE.depth + 2 * PLATE.bevel);
   const speed = random(seed, 11).mul(0.6).add(0.3);
-  const lateral = random(seed, 13).sub(0.5).mul(1.4);
+  // Out of the faces, forwards or backwards: sparks leave the hole instead of rattling in it.
+  const side = random(seed, 13).lessThan(0.5).select(float(-1), float(1));
+  const lateral = side.mul(random(seed, 19).mul(0.9).add(0.5));
   const velocity = vec3(e.z.mul(0.6), e.w.mul(0.6).add(0.5), lateral).mul(speed);
-  return { position: vec3(e.x, e.y, z), velocity };
+  const position = vec3(e.xy.add(e.zw.mul(SPARK_PHYSICS.skin)), z);
+  return { position, velocity };
 }
 
 /**
@@ -105,7 +125,12 @@ function emitter(seed: Node<'uint'>, emitters: DataTexture, holeCount: number, o
  * WebGPU and on the WebGL 2 fallback (transform feedback). Dead sparks wait, then are
  * reborn on a hot edge at a rate set by the heat.
  */
-export function createSparkSimulation(count: number, emitters: SparkEmitters, u: SparkUniforms) {
+export function createSparkSimulation(
+  count: number,
+  emitters: SparkEmitters,
+  mask: EdgeMaskInfo,
+  u: SparkUniforms,
+) {
   const body = instancedArray(count, 'vec4'); // xyz position (world), w age
   const motion = instancedArray(count, 'vec4'); // xyz velocity (world), w lifetime
   const emitterTex = emitterTexture(emitters);
@@ -128,13 +153,15 @@ export function createSparkSimulation(count: number, emitters: SparkEmitters, u:
       If(random(seed).lessThan(u.birth), () => {
         const e = emitter(seed, emitterTex, holeCount, outerCount);
         b.xyz.assign(u.model.mul(vec4(e.position, 1)).xyz);
-        m.xyz.assign(u.model.mul(vec4(e.velocity, 0)).xyz);
+        // The spinning pendant throws its sparks: add the surface velocity at birth.
+        m.xyz.assign(u.model.mul(vec4(e.velocity, 0)).xyz.add(surfaceVelocity(b.xyz, u)));
         const [shortest, longest] = SPARK_PHYSICS.lifetime;
         m.w.assign(mix(float(shortest), float(longest), random(seed, 17)));
         b.w.assign(0);
       });
     }).Else(() => {
       integrate(b, m, u);
+      collide(b, m, u, mask);
     });
   })().compute(count);
 
@@ -154,12 +181,42 @@ function integrate(b: Node<'vec4'>, m: Node<'vec4'>, u: SparkUniforms) {
   });
 }
 
+/** Velocity of the pendant's surface at a world point: ω × r, ω = (0, spin, 0). */
+function surfaceVelocity(point: Node<'vec3'>, u: SparkUniforms): Node<'vec3'> {
+  const r = point.sub(u.center);
+  return vec3(r.z.mul(u.spin), 0, r.x.mul(u.spin).negate());
+}
+
+/**
+ * Bounce off the spinning pendant (SPEC §5.4): exact SDF tested in pendant space, the
+ * spark pushed back to the surface, its velocity reflected relative to the moving surface
+ * (restitution, friction), so the rotation is transmitted to it.
+ */
+function collide(b: Node<'vec4'>, m: Node<'vec4'>, u: SparkUniforms, mask: EdgeMaskInfo) {
+  If(length(b.xyz.sub(u.center)).lessThan(SPARK_PHYSICS.reach), () => {
+    const local = u.modelInverse.mul(vec4(b.xyz, 1)).xyz;
+    const d = plateSdf(local, mask);
+    If(d.lessThan(SPARK_PHYSICS.skin), () => {
+      const n = normalize(u.model.mul(vec4(plateNormal(local, mask), 0)).xyz);
+      b.xyz.addAssign(n.mul(float(SPARK_PHYSICS.skin).sub(d)));
+      const surface = surfaceVelocity(b.xyz, u);
+      const relative = m.xyz.sub(surface);
+      const vn = dot(relative, n);
+      If(vn.lessThan(0), () => {
+        const normal = n.mul(vn);
+        const tangent = relative.sub(normal).mul(1 - SPARK_PHYSICS.pendantFriction);
+        m.xyz.assign(tangent.sub(normal.mul(SPARK_PHYSICS.pendantRestitution)).add(surface));
+      });
+    });
+  });
+}
+
 /** Per frame: birth probability from the heat, pendant pose, and one compute step. */
 export function stepSparks(
   renderer: WebGPURenderer,
   sim: ReturnType<typeof createSparkSimulation>,
   u: SparkUniforms,
-  frame: { dt: number; heat: number; model: Matrix4 },
+  frame: { dt: number; heat: number; model: Matrix4; spin: number },
 ): void {
   const dt = Math.min(frame.dt, SPARK_PHYSICS.maxDt);
   u.dt.value = dt;
@@ -167,5 +224,8 @@ export function stepSparks(
   // Each dead spark is reborn with this probability: births/s ≈ heat² × birthRate × pool.
   u.birth.value = Math.min(1, frame.heat ** 2 * SPARK_PHYSICS.birthRate * dt);
   u.model.value.copy(frame.model);
+  u.modelInverse.value.copy(frame.model).invert();
+  u.center.value.setFromMatrixPosition(frame.model);
+  u.spin.value = frame.spin;
   renderer.compute(sim.update);
 }

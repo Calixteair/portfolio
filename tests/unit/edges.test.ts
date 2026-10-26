@@ -17,7 +17,15 @@ describe('sampleEdge', () => {
     }
   });
 
-  it('points normals away from the hole centre', () => {
+  it('points hole normals into the hole', () => {
+    const samples = sampleEdge(hole, 100, mulberry32(3), true);
+    for (let i = 0; i < 100; i++) {
+      const [x = 0, y = 0, nx = 0, ny = 0] = samples.subarray(i * 4, i * 4 + 4);
+      expect((x - HOLE.cx) * nx + (y - HOLE.cy) * ny).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('points outer-edge normals away from the hole centre', () => {
     const samples = sampleEdge(outer, 100, mulberry32(2));
     for (let i = 0; i < 100; i++) {
       const [x = 0, y = 0, nx = 0, ny = 0] = samples.subarray(i * 4, i * 4 + 4);

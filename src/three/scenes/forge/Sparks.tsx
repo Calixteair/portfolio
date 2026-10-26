@@ -5,6 +5,7 @@ import { createSparkMaterial } from '../../../shaders/sparkMaterial';
 import { createSparkSimulation, createSparkUniforms, stepSparks } from '../../../shaders/sparks';
 import { sampleEdge } from '../../pendant/edges';
 import type { Pendant } from '../../pendant/placeholder';
+import type { SpinState } from '../../pendant/spin';
 import { mulberry32 } from '../../random';
 import { useWebGPU } from '../../useWebGPU';
 import { GROUND_Y } from './decor';
@@ -16,12 +17,12 @@ export const SPARK_COUNT = 16_384;
 function buildSparks(pendant: Pendant) {
   const rand = mulberry32(23);
   const emitters = {
-    hole: sampleEdge(pendant.outline.hole, 512, rand),
+    hole: sampleEdge(pendant.outline.hole, 512, rand, true),
     outer: sampleEdge(pendant.outline.outer, 256, rand),
   };
   const uniforms = createSparkUniforms();
   uniforms.groundY.value = GROUND_Y;
-  const sim = createSparkSimulation(SPARK_COUNT, emitters, uniforms);
+  const sim = createSparkSimulation(SPARK_COUNT, emitters, pendant.edgeMask, uniforms);
   const geometry = new PlaneGeometry(1, 1);
   const material = createSparkMaterial(sim.body, sim.motion);
   const mesh = new InstancedMesh(geometry, material, SPARK_COUNT);
@@ -35,7 +36,13 @@ function buildSparks(pendant: Pendant) {
 }
 
 /** Molten-metal sparks thrown from the hot edges of the pendant (SPEC §5.4). */
-export default function Sparks({ pendant, forge }: { pendant: Pendant; forge: ForgeUniforms }) {
+interface SparksProps {
+  pendant: Pendant;
+  forge: ForgeUniforms;
+  spin: SpinState;
+}
+
+export default function Sparks({ pendant, forge, spin }: SparksProps) {
   const { gl } = useWebGPU();
   const sparks = useMemo(() => buildSparks(pendant), [pendant]);
 
@@ -49,6 +56,7 @@ export default function Sparks({ pendant, forge }: { pendant: Pendant; forge: Fo
       dt,
       heat: forge.heat.value,
       model: pendant.group.matrixWorld,
+      spin: spin.velocity,
     });
   });
   return <primitive object={sparks.mesh} />;

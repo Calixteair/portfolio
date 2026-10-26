@@ -2,13 +2,15 @@ import { HOLE, type Point } from './shape';
 
 /**
  * Spark emitters: points spread along an outline, each with its 2D unit normal pointing
- * away from the hole centre (as in the prototype). Packed as vec4 (x, y, nx, ny) for a
- * GPU storage buffer.
+ * out of the metal: into the hole for the hole's outline (`inward`), away from the hole
+ * centre for the outer edge. Sparks then fly off the surface instead of into it.
+ * Packed as vec4 (x, y, nx, ny) for a GPU float texture.
  */
 export function sampleEdge(
   poly: readonly Point[],
   count: number,
   rand: () => number,
+  inward = false,
 ): Float32Array {
   const out = new Float32Array(count * 4);
   for (let i = 0; i < count; i++) {
@@ -21,7 +23,8 @@ export function sampleEdge(
     const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     let nx = -(b.y - a.y) / len;
     let ny = (b.x - a.x) / len;
-    if ((x - HOLE.cx) * nx + (y - HOLE.cy) * ny < 0) {
+    const away = (x - HOLE.cx) * nx + (y - HOLE.cy) * ny >= 0;
+    if (away === inward) {
       nx = -nx;
       ny = -ny;
     }

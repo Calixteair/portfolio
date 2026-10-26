@@ -3,6 +3,9 @@ import {
   hash,
   instanceIndex,
   instancedArray,
+  mx_noise_float,
+  positionLocal,
+  uv,
   shapeCircle,
   sin,
   time,
@@ -67,15 +70,34 @@ function motes(count: number): Sprite {
   return sprite;
 }
 
+/** Soft glow around the star: a camera-facing sprite fading out, breathing slowly. */
+function corona(): Sprite {
+  const material = new SpriteNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+  });
+  const d = uv().sub(0.5).length().mul(2);
+  const breathe = sin(time.mul(0.5)).mul(0.08).add(1);
+  material.colorNode = color(PALETTE_B.core).mul(float(0.9).mul(breathe));
+  material.opacityNode = float(1).sub(d).clamp(0, 1).pow(3);
+  const sprite = new Sprite(material);
+  sprite.scale.setScalar(7);
+  return sprite;
+}
+
 /**
- * The ring the visitor came through (SPEC §5.7), provisional: dark metal with a faint blue
- * inner glow. M6 replaces it with the real ring (dark, liquid surface).
+ * The ring the visitor came through (SPEC §5.7): dark metal with a liquid, rippling surface
+ * and a faint blue glow. It stays behind the arrival point, visible when looking back.
  */
 function arrivalRing(): Mesh {
-  const material = new MeshStandardNodeMaterial({ roughness: 0.35, metalness: 0.9 });
-  material.colorNode = color(0x0b0d12);
-  material.emissiveNode = color(PALETTE_B.filament).mul(0.15);
-  const ring = new Mesh(new TorusGeometry(2.2, 0.16, 24, 128), material);
+  const material = new MeshStandardNodeMaterial({ metalness: 0.95 });
+  // Liquid dark metal: slow ripples running around the ring vary its sheen and glow.
+  const flow = mx_noise_float(positionLocal.mul(6).add(vec3(0, 0, time.mul(0.35))));
+  material.colorNode = color(0x07090d);
+  material.roughnessNode = flow.mul(0.12).add(0.18);
+  material.emissiveNode = color(PALETTE_B.filament).mul(flow.mul(0.5).add(0.5).pow(4).mul(0.6));
+  const ring = new Mesh(new TorusGeometry(2.2, 0.16, 32, 160), material);
   ring.position.set(0, 2.5, 47.5);
   return ring;
 }
@@ -95,10 +117,11 @@ export function createPortalSystem(entries: SystemEntry[]): PortalSystem {
   // HDR core: blooms through the main pipeline once displayed in the portal.
   starMaterial.colorNode = color(PALETTE_B.core).mul(2.5);
   const star = new Mesh(new SphereGeometry(0.9, 48, 24), starMaterial);
+  star.add(corona());
   // Gentle falloff: the outer planets (≈ 40 m) must stay lit; a faint blue fill keeps their
   // night side readable.
   const light = new PointLight(PALETTE_B.core, 30, 0, 0.9);
-  const fill = new AmbientLight(PALETTE_B.filament, 0.12);
+  const fill = new AmbientLight(PALETTE_B.filament, 0.4);
   const bodies = createBodies(layoutSystem(entries));
   const embers = motes(600);
   scene.add(sky, star, light, fill, bodies.group, embers, arrivalRing());

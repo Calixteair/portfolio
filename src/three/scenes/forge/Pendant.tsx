@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { Object3D } from 'three/webgpu';
 import type { JourneyState } from '../../../journey/machine';
 import { alignWire, projectWire } from '../../../loader/wire';
-import { bindDragSpin, type DragController } from '../../pendant/dragSpin';
+import { bindDragSpin, bindSpaceStrike, type DragController } from '../../pendant/dragSpin';
 import type { Pendant as PendantModel } from '../../pendant/placeholder';
 import {
   REST_ANGLE,
@@ -37,7 +37,8 @@ interface PendantProps {
 
 /**
  * Mounts the pendant (procedural placeholder now, the artist's GLB later: same interface),
- * turned by drags anywhere and pushed by clicks on the pendant itself, with inertia.
+ * turned by drags anywhere and pushed by clicks on the pendant itself (or Space), with
+ * inertia.
  * Face-on under the loader, it coasts to its three-quarter view once the visitor enters.
  */
 export default function Pendant({ pendant, spin, journey, interactive, onStrike }: PendantProps) {
@@ -53,8 +54,15 @@ export default function Pendant({ pendant, spin, journey, interactive, onStrike 
     settleSpin(spin, REST_ANGLE);
     const controller = bindDragSpin(canvas, spin);
     drag.current = controller;
-    return controller.dispose;
-  }, [canvas, spin, interactive]);
+    const unbindSpace = bindSpaceStrike(() => {
+      impulseSpin(spin);
+      onStrike();
+    });
+    return () => {
+      controller.dispose();
+      unbindSpace();
+    };
+  }, [canvas, spin, interactive, onStrike]);
 
   useFrame((state, dt) => {
     if (!drag.current?.isDragging()) stepSpin(spin, Math.min(dt, MAX_FRAME_DT));

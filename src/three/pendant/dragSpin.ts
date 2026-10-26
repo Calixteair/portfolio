@@ -1,4 +1,4 @@
-import { dragSpin, type SpinState } from './spin';
+import { SPIN, dragSpin, type SpinState } from './spin';
 
 /** Held still this long before release: no fling, the pendant just stays where it was let go. */
 const RELEASE_STILL_MS = 100;
@@ -8,25 +8,37 @@ export interface DragController {
   dispose: () => void;
 }
 
+interface Press {
+  startX: number;
+  x: number;
+  t: number;
+  /** Becomes a drag only past the click slop: a press, even a long one, stays a click. */
+  dragging: boolean;
+}
+
 /**
  * Horizontal drags anywhere on the canvas turn the pendant; the release speed becomes its
- * inertia. Clicks are handled separately (raycast on the pendant).
+ * inertia. A press that does not move is a click (handled by the raycast on the pendant):
+ * it never stops the spin, however long it is held.
  */
 export function bindDragSpin(element: HTMLElement, spin: SpinState): DragController {
-  let last: { x: number; t: number } | null = null;
+  let press: Press | null = null;
 
   const down = (e: PointerEvent) => {
-    last = { x: e.clientX, t: e.timeStamp };
+    press = { startX: e.clientX, x: e.clientX, t: e.timeStamp, dragging: false };
     element.setPointerCapture(e.pointerId);
   };
   const move = (e: PointerEvent) => {
-    if (!last) return;
-    dragSpin(spin, e.clientX - last.x, (e.timeStamp - last.t) / 1000);
-    last = { x: e.clientX, t: e.timeStamp };
+    if (!press) return;
+    if (!press.dragging && Math.abs(e.clientX - press.startX) <= SPIN.clickSlop) return;
+    press.dragging = true;
+    dragSpin(spin, e.clientX - press.x, (e.timeStamp - press.t) / 1000);
+    press.x = e.clientX;
+    press.t = e.timeStamp;
   };
   const up = (e: PointerEvent) => {
-    if (last && e.timeStamp - last.t > RELEASE_STILL_MS) spin.velocity = 0;
-    last = null;
+    if (press?.dragging && e.timeStamp - press.t > RELEASE_STILL_MS) spin.velocity = 0;
+    press = null;
   };
 
   const events: [string, (e: PointerEvent) => void][] = [
@@ -37,10 +49,30 @@ export function bindDragSpin(element: HTMLElement, spin: SpinState): DragControl
   ];
   for (const [name, handler] of events) element.addEventListener(name, handler as EventListener);
   return {
-    isDragging: () => last !== null,
+    isDragging: () => press?.dragging === true,
     dispose: () => {
       for (const [name, handler] of events)
         element.removeEventListener(name, handler as EventListener);
     },
   };
+}
+
+/** Typing in a field (e.g. the dev panel) must not strike the pendant. */
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as Partial<HTMLElement> | null;
+  return (
+    !!el &&
+    (el.isContentEditable === true || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName ?? ''))
+  );
+}
+
+/** Space acts as a click on the pendant: one strike per press (key repeat ignored). */
+export function bindSpaceStrike(strike: () => void): () => void {
+  const keydown = (e: KeyboardEvent) => {
+    if (e.code !== 'Space' || isTyping(e.target)) return;
+    e.preventDefault(); // no page scroll
+    if (!e.repeat) strike();
+  };
+  window.addEventListener('keydown', keydown);
+  return () => window.removeEventListener('keydown', keydown);
 }

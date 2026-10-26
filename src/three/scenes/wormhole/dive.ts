@@ -8,7 +8,7 @@ import type { Pendant } from '../../pendant/placeholder';
 import { REST_ANGLE, type SpinState } from '../../pendant/spin';
 import { HOLE } from '../../pendant/shape';
 import type { PortalSystem } from '../portal/system';
-import { poseArrival } from '../portal/window';
+import { ARRIVAL, poseArrival } from '../portal/window';
 import type { LensUniforms } from '../../post/lens';
 import { showStage, type StageView } from '../../stage';
 import type { Tunnel } from './tunnel';
@@ -28,6 +28,8 @@ export interface DiveCast {
   stage: StageView;
   /** Shows the planetary system full screen, from the portal camera (seamless arrival). */
   land: () => void;
+  /** That camera: after the flash it glides out through the ring. */
+  arrival: PerspectiveCamera;
 }
 
 /** 0 → 1 → back, for the camera pull: lerps the camera position towards the portal. */
@@ -107,6 +109,17 @@ function addArrival(tl: Timeline, cast: DiveCast, rest: { aberration: number }) 
     BEATS.tunnel,
   );
   tl.call(cast.land, [], BEATS.flash);
+  const glide = { z: ARRIVAL.fromZ };
+  tl.to(
+    glide,
+    {
+      z: ARRIVAL.toZ,
+      duration: 1.6,
+      ease: 'power2.out',
+      onUpdate: () => poseArrival(cast.arrival, cast.arrival.aspect, glide.z),
+    },
+    BEATS.flash,
+  );
   tl.to(
     cast.lens.flash,
     { value: 0, duration: BEATS.end - BEATS.flash, ease: 'power2.out' },
@@ -144,6 +157,8 @@ export function playFade(gsap: typeof Gsap, cast: DiveCast): Promise<void> {
     const tl = gsap.timeline({ onComplete: resolve });
     tl.to(cast.lens.flash, { value: 1, duration: 0.4, ease: 'power1.in' });
     tl.call(cast.land);
+    // No glide: straight to the arrival point, in front of the ring.
+    tl.call(() => poseArrival(cast.arrival, cast.arrival.aspect, ARRIVAL.toZ));
     tl.to(cast.lens.flash, { value: 0, duration: 0.5, ease: 'power1.out' });
   });
 }
@@ -199,10 +214,11 @@ export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera
       lens: setup.lens,
       tunnel: setup.tunnel,
       stage: setup.stage,
+      arrival: eye,
       land: () => {
         // From here the portal camera is the visitor's: the portal stops re-posing it.
         setup.frozen.value = true;
-        poseArrival(eye, camera.aspect);
+        poseArrival(eye, camera.aspect, ARRIVAL.fromZ);
         showStage(setup.stage, setup.system.scene, eye);
       },
     };

@@ -22,6 +22,7 @@ import {
   PointLight,
   Scene,
   SphereGeometry,
+  TorusGeometry,
   Sprite,
   SpriteNodeMaterial,
   type Node,
@@ -95,6 +96,19 @@ function motes(count: number): Sprite {
   return sprite;
 }
 
+/**
+ * The ring the visitor came through (SPEC §5.7), provisional: dark metal with a faint blue
+ * inner glow. M6 replaces it with the real ring (dark, liquid surface).
+ */
+function arrivalRing(): Mesh {
+  const material = new MeshStandardNodeMaterial({ roughness: 0.35, metalness: 0.9 });
+  material.colorNode = color(0x0b0d12);
+  material.emissiveNode = color(PALETTE_B.filament).mul(0.15);
+  const ring = new Mesh(new TorusGeometry(2.2, 0.16, 24, 128), material);
+  ring.position.set(0, 2.5, 47.5);
+  return ring;
+}
+
 export interface PortalSystem {
   scene: Scene;
   /** Per frame: orbits. */
@@ -117,7 +131,7 @@ export function createPortalSystem(): PortalSystem {
     return { mesh, spec };
   });
   const embers = motes(600);
-  scene.add(sky, star, light, orbits, embers);
+  scene.add(sky, star, light, orbits, embers, arrivalRing());
   scene.background = new Color(PALETTE_B.void);
 
   const update = (elapsed: number) => {

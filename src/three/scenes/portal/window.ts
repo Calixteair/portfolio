@@ -31,6 +31,12 @@ const ANCHOR = new Matrix4()
   .makeTranslation(0, 2.5, 45)
   .multiply(new Matrix4().makeRotationY(REST_ANGLE));
 
+/**
+ * The visitor exits the wormhole through the ring (SPEC §5.6): from just behind it to the
+ * arrival point in front of it, along the line of sight to the star. Ring at z = 47.5.
+ */
+export const ARRIVAL = { y: 2.5, fromZ: 56, toZ: 44 } as const;
+
 export interface PortalWindow {
   surface: Mesh;
   camera: PerspectiveCamera;
@@ -103,12 +109,11 @@ export function renderPortal(
 }
 
 /**
- * Arrival pose (SPEC §5.6, end of the dive): at the anchor, the hole now behind us, facing
- * the star with a natural field of view (the vertigo FOV of the dive is left behind).
+ * Arrival pose (SPEC §5.6, end of the dive): on the axis through the ring, facing the star
+ * with a natural field of view (the vertigo FOV of the dive is left behind).
  */
-export function poseArrival(camera: PerspectiveCamera, aspect: number): void {
-  pose.copy(ANCHOR);
-  pose.decompose(camera.position, camera.quaternion, camera.scale);
+export function poseArrival(camera: PerspectiveCamera, aspect: number, z: number): void {
+  camera.position.set(0, ARRIVAL.y, z);
   camera.lookAt(0, 0, 0);
   camera.fov = 50;
   camera.aspect = aspect;

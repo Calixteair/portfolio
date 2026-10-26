@@ -6,20 +6,12 @@ import '../three/extend';
 import Precompile from '../three/Precompile';
 import LensEffects from '../three/post/LensEffects';
 import { backendOf, createRenderer, supports3D, type Backend } from '../three/renderer';
-import ForgeDirector from '../three/scenes/forge/ForgeDirector';
-import ForgeLighting from '../three/scenes/forge/ForgeLighting';
-import ForgeWorld from '../three/scenes/forge/ForgeWorld';
-import Pendant from '../three/scenes/forge/Pendant';
-import Sparks from '../three/scenes/forge/Sparks';
-import Swarm from '../three/scenes/forge/Swarm';
-import Portal from '../three/scenes/portal/Portal';
 import Dive from '../three/scenes/wormhole/Dive';
 import Wormhole from '../three/scenes/wormhole/Wormhole';
 import BackendBadge from './BackendBadge';
+import Forge from './Forge';
 import RenderErrorBoundary from './RenderErrorBoundary';
 import { useWorld } from './useWorld';
-
-const noop = () => {};
 
 // Dev-only tuning panel: the dynamic import is dropped from the production build.
 const DevControls = import.meta.env.DEV ? lazy(() => import('../dev/DevControls')) : null;
@@ -34,9 +26,13 @@ export default function Experience() {
   const [frameloop, setFrameloop] = useState<'never' | 'always'>('never');
   const [backend, setBackend] = useState<Backend | null>(null);
   const world = useWorld();
-  const { lens, forge, lights, pendant, runtime, stage, system, tunnel } = world;
+  const { lens, lights, pendant, runtime, stage, system, tunnel } = world;
   const entered = loader.phase === 'entered';
   const startRendering = useCallback(() => setFrameloop('always'), []);
+  // Past the wormhole, the forge is never seen again: unmounting it releases its GPU
+  // resources (SPEC §5.6, CLAUDE.md: dispose left scenes).
+  const [arrived, setArrived] = useState(false);
+  const onArrived = useCallback(() => setArrived(true), []);
   const { fail, reach } = loader;
 
   useEffect(() => {
@@ -62,25 +58,7 @@ export default function Experience() {
           reach('renderer');
         }}
       >
-        <ForgeLighting lights={lights} uniforms={forge} />
-        <ForgeWorld uniforms={forge} />
-        <ForgeDirector runtime={runtime} uniforms={forge} active={entered} />
-        <Pendant
-          pendant={pendant}
-          spin={runtime.spin}
-          journey={runtime.journey}
-          interactive={entered}
-          onStrike={world.onStrike}
-        />
-        <Sparks pendant={pendant} forge={forge} spin={runtime.spin} />
-        <Swarm pendant={pendant} forge={forge} />
-        <Portal
-          pendant={pendant}
-          forge={forge}
-          system={system}
-          frozen={world.frozen}
-          onReady={world.setPortalCamera}
-        />
+        {!arrived && <Forge world={world} entered={entered} />}
         <Wormhole runtime={runtime} stage={stage} tunnel={tunnel} />
         <Dive
           runtime={runtime}
@@ -93,7 +71,7 @@ export default function Experience() {
           frozen={world.frozen}
           loadAnimation={entered}
           bind={world.bindDive}
-          onArrived={noop}
+          onArrived={onArrived}
         />
         <LensEffects uniforms={lens} stage={stage} />
         {DevControls && (

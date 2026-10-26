@@ -70,7 +70,13 @@ export default function Experience() {
         <ForgeLighting lights={lights} uniforms={forge} />
         <ForgeWorld uniforms={forge} />
         <ForgeDirector runtime={runtime} uniforms={forge} active={entered} />
-        <Pendant pendant={pendant} spin={runtime.spin} interactive={entered} onStrike={onStrike} />
+        <Pendant
+          pendant={pendant}
+          spin={runtime.spin}
+          journey={runtime.journey}
+          interactive={entered}
+          onStrike={onStrike}
+        />
         <Sparks pendant={pendant} forge={forge} spin={runtime.spin} />
         <Swarm pendant={pendant} forge={forge} />
         <LensEffects uniforms={lens} />

@@ -7,10 +7,10 @@ import type { Pendant as PendantModel } from '../../pendant/placeholder';
 import {
   SPIN,
   breathingTilt,
-  createSpin,
   impulseSpin,
   settleSpin,
   stepSpin,
+  type SpinState,
 } from '../../pendant/spin';
 
 const MAX_FRAME_DT = 0.05; // no jump after a tab switch
@@ -23,8 +23,11 @@ function pose(object: Object3D, tilt: number, yaw: number): void {
 
 interface PendantProps {
   pendant: PendantModel;
+  spin: SpinState;
   /** False under the loader: no input until "Entrer". */
   interactive: boolean;
+  /** A click on the pendant itself (not a drag): heats it (SPEC §2). */
+  onStrike: () => void;
 }
 
 /**
@@ -32,8 +35,7 @@ interface PendantProps {
  * turned by drags anywhere and pushed by clicks on the pendant itself, with inertia.
  * Face-on under the loader, it coasts to its three-quarter view once the visitor enters.
  */
-export default function Pendant({ pendant, interactive }: PendantProps) {
-  const spin = useMemo(() => createSpin(0), []);
+export default function Pendant({ pendant, spin, interactive, onStrike }: PendantProps) {
   const drag = useRef<DragController | null>(null);
   /** Clock time of "Entrer": breathing starts from there, smoothly (sin(0) = 0). */
   const enteredAt = useRef<number | null>(null);
@@ -65,7 +67,9 @@ export default function Pendant({ pendant, interactive }: PendantProps) {
 
   const strike = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    if (interactive && e.delta <= SPIN.clickSlop) impulseSpin(spin);
+    if (!interactive || e.delta > SPIN.clickSlop) return;
+    impulseSpin(spin);
+    onStrike();
   };
 
   return <primitive object={pendant.group} onClick={strike} />;

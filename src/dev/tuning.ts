@@ -6,6 +6,8 @@ import {
   type UniformNode,
   type WebGPURenderer,
 } from 'three/webgpu';
+import type { JourneyRules } from '../journey/machine';
+import type { ForgeRuntime } from '../journey/runtime';
 import type { LensUniforms } from '../three/post/lens';
 import type { ForgeLights } from '../three/scenes/forge/lighting';
 
@@ -33,6 +35,14 @@ export function setLightIntensity(light: Light, value: number): void {
 
 export function setLightColor(light: Light, color: string): void {
   light.color.set(color);
+}
+
+export function setManualHeat(runtime: ForgeRuntime, change: Partial<ForgeRuntime['manual']>) {
+  Object.assign(runtime.manual, change);
+}
+
+export function setRule(rules: JourneyRules, key: keyof JourneyRules, value: number): void {
+  rules[key] = value;
 }
 
 export function setKeyRange(lights: ForgeLights, end: 'cold' | 'hot', value: number): void {

@@ -1,6 +1,8 @@
 import { Canvas } from '@react-three/fiber';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type { WebGPURenderer } from 'three/webgpu';
+import { strike } from '../journey/machine';
+import { createForgeRuntime } from '../journey/runtime';
 import { useLoader } from '../loader/useLoader';
 import '../three/extend';
 import Precompile from '../three/Precompile';
@@ -8,6 +10,7 @@ import LensEffects from '../three/post/LensEffects';
 import { createLensUniforms } from '../three/post/lens';
 import { backendOf, createRenderer, supports3D, type Backend } from '../three/renderer';
 import { createPendant } from '../three/pendant/placeholder';
+import ForgeDirector from '../three/scenes/forge/ForgeDirector';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
 import ForgeWorld from '../three/scenes/forge/ForgeWorld';
 import { createForgeLights } from '../three/scenes/forge/lighting';
@@ -33,6 +36,9 @@ export default function Experience() {
   // Built here and passed down, so the dev panel tunes these exact objects.
   const lights = useMemo(() => createForgeLights(), []);
   const pendant = useMemo(() => createPendant(), []);
+  const runtime = useMemo(() => createForgeRuntime(), []);
+  const onStrike = useCallback(() => strike(runtime.journey, runtime.rules), [runtime]);
+  const entered = loader.phase === 'entered';
   const startRendering = useCallback(() => setFrameloop('always'), []);
   const { fail, reach } = loader;
 
@@ -61,11 +67,17 @@ export default function Experience() {
       >
         <ForgeLighting lights={lights} uniforms={forge} />
         <ForgeWorld uniforms={forge} />
-        <Pendant pendant={pendant} interactive={loader.phase === 'entered'} />
+        <ForgeDirector runtime={runtime} uniforms={forge} active={entered} />
+        <Pendant pendant={pendant} spin={runtime.spin} interactive={entered} onStrike={onStrike} />
         <LensEffects uniforms={lens} />
         {DevControls && (
           <Suspense fallback={null}>
-            <DevControls forge={forge} lens={lens} lights={lights} steel={pendant.body.material} />
+            <DevControls
+              runtime={runtime}
+              lens={lens}
+              lights={lights}
+              steel={pendant.body.material}
+            />
           </Suspense>
         )}
         <Precompile onStage={reach} onCompiled={startRendering} onError={fail} />

@@ -2,7 +2,8 @@ import { button, folder, useControls } from 'leva';
 import type { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { LensUniforms } from '../three/post/lens';
 import { FORGE_LOOK, type ForgeLights } from '../three/scenes/forge/lighting';
-import type { ForgeUniforms } from '../three/scenes/forge/uniforms';
+import type { ForgeRuntime } from '../journey/runtime';
+import type { JourneyRules } from '../journey/machine';
 import { useWebGPU } from '../three/useWebGPU';
 import {
   copyLook,
@@ -13,11 +14,13 @@ import {
   setKeyRange,
   setLightColor,
   setLightIntensity,
+  setManualHeat,
+  setRule,
   setUniform,
 } from './tuning';
 
 export interface DevControlsProps {
-  forge: ForgeUniforms;
+  runtime: ForgeRuntime;
   lens: LensUniforms;
   lights: ForgeLights;
   steel: MeshPhysicalNodeMaterial;
@@ -30,16 +33,37 @@ function slider(value: number, [min, max, step]: Range, apply: (v: number) => vo
   return { value, min, max, step, onChange: apply, transient: true as const };
 }
 
-function uniformSlider(u: ForgeUniforms['heat'], range: Range) {
+function uniformSlider(u: LensUniforms['grain'], range: Range) {
   return slider(u.value, range, (v) => setUniform(u, v));
 }
 
+/** Journey thresholds (SPEC §2), applied live. */
+function rulesFolder(rules: JourneyRules) {
+  const rule = (key: keyof JourneyRules, range: Range) =>
+    slider(rules[key], range, (v) => setRule(rules, key, v));
+  return folder({
+    heatPerStrike: rule('heatPerStrike', [0, 0.5, 0.01]),
+    coolPerSecond: rule('coolPerSecond', [0, 0.5, 0.01]),
+    threshold: rule('threshold', [0.1, 1, 0.01]),
+    turnsNeeded: rule('turnsNeeded', [0, 10, 0.5]),
+    overheatSeconds: rule('overheatSeconds', [0, 5, 0.1]),
+  });
+}
+
 /** Dev-only leva panel (lazy-loaded behind import.meta.env.DEV, absent from the prod bundle). */
-export default function DevControls({ forge, lens, lights, steel }: DevControlsProps) {
+export default function DevControls({ runtime, lens, lights, steel }: DevControlsProps) {
   const { gl, scene } = useWebGPU();
   const { key, rim } = lights;
   useControls({
-    Forge: folder({ heat: uniformSlider(forge.heat, [0, 1, 0.01]) }),
+    Forge: folder({
+      manualHeat: {
+        value: runtime.manual.enabled,
+        onChange: (on: boolean) => setManualHeat(runtime, { enabled: on }),
+        transient: true as const,
+      },
+      heat: slider(runtime.manual.heat, [0, 1, 0.01], (v) => setManualHeat(runtime, { heat: v })),
+    }),
+    Journey: rulesFolder(runtime.rules),
     Lights: folder({
       exposure: slider(FORGE_LOOK.exposure, [0.3, 2.5, 0.01], (v) => setExposure(gl, v)),
       environment: slider(FORGE_LOOK.environmentIntensity, [0, 3, 0.01], (v) =>

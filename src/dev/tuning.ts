@@ -8,6 +8,7 @@ import {
 } from 'three/webgpu';
 import type { JourneyRules } from '../journey/machine';
 import type { ForgeRuntime } from '../journey/runtime';
+import { SPARK_RATE } from '../shaders/sparks';
 import type { LensUniforms } from '../three/post/lens';
 import type { ForgeLights } from '../three/scenes/forge/lighting';
 
@@ -43,6 +44,10 @@ export function setManualHeat(runtime: ForgeRuntime, change: Partial<ForgeRuntim
 
 export function setRule(rules: JourneyRules, key: keyof JourneyRules, value: number): void {
   rules[key] = value;
+}
+
+export function setSparkRate(perSecond: number): void {
+  SPARK_RATE.perSecond = perSecond;
 }
 
 export function setKeyRange(lights: ForgeLights, end: 'cold' | 'hot', value: number): void {

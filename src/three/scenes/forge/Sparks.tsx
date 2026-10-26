@@ -31,7 +31,7 @@ function buildSparks(pendant: Pendant, count: number) {
     material.dispose();
     sim.dispose();
   };
-  return { sim, uniforms, mesh, dispose };
+  return { sim, uniforms, mesh, dispose, pool: count };
 }
 
 /** Molten-metal sparks thrown from the hot edges of the pendant (SPEC §5.4). */
@@ -59,6 +59,7 @@ export default function Sparks({ pendant, forge, spin }: SparksProps) {
       heat: forge.heat.value,
       model: pendant.group.matrixWorld,
       spin: spin.velocity,
+      pool: sparks.pool,
     });
   });
   return <primitive object={sparks.mesh} />;

@@ -3,6 +3,7 @@ import type { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { LensUniforms } from '../three/post/lens';
 import { FORGE_LOOK, type ForgeLights } from '../three/scenes/forge/lighting';
 import type { ForgeRuntime } from '../journey/runtime';
+import { SPARK_RATE } from '../shaders/sparks';
 import type { JourneyRules } from '../journey/machine';
 import { useWebGPU } from '../three/useWebGPU';
 import {
@@ -16,6 +17,7 @@ import {
   setLightIntensity,
   setManualHeat,
   setRule,
+  setSparkRate,
   setUniform,
 } from './tuning';
 
@@ -64,6 +66,9 @@ export default function DevControls({ runtime, lens, lights, steel }: DevControl
       heat: slider(runtime.manual.heat, [0, 1, 0.01], (v) => setManualHeat(runtime, { heat: v })),
     }),
     Journey: rulesFolder(runtime.rules),
+    Sparks: folder({
+      perSecond: slider(SPARK_RATE.perSecond, [0, 3000, 10], (v) => setSparkRate(v)),
+    }),
     Lights: folder({
       exposure: slider(FORGE_LOOK.exposure, [0.3, 2.5, 0.01], (v) => setExposure(gl, v)),
       environment: slider(FORGE_LOOK.environmentIntensity, [0, 3, 0.01], (v) =>

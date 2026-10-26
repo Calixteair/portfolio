@@ -44,8 +44,6 @@ export const SPARK_PHYSICS = {
   friction: 0.55,
   /** Share of sparks born on the outer edge (the rest from the hole, SPEC §5.4). */
   outerShare: 0.25,
-  /** Births per second at full heat, per simulated spark. */
-  birthRate: 0.8,
   /** Bounce on the pendant: kept normal speed, lost tangential speed. */
   pendantRestitution: 0.4,
   pendantFriction: 0.25,
@@ -73,6 +71,12 @@ function emitterTexture({ hole, outer }: SparkEmitters): DataTexture {
   tex.needsUpdate = true;
   return tex;
 }
+
+/**
+ * Spark births per second at full heat (heat² curve below it). Absolute, so the look does
+ * not depend on the pool size or the backend. Mutable: tuned in the dev panel.
+ */
+export const SPARK_RATE = { perSecond: 260 };
 
 /** Per-frame inputs of the simulation. */
 export function createSparkUniforms() {
@@ -216,13 +220,15 @@ export function stepSparks(
   renderer: WebGPURenderer,
   sim: ReturnType<typeof createSparkSimulation>,
   u: SparkUniforms,
-  frame: { dt: number; heat: number; model: Matrix4; spin: number },
+  frame: { dt: number; heat: number; model: Matrix4; spin: number; pool: number },
 ): void {
   const dt = Math.min(frame.dt, SPARK_PHYSICS.maxDt);
   u.dt.value = dt;
   u.epoch.value = (u.epoch.value + 1) % 1e6;
-  // Each dead spark is reborn with this probability: births/s ≈ heat² × birthRate × pool.
-  u.birth.value = Math.min(1, frame.heat ** 2 * SPARK_PHYSICS.birthRate * dt);
+  // The pool is much larger than the live sparks: almost all are dead, so each one is
+  // reborn with probability births-this-frame / pool.
+  const births = frame.heat ** 2 * SPARK_RATE.perSecond * dt;
+  u.birth.value = Math.min(1, births / frame.pool);
   u.model.value.copy(frame.model);
   u.modelInverse.value.copy(frame.model).invert();
   u.center.value.setFromMatrixPosition(frame.model);

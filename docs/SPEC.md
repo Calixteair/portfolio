@@ -201,7 +201,9 @@ planet:                # optionnel, sinon dérivé de la catégorie
   hue: number          # 0-360, teinte dominante
 ```
 
-Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque aux **cotes du vrai pendentif, 26 × 18 × 4 mm** (cotes du fabricant), **octogone allongé** (les quatre coins coupés, comme sur les photos), toutes les arêtes à peine arrondies (congés de 0,3 mm aux coins, biseau arrondi de 0,35 mm), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le futur GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
+Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque aux **cotes du vrai pendentif, 26 × 18 × 4 mm** (cotes du fabricant), **octogone allongé** (les quatre coins coupés, comme sur les photos), toutes les arêtes à peine arrondies (congés de 0,3 mm aux coins, biseau arrondi de 0,35 mm), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
+
+_Tranché en M9_ : pas d'artiste. Le modèle est **généré par script Blender** (`tools/blender/pendant.py`, `npm run model:build`) à partir du contour du site (source unique : fil du loader, champs de bord, étincelles et portail restent exacts). L'érosion est **creusée** (booléen) ; la croûte est marquée dans la couleur de sommet (R = 1), que lit le shader de la plaque. Aucune texture : brossé, chauffe et incandescence restent en TSL. Le placeholder est construit tout de suite puis remplacé par le modèle avant la compilation des shaders ; en cas d'échec de chargement, il reste.
 
 ## 7. Budgets de performance
 

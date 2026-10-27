@@ -7,7 +7,8 @@ Run headless (no window):
 
 --preview renders the two reference angles to tools/blender/build/preview-*.png;
 --save writes tools/blender/build/pendant.blend, to open in Blender;
---export writes tools/blender/build/pendant.glb (then: npm run optimize:assets).
+--export lightens the plate, marks the crust (vertex colour) and writes
+tools/blender/build/pendant.glb (then: npm run optimize:assets).
 Units are the site's scene units (18 mm = 0.62).
 """
 
@@ -345,6 +346,52 @@ def render(name: str, yaw: float, background) -> None:
     bpy.data.objects.remove(cam)
 
 
+# --- Export for the site ------------------------------------------------------------------
+
+# Target face count for the web (the eroded cavities carry most of the 73k faces).
+WEB_FACES = 18000
+
+
+def for_web(body: bpy.types.Object) -> None:
+    """
+    Lighten, then mark the crust for the site's shaders: a vertex colour whose red channel
+    is 1 on carved faces (the black crust), 0 on silver. No UVs: they are just (x, y), the
+    site rebuilds them on load (float UVs would double the file).
+    """
+    body.data.validate()  # drop the degenerate faces the boolean can leave
+    triangles = sum(len(p.vertices) - 2 for p in body.data.polygons)
+    decimate = body.modifiers.new("web", "DECIMATE")
+    decimate.ratio = min(1.0, WEB_FACES / triangles)  # the ratio counts triangles
+    apply(body, "web")
+    mesh = body.data
+    mesh.validate()
+    crust = mesh.color_attributes.new("crust", "BYTE_COLOR", "CORNER")
+    for poly in mesh.polygons:
+        value = 1.0 if poly.material_index == 1 else 0.0
+        for li in poly.loop_indices:
+            crust.data[li].color = (value, value, value, 1)
+    mesh.color_attributes.active_color = crust
+
+
+def export(body: bpy.types.Object, gems: list[bpy.types.Object]) -> None:
+    """GLB in the site's own axes (Y up, plate facing +Z): no conversion, no materials."""
+    for_web(body)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in [body, *gems]:
+        obj.select_set(True)
+    bpy.ops.export_scene.gltf(
+        filepath=str(BUILD / "pendant.glb"),
+        export_format="GLB",
+        use_selection=True,
+        export_apply=True,
+        export_materials="NONE",
+        export_vertex_color="ACTIVE",
+        export_yup=False,
+        export_texcoords=False,
+    )
+    print("pendant: exported", len(body.data.polygons), "faces,", len(gems), "diamonds")
+
+
 def main() -> None:
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     reset()
@@ -364,10 +411,7 @@ def main() -> None:
             studio((0.16, 0.16, 0.165))
         bpy.ops.wm.save_as_mainfile(filepath=str(BUILD / "pendant.blend"))
     if "--export" in args:
-        bpy.ops.export_scene.gltf(filepath=str(BUILD / "pendant.glb"), export_format="GLB",
-                                  export_apply=True, export_materials="NONE",
-                                  # Keep the site's axes (Y up, plate facing +Z) as they are.
-                                  export_yup=False)
+        export(body, gems)
     print("pendant: done", len(body.data.polygons), "faces")
 
 

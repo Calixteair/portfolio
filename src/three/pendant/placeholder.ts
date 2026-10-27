@@ -5,6 +5,7 @@ import {
   InstancedMesh,
   LinearFilter,
   Mesh,
+  type BufferGeometry,
   type MeshPhysicalNodeMaterial,
   Object3D,
   OctahedronGeometry,
@@ -14,17 +15,29 @@ import {
   Vector2,
 } from 'three/webgpu';
 import type { PlateHeat } from '../../shaders/heat';
-import { createDiamondMaterial, createPlateMaterial, type EdgeMaskInfo } from '../../shaders/steel';
+import {
+  createDiamondMaterial,
+  createPlateMaterial,
+  setPlateNodes,
+  type EdgeMaskInfo,
+} from '../../shaders/steel';
+import { attribute } from 'three/tsl';
+import { loadPendantModel, type PendantModel } from './model';
 import { disposeMeshes } from '../dispose';
 import { loadEdgeBytes } from './edgeFile';
 import { PENDANT_SEED, pendantOutlines } from './outlines';
 import { HOLE, PLATE, bakeEdgeFields, fieldLayout, type Point } from './shape';
 
-/** Same interface as the artist's GLB will expose (SPEC §6). */
+/**
+ * The pendant (SPEC §6): the procedural placeholder at first, replaced by the model from
+ * tools/blender/ once loaded (useModel), same interface either way.
+ */
 export interface Pendant {
   group: Group;
-  body: Mesh<ExtrudeGeometry, MeshPhysicalNodeMaterial>;
+  body: Mesh<BufferGeometry, MeshPhysicalNodeMaterial>;
   diamonds: InstancedMesh;
+  /** Which geometry is shown (mirrored on <html data-pendant> for tests). */
+  source: 'placeholder' | 'model';
   edgeMask: EdgeMaskInfo;
   /** Plate-space outlines, for spark emitters and collisions (M3). */
   outline: { outer: Point[]; hole: Point[] };
@@ -56,7 +69,7 @@ function buildBody(
   hole: Point[],
   mask: EdgeMaskInfo,
   heat: PlateHeat,
-): Pendant['body'] {
+): Mesh<ExtrudeGeometry, MeshPhysicalNodeMaterial> {
   const shape = new Shape(toVectors(outer));
   shape.holes.push(new Path(toVectors(hole)));
   const geometry = new ExtrudeGeometry(shape, {
@@ -106,11 +119,34 @@ function buildDiamonds(hole: Point[], rand: () => number): InstancedMesh {
   return mesh;
 }
 
-/** Procedural stand-in for the final GLB: chamfered steel plate, eroded hole, black diamonds. */
+/** The model's plate and diamonds replace the placeholder's, in place (same materials). */
+function useModel(pendant: Pendant, model: PendantModel, heat: PlateHeat): void {
+  const old = pendant.body.geometry;
+  pendant.body.geometry = model.body;
+  old.dispose();
+  setPlateNodes(pendant.body.material, pendant.edgeMask, heat, attribute('color', 'vec4').r);
+  const diamonds = new InstancedMesh(
+    model.diamond,
+    pendant.diamonds.material,
+    model.diamonds.length,
+  );
+  model.diamonds.forEach((matrix, i) => diamonds.setMatrixAt(i, matrix));
+  pendant.group.remove(pendant.diamonds);
+  pendant.diamonds.geometry.dispose();
+  pendant.diamonds = diamonds;
+  pendant.group.add(diamonds);
+  pendant.source = 'model';
+}
+
+/**
+ * The pendant: built procedurally at once (the scene never waits on a download), the
+ * model swapped in when it arrives. `ready` waits for both the edge fields and the model
+ * (or its failure: the placeholder then stays, never a broken pendant).
+ */
 export function createPendant(heat: PlateHeat, seed = PENDANT_SEED): Pendant {
   const { outer, hole, rand } = pendantOutlines(seed);
   const edgeMask = edgeMaskTexture();
-  const ready = loadEdgeBytes(seed, () => bakeEdgeFields(hole, outer).data).then(edgeMask.fill);
+  const edges = loadEdgeBytes(seed, () => bakeEdgeFields(hole, outer).data).then(edgeMask.fill);
   const body = buildBody(outer, hole, edgeMask, heat);
   const diamonds = buildDiamonds(hole, rand);
   const group = new Group();
@@ -119,5 +155,22 @@ export function createPendant(heat: PlateHeat, seed = PENDANT_SEED): Pendant {
     disposeMeshes(group);
     edgeMask.texture.dispose();
   };
-  return { group, body, diamonds, edgeMask, outline: { outer, hole }, ready, dispose };
+  const pendant: Pendant = {
+    group,
+    body,
+    diamonds,
+    source: 'placeholder',
+    edgeMask,
+    outline: { outer, hole },
+    ready: Promise.resolve(),
+    dispose,
+  };
+  const model = loadPendantModel()
+    .then((m) => useModel(pendant, m, heat))
+    .catch((error: unknown) => console.warn('[pendant] model unavailable, placeholder kept', error))
+    .finally(() => {
+      document.documentElement.dataset.pendant = pendant.source;
+    });
+  pendant.ready = Promise.all([edges, model]).then(() => undefined);
+  return pendant;
 }

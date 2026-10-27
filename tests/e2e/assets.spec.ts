@@ -9,5 +9,8 @@ test.describe('self-hosted build outputs', () => {
     expect(wasm.status()).toBe(200);
     expect(wasm.headers()['content-type']).toBe('application/wasm');
     expect((await request.get('/generated/basis/basis_transcoder.js')).status()).toBe(200);
+    const model = await request.get('/models/pendant.glb');
+    expect(model.status()).toBe(200);
+    expect((await model.body()).subarray(0, 4).toString()).toBe('glTF');
   });
 });

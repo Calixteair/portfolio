@@ -80,10 +80,12 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 - [x] Montagnes en cirque (fer à cheval) autour du pendentif, sol en cuvette accidenté
 - [x] Cailloux instanciés selon le niveau de qualité, nuages en trois couches avec parallaxe
 
-## M9 — Intégration du modèle final (à la livraison de l'artiste)
+## M9 — Modèle final du pendentif
 
-- [ ] Remplacer le placeholder par le GLB optimisé (`assets/pendant.glb` → `npm run optimize:assets`, nécessite `toktx` de KTX-Software), chargé par `createGltfLoader()`, sans toucher au reste
-- [ ] Vérifier le transcodeur KTX2 sous la CSP (worker `blob:`, WASM) avec une vraie texture
+- [x] Cotes réelles (26 × 18 × 4 mm, argent 925), octogone aux arêtes adoucies, trou d'après la photo
+- [x] Modèle construit par script Blender (`tools/blender/pendant.py`, headless) depuis le contour du site : érosion creusée dans le volume, croûte noire au fond des cavités, diamants posés par lancer de rayon
+- [x] Export allégé (≈ 15 000 faces) → `npm run optimize:assets` (Meshopt, 296 Ko, 227 Ko gzip), aucune texture (tout est dans les shaders), donc pas de KTX2 ni de `toktx`
+- [x] Chargé en chunk différé (hors budget de démarrage), même interface que le placeholder, repli automatique sur le placeholder ; testé WebGPU et WebGL 2
 
 ---
 

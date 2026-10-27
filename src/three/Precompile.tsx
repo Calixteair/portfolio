@@ -27,9 +27,13 @@ export default function Precompile({ ready, onStage, onCompiled, onError }: Prec
   useEffect(() => {
     let alive = true;
     onStage('scene');
-    // No downloaded asset yet (procedural placeholder): drei's useProgress joins with the GLB.
-    onStage('assets');
-    Promise.all([gl.compileAsync(scene, camera), ready])
+    // The model (and the edge fields) first: it changes the pendant's geometry and shader,
+    // which must then be compiled in the version the visitor will see.
+    ready
+      .then(() => {
+        onStage('assets');
+        return gl.compileAsync(scene, camera);
+      })
       .then(() => {
         if (!alive) return;
         frames.current = 0;

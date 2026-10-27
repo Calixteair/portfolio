@@ -61,16 +61,32 @@ function brushedRoughness(): Node<'float'> {
  * It glows from the edges with the forge heat and keeps tempering tints where it got hot.
  */
 export function createPlateMaterial(mask: EdgeMaskInfo, heat: PlateHeat): MeshPhysicalNodeMaterial {
-  const fields = sampleEdgeMask(mask);
-  const crust = crustMask(fields);
-  const past = heatField(fields.holeEdge, fields.outerEdge, heat.heatHistory, heat);
-  // Sterling silver's reflectance (linear): near white, slightly warm.
-  const silver = vec3(0.95, 0.93, 0.88).mul(temperTint(past));
-  const crustColor = vec3(0.006).add(noise01(positionLocal.xy.mul(400)).mul(0.01));
   const material = new MeshPhysicalNodeMaterial({
     anisotropy: STEEL_ANISOTROPY,
     envMapIntensity: 1.1,
   });
+  setPlateNodes(material, mask, heat, null);
+  return material;
+}
+
+/**
+ * The plate's shading. `crust` (0-1) says where the black erosion crust is: null for the
+ * placeholder (drawn procedurally around the hole), the model's colour attribute for the
+ * final pendant (its cavities are carved in the geometry). Rebuilds the same material,
+ * so whoever holds it (the dev panel) keeps a valid reference.
+ */
+export function setPlateNodes(
+  material: MeshPhysicalNodeMaterial,
+  mask: EdgeMaskInfo,
+  heat: PlateHeat,
+  crustSource: Node<'float'> | null,
+): void {
+  const fields = sampleEdgeMask(mask);
+  const crust = crustSource ?? crustMask(fields);
+  const past = heatField(fields.holeEdge, fields.outerEdge, heat.heatHistory, heat);
+  // Sterling silver's reflectance (linear): near white, slightly warm.
+  const silver = vec3(0.95, 0.93, 0.88).mul(temperTint(past));
+  const crustColor = vec3(0.006).add(noise01(positionLocal.xy.mul(400)).mul(0.01));
   material.colorNode = mix(silver, crustColor, crust);
   material.metalnessNode = mix(float(1), float(0), crust);
   material.roughnessNode = mix(brushedRoughness(), float(0.5), crust);
@@ -78,7 +94,7 @@ export function createPlateMaterial(mask: EdgeMaskInfo, heat: PlateHeat): MeshPh
   material.emissiveNode = incandescence(
     heatField(fields.holeEdge, fields.outerEdge, heat.heat, heat),
   );
-  return material;
+  material.needsUpdate = true;
 }
 
 /** Black diamond: opaque, very glossy dielectric with sharp facets, no refraction. */

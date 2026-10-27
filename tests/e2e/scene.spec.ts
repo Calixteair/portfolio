@@ -34,6 +34,7 @@ test('loads, then enters the scene on the forced WebGL 2 backend', async ({ page
   await page.goto('/?gl=webgl2');
   await enterScene(page);
   await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgl2');
+  await expect(page.locator('html')).toHaveAttribute('data-pendant', 'model');
   expect(errors).toEqual([]);
 });
 
@@ -43,6 +44,7 @@ test('loads, then enters the scene on WebGPU @webgpu', async ({ page }) => {
   await enterScene(page);
   await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgpu');
   await expect(page.locator('html')).toHaveAttribute('data-quality', /^(low|medium|high)$/);
+  await expect(page.locator('html')).toHaveAttribute('data-pendant', 'model');
   expect(errors).toEqual([]);
 });
 
@@ -220,5 +222,14 @@ test('I shows the titles over the bodies; a title travels to its body @webgpu', 
   await titles.locator('[data-title-of="portfolio"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#panel-portfolio')).toBeVisible({ timeout: 15_000 });
+  expect(errors).toEqual([]);
+});
+
+test('keeps the procedural pendant when the model cannot load', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.route('**/models/pendant.glb', (route) => route.abort());
+  await page.goto('/?gl=webgl2');
+  await enterScene(page);
+  await expect(page.locator('html')).toHaveAttribute('data-pendant', 'placeholder');
   expect(errors).toEqual([]);
 });

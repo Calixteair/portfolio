@@ -61,8 +61,8 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M7 — Version HTML, SEO, accessibilité
 
-- [ ] Version classique complète, « Passer l'intro », meta et Open Graph
-- [ ] Lighthouse ≥ 95 sur la version HTML
+- [x] Version classique complète (`/classique/`), « Passer l'intro », liens directs `#slug`, meta et Open Graph, JSON-LD, robots et sitemap
+- [x] Lighthouse ≥ 95 sur la version HTML (100 / 100 / 100 / 100, mobile et ordinateur)
 
 ## M8 — Performance et production
 

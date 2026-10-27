@@ -52,7 +52,8 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 ## 3. Pages et SEO
 
 - `index.astro` contient : le loader (HTML/CSS inline), l'île 3D, et une **version HTML complète** du contenu (projets, compétences, expériences, contact).
-- La version HTML est ce que voient Google, les lecteurs d'écran, les appareils sans WebGL, et les visiteurs qui utilisent « Passer l'intro » ou « Version classique ».
+- La version HTML est ce que voient Google, les lecteurs d'écran, les appareils sans WebGL, et les visiteurs qui choisissent « Version classique ». _Tranché en M7_ : elle vit aussi sur sa propre page `/classique/`, sans l'île 3D (≈ 430 Ko de JS en moins, Lighthouse 100), avec les mêmes articles que les panneaux (`EntryArticle`) et un `canonical` vers `/`. « Passer l'intro » mène, lui, au système planétaire (§2).
+- Un lien direct vers un astre (`/#slug`) saute l'intro puis vole jusqu'à lui.
 - Balises meta, Open Graph et image de partage (une capture du pendentif incandescent).
 
 ## 4. Loader

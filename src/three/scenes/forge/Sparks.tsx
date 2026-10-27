@@ -7,7 +7,7 @@ import { sampleEdge } from '../../pendant/edges';
 import type { Pendant } from '../../pendant/placeholder';
 import type { SpinState } from '../../pendant/spin';
 import { mulberry32 } from '../../random';
-import { backendOf } from '../../renderer';
+import { startTier } from '../../quality';
 import { useWebGPU } from '../../useWebGPU';
 import { particleBudget } from './budget';
 import { GROUND_Y } from './decor';
@@ -44,7 +44,7 @@ interface SparksProps {
 export default function Sparks({ pendant, forge, spin }: SparksProps) {
   const { gl } = useWebGPU();
   const sparks = useMemo(
-    () => buildSparks(pendant, particleBudget(backendOf(gl)).sparks),
+    () => buildSparks(pendant, particleBudget(startTier(gl).tier).sparks),
     [pendant, gl],
   );
 

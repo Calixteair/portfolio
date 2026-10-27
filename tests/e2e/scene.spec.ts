@@ -42,6 +42,7 @@ test('loads, then enters the scene on WebGPU @webgpu', async ({ page }) => {
   await page.goto('/');
   await enterScene(page);
   await expect(page.locator('html')).toHaveAttribute('data-backend', 'webgpu');
+  await expect(page.locator('html')).toHaveAttribute('data-quality', /^(low|medium|high)$/);
   expect(errors).toEqual([]);
 });
 

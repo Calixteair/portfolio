@@ -39,6 +39,7 @@ export default function Forge({ world, entered }: ForgeProps) {
         readiness={world.readiness}
         tunnel={world.tunnel}
         dive={world.dive}
+        quality={world.quality}
       />
     </>
   );

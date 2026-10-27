@@ -1,4 +1,4 @@
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import { PointLight, type Node } from 'three/webgpu';
 import { PALETTE_B } from '../../../shaders/nebula';
@@ -9,13 +9,14 @@ import { HOLE } from '../../pendant/shape';
 import { useWebGPU } from '../../useWebGPU';
 import type { ForgeUniforms } from '../forge/uniforms';
 import type { PortalSystem } from './system';
+import type { LiveQuality } from '../../quality';
 import type { DiveView } from '../../stage';
 import type { Tunnel } from '../wormhole/tunnel';
 import {
   createPortalWindow,
   renderPortal,
   renderView,
-  resizeTarget,
+  fitWindow,
   type PortalWindow,
 } from './window';
 
@@ -60,14 +61,14 @@ interface PortalProps {
   /** While pulled in, the hole shows the tunnel's entrance (no cut, SPEC §5.6). */
   tunnel: Tunnel;
   dive: DiveView;
+  /** Its resolution follows the live quality tier. */
+  quality: LiveQuality;
 }
 
 /** The other side, seen through the hole once the portal opens (SPEC §5.5). */
 export default function Portal(props: PortalProps) {
-  const { pendant, forge, system, frozen, onReady, readiness, tunnel, dive } = props;
+  const { pendant, forge, system, frozen, onReady, readiness, tunnel, dive, quality } = props;
   const { gl } = useWebGPU();
-  const size = useThree((s) => s.size);
-  const dpr = useThree((s) => s.viewport.dpr);
   const portal = useMemo(() => buildPortal(pendant, forge), [pendant, forge]);
 
   useEffect(() => {
@@ -78,13 +79,10 @@ export default function Portal(props: PortalProps) {
     onReady(portal.win.camera);
     return portal.dispose;
   }, [gl, portal, system, onReady, readiness]);
-  useEffect(
-    () => resizeTarget(portal.win.target, size.width * dpr, size.height * dpr),
-    [portal, size, dpr],
-  );
 
   useFrame((state) => {
     setSpill(portal.spill, forge.portal.value);
+    fitWindow(portal.win.target, state, quality);
     const camera = state.camera as unknown as Parameters<typeof renderPortal>[3]['camera'];
     if (dive.phase === 'pull') renderView(gl, portal.win.target, tunnel, camera);
     if (dive.phase !== 'idle' || forge.portal.value <= 0 || frozen.value) return;

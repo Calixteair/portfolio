@@ -4,6 +4,7 @@ import type { WebGPURenderer } from 'three/webgpu';
 import { useLoader } from '../loader/useLoader';
 import '../three/extend';
 import Precompile from '../three/Precompile';
+import Quality from '../three/Quality';
 import LensEffects from '../three/post/LensEffects';
 import { backendOf, createRenderer, supports3D, type Backend } from '../three/renderer';
 import Explore from '../three/scenes/portal/Explore';
@@ -28,6 +29,8 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
   const supported = useMemo(() => supports3D(), []);
   const [frameloop, setFrameloop] = useState<'never' | 'always'>('never');
   const [backend, setBackend] = useState<Backend | null>(null);
+  // Driven by the quality monitor (a few changes per visit, never per frame).
+  const [dpr, setDpr] = useState(1);
   const world = useWorld(entries);
   const { lens, lights, pendant, runtime, stage, system, tunnel } = world;
   const entered = loader.phase === 'entered';
@@ -51,7 +54,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
     <RenderErrorBoundary onError={fail}>
       <Canvas
         frameloop={frameloop}
-        dpr={[1, 2]}
+        dpr={dpr}
         // Drags turn the pendant: no browser panning or zooming on touch screens.
         style={{ touchAction: 'none', cursor: 'grab' }}
         camera={{ fov: 32, near: 0.05, far: 400, position: [0, 0.18, 3.3] }}
@@ -83,6 +86,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           system={system}
           eye={world.portalCamera}
           dive={world.dive}
+          quality={world.quality}
         />
         <Dive
           runtime={runtime}
@@ -101,6 +105,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           skip={entered && (loader.skipped || linked)}
           onArrived={onArrived}
         />
+        <Quality live={world.quality} setDpr={setDpr} />
         <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} />
         {DevControls && (
           <Suspense fallback={null}>

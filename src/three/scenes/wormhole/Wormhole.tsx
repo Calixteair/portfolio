@@ -1,12 +1,13 @@
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type { PerspectiveCamera } from 'three/webgpu';
 import type { ForgeRuntime } from '../../../journey/runtime';
 import { markReady, type DiveReadiness } from '../../readiness';
 import { showStage, type DiveView, type StageView } from '../../stage';
 import { useWebGPU } from '../../useWebGPU';
+import type { LiveQuality } from '../../quality';
 import type { PortalSystem } from '../portal/system';
-import { ARRIVAL, arrivalPoint, renderView, resizeTarget } from '../portal/window';
+import { ARRIVAL, arrivalPoint, fitWindow, renderView } from '../portal/window';
 import type { Tunnel } from './tunnel';
 
 interface WormholeProps {
@@ -18,6 +19,8 @@ interface WormholeProps {
   system: PortalSystem;
   eye: { current: PerspectiveCamera | null };
   dive: DiveView;
+  /** The mouth's resolution follows the live quality tier. */
+  quality: LiveQuality;
 }
 
 /** The mouth shows the system from the landing point, with the tunnel camera's lens. */
@@ -45,8 +48,6 @@ function renderMouth(
 export default function Wormhole(props: WormholeProps) {
   const { runtime, stage, tunnel, readiness, dive } = props;
   const { gl } = useWebGPU();
-  const size = useThree((s) => s.size);
-  const dpr = useThree((s) => s.viewport.dpr);
   const previewing = useRef(false);
   const mouthWarm = useRef(false);
 
@@ -56,12 +57,9 @@ export default function Wormhole(props: WormholeProps) {
       .then(() => markReady(readiness, 'tunnel'))
       .catch((e: unknown) => console.error(e));
   }, [gl, tunnel, readiness]);
-  useEffect(
-    () => resizeTarget(tunnel.mouthTarget, size.width * dpr, size.height * dpr),
-    [tunnel, size, dpr],
-  );
 
   useFrame((state) => {
+    fitWindow(tunnel.mouthTarget, state, props.quality);
     // Off screen, so rendered once early too: its shaders are built before the dive.
     if (dive.phase === 'tunnel' || !mouthWarm.current) {
       mouthWarm.current = renderMouth(gl, props, state.clock.elapsedTime);

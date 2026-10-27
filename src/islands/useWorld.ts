@@ -9,6 +9,7 @@ import { createForgeUniforms } from '../three/scenes/forge/uniforms';
 import { createPortalSystem } from '../three/scenes/portal/system';
 import { createTunnel } from '../three/scenes/wormhole/tunnel';
 import { createDiveReadiness } from '../three/readiness';
+import { createLiveQuality } from '../three/quality';
 import { createDiveView, createStageView } from '../three/stage';
 import type { SystemEntry } from '../system/layout';
 
@@ -29,6 +30,7 @@ export function useWorld(entries: SystemEntry[]) {
   const portalCamera = useRef<PerspectiveCamera | null>(null);
   const frozen = useMemo(() => ({ value: false }), []);
   const readiness = useMemo(() => createDiveReadiness(), []);
+  const quality = useMemo(() => createLiveQuality(), []);
   const warmUp = useMemo(
     () => ({
       views: [
@@ -74,6 +76,7 @@ export function useWorld(entries: SystemEntry[]) {
     portalCamera,
     frozen,
     readiness,
+    quality,
     warmUp,
     onStrike,
     bindDive,

@@ -10,7 +10,7 @@ import {
 import { sampleEdge } from '../../pendant/edges';
 import type { Pendant } from '../../pendant/placeholder';
 import { mulberry32 } from '../../random';
-import { backendOf } from '../../renderer';
+import { startTier } from '../../quality';
 import { useWebGPU } from '../../useWebGPU';
 import { particleBudget } from './budget';
 import type { ForgeUniforms } from './uniforms';
@@ -37,7 +37,7 @@ function buildSwarm(pendant: Pendant, count: number) {
 export default function Swarm({ pendant, forge }: { pendant: Pendant; forge: ForgeUniforms }) {
   const { gl } = useWebGPU();
   const swarm = useMemo(
-    () => buildSwarm(pendant, particleBudget(backendOf(gl)).swarm),
+    () => buildSwarm(pendant, particleBudget(startTier(gl).tier).swarm),
     [pendant, gl],
   );
 

@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { PARTICLE_BUDGET, particleBudget } from '../../src/three/scenes/forge/budget';
+import { QUALITY } from '../../src/three/quality';
+import { particleBudget } from '../../src/three/scenes/forge/budget';
 
 describe('particleBudget', () => {
-  it('gives the WebGL 2 fallback fewer particles than WebGPU', () => {
-    expect(PARTICLE_BUDGET.webgl2.sparks).toBeLessThan(PARTICLE_BUDGET.webgpu.sparks);
-    expect(PARTICLE_BUDGET.webgl2.swarm).toBeLessThan(PARTICLE_BUDGET.webgpu.swarm);
+  it('follows the quality tier', () => {
+    expect(particleBudget('low', '').swarm).toBeLessThan(particleBudget('high', '').swarm);
   });
 
   it('accepts a positive integer override in dev, and ignores junk', () => {
-    expect(particleBudget('webgpu', '?sparks=1000&swarm=10')).toEqual({ sparks: 1000, swarm: 10 });
-    expect(particleBudget('webgl2', '?sparks=-5&swarm=abc')).toEqual(PARTICLE_BUDGET.webgl2);
+    expect(particleBudget('high', '?sparks=1000&swarm=10')).toEqual({ sparks: 1000, swarm: 10 });
+    expect(particleBudget('medium', '?sparks=-5&swarm=abc')).toEqual({
+      sparks: QUALITY.medium.sparks,
+      swarm: QUALITY.medium.swarm,
+    });
   });
 });

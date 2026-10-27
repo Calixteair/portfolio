@@ -18,11 +18,9 @@ import {
   type WebGPURenderer,
 } from 'three/webgpu';
 import type { Point } from '../../pendant/shape';
+import { QUALITY, type LiveQuality } from '../../quality';
 import { REST_ANGLE } from '../../pendant/spin';
 import type { PortalSystem } from './system';
-
-/** Render target scale (SPEC §5.5: the portal is rendered at half resolution). */
-const SCALE = 0.5;
 
 /**
  * The arrival axis: the visitor exits the wormhole through the ring (SPEC §5.6) along this
@@ -96,10 +94,13 @@ const relative = new Matrix4();
 const inverse = new Matrix4();
 const pose = new Matrix4();
 
-/** Size a window's target at half the drawing buffer. */
-export function resizeTarget(target: RenderTarget, width: number, height: number): void {
-  const w = Math.max(2, Math.round(width * SCALE));
-  const h = Math.max(2, Math.round(height * SCALE));
+/**
+ * Size a window's target to a fraction of the drawing buffer (SPEC §5.5: half resolution,
+ * less on the low quality tier). A no-op when unchanged, so it can run every frame.
+ */
+export function resizeTarget(target: RenderTarget, width: number, height: number, scale: number) {
+  const w = Math.max(2, Math.round(width * scale));
+  const h = Math.max(2, Math.round(height * scale));
   if (target.width !== w || target.height !== h) target.setSize(w, h);
 }
 
@@ -123,6 +124,17 @@ export function renderPortal(
   renderer.setRenderTarget(win.target);
   renderer.render(system.scene, win.camera);
   renderer.setRenderTarget(previous);
+}
+
+/** Keep a window's target at the live tier's scale of the drawing buffer (every frame). */
+export function fitWindow(
+  target: RenderTarget,
+  state: { size: { width: number; height: number }; viewport: { dpr: number } },
+  quality: LiveQuality,
+): void {
+  const { width, height } = state.size;
+  const dpr = state.viewport.dpr;
+  resizeTarget(target, width * dpr, height * dpr, QUALITY[quality.tier].portalScale);
 }
 
 /**

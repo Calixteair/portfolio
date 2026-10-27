@@ -175,7 +175,9 @@ Dans _The Expanse_, les anneaux mènent à d'autres systèmes stellaires. Ici, l
 **Navigation et accessibilité**
 
 - État dans l'URL (`#projet-slug`) pour partager un lien direct vers une planète et gérer le bouton retour.
-- Les planètes sont aussi atteignables au clavier : une liste HTML (masquée visuellement mais accessible) pilote la même navigation.
+- Une **carte du système** (ouverte au départ, repliable avec `M`) liste tous les astres par groupe, avec une recherche (titre, résumé, tags ; accents et casse ignorés). Les résultats s'éclairent en 3D, le reste s'estompe ; Entrée part vers le premier. Elle pilote la même navigation, au clavier comme à la souris.
+- `I` affiche les titres des projets et des parcours en cartes au-dessus des astres. Le survol (souris, carte, liste) éclaire l'astre et sa trace d'orbite.
+- _Tranché en M8_ : le voyage est une **navette** et non un zoom : trajectoire courbe (Bézier) qui part dans le sens du mouvement, contourne l'étoile et s'insère tangentiellement sur l'orbite de la cible ; la caméra regarde la route, s'incline dans les virages, puis se tourne vers l'astre. 2,5 à 5 s selon la distance.
 - Cliquer sur l'anneau ramène à la forge (option, à valider en test).
 
 ## 6. Contenu

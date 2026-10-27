@@ -18,13 +18,39 @@ export const QUALITY: Record<
     swarm: number;
     portalScale: number;
     dof: boolean;
-    /** Instanced pebbles on the forge ground (one draw call, built once). */
+    /** Instanced pebbles and gravel on the forge ground (one draw call, built once). */
     pebbles: number;
+    /** Instanced boulders between the pebbles and the peaks. */
+    boulders: number;
   }
 > = {
-  low: { dprMax: 1, sparks: 2048, swarm: 4096, portalScale: 0.35, dof: false, pebbles: 150 },
-  medium: { dprMax: 1.5, sparks: 4096, swarm: 8192, portalScale: 0.5, dof: false, pebbles: 400 },
-  high: { dprMax: 2, sparks: 4096, swarm: 16384, portalScale: 0.5, dof: true, pebbles: 800 },
+  low: {
+    dprMax: 1,
+    sparks: 2048,
+    swarm: 4096,
+    portalScale: 0.35,
+    dof: false,
+    pebbles: 400,
+    boulders: 30,
+  },
+  medium: {
+    dprMax: 1.5,
+    sparks: 4096,
+    swarm: 8192,
+    portalScale: 0.5,
+    dof: false,
+    pebbles: 1000,
+    boulders: 60,
+  },
+  high: {
+    dprMax: 2,
+    sparks: 4096,
+    swarm: 16384,
+    portalScale: 0.5,
+    dof: true,
+    pebbles: 2000,
+    boulders: 100,
+  },
 };
 
 const ORDER: QualityTier[] = ['low', 'medium', 'high'];

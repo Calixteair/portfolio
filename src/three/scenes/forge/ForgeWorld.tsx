@@ -10,7 +10,7 @@ import type { ForgeUniforms } from './uniforms';
 export default function ForgeWorld({ uniforms }: { uniforms: ForgeUniforms }) {
   const { gl } = useWebGPU();
   const world = useMemo(
-    () => createForgeWorld(uniforms.heat, HAZE, QUALITY[startTier(gl).tier].pebbles),
+    () => createForgeWorld(uniforms.heat, HAZE, QUALITY[startTier(gl).tier]),
     [uniforms, gl],
   );
   useEffect(() => world.dispose, [world]);

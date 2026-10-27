@@ -60,11 +60,11 @@ interface PeakLayer {
 /** Near → far: scattered rocks, the inner cirque wall, the great mountains (SPEC §5.1). */
 const PEAK_LAYERS: PeakLayer[] = [
   {
-    count: 5,
+    count: 14,
     arc: null,
-    distance: [4.5, 8],
-    height: [0.5, 1.2],
-    radius: [0.35, 0.8],
+    distance: [4.5, 12],
+    height: [0.35, 1.1],
+    radius: [0.3, 0.9],
     glow: 1,
     color: 0x4a4b50,
   },
@@ -164,7 +164,8 @@ function clusterSpot(
   i: number,
 ): { x: number; z: number; tall: number } {
   if (!layer.arc) {
-    const angle = (rand() - 0.5) * 2.6;
+    // Spread wide (±110°): the sides of the frame need rocks too, not only the back.
+    const angle = (rand() - 0.5) * 3.8;
     const distance = pick(rand, layer.distance);
     return { x: Math.sin(angle) * distance, z: -Math.cos(angle) * distance - 1, tall: 1 };
   }
@@ -265,15 +266,41 @@ function pebbles(rand: Rand, count: number, heat: UniformNode<'float', number>):
   const dummy = new Object3D();
   for (let i = 0; i < count; i++) {
     const angle = rand() * Math.PI * 2;
-    const r = 1.3 + 22 * rand() ** 2;
+    const r = 1.3 + 22 * rand() ** 2.2;
     const x = Math.sin(angle) * r;
     const z = -Math.cos(angle) * r;
     // Between the pendant and the camera, pebbles loom large: keep those small.
     const near = z > 0 ? 0.45 : 1;
-    const size = (0.025 + rand() * 0.07) * (1 + r * 0.06) * near;
+    // Mostly gravel, some stones.
+    const base = rand() < 0.65 ? 0.01 + rand() * 0.025 : 0.035 + rand() * 0.07;
+    const size = base * (1 + r * 0.06) * near;
     dummy.position.set(x, GROUND_Y + groundHeight(x, z) + size * 0.25, z);
     dummy.rotation.set((rand() - 0.5) * 0.6, rand() * Math.PI * 2, (rand() - 0.5) * 0.6);
     dummy.scale.setScalar(size);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  return mesh;
+}
+
+/**
+ * Boulders: cut blocks (25-70 cm) between the pebbles and the peaks, so the ground is
+ * not bare between them. Kept off the line between the camera and the pendant.
+ */
+function boulders(rand: Rand, count: number, heat: UniformNode<'float', number>): InstancedMesh {
+  const material = createRockMaterial(heat, { color: 0x34353a, grain: true, glow: 0.6 });
+  const mesh = new InstancedMesh(block(mulberry32(9), 1, 1, false), material, count);
+  const dummy = new Object3D();
+  for (let i = 0; i < count; i++) {
+    const angle = (rand() - 0.5) * Math.PI * 1.25; // ±112°: never in front of the pendant
+    const r = 3 + 24 * rand() ** 1.4;
+    const x = Math.sin(angle) * r;
+    const z = -Math.cos(angle) * r;
+    const w = 0.25 + rand() * 0.45;
+    const h = w * (0.6 + rand() * 0.8);
+    dummy.position.set(x, GROUND_Y + groundHeight(x, z) - h * 0.15, z);
+    dummy.rotation.set((rand() - 0.5) * 0.3, rand() * Math.PI * 2, (rand() - 0.5) * 0.3);
+    dummy.scale.set(w, h, w * (0.8 + rand() * 0.4));
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
   }
@@ -306,18 +333,25 @@ function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
 export function createForgeWorld(
   heat: UniformNode<'float', number>,
   horizon: Color,
-  pebbleCount: number,
+  strewn: { pebbles: number; boulders: number },
 ): ForgeWorld {
   const rand = mulberry32(11);
   const ground = new Mesh(
     groundGeometry(),
-    createRockMaterial(heat, { color: 0x1c1c1f, grain: true, glow: 0.35 }),
+    createRockMaterial(heat, { color: 0x1c1c1f, grain: true, glow: 0.35, patches: true }),
   );
   const sky = new Mesh(new SphereGeometry(140, 48, 24), createSkyMaterial(heat, horizon));
   const glow = new PointLight(0xff6a2a, 0.3, 40, 1.25);
   glow.position.set(0, GROUND_Y + 0.15, -0.4);
   const group = new Group();
-  group.add(ground, sky, glow, ...buildPeaks(rand, heat), pebbles(rand, pebbleCount, heat));
+  group.add(
+    ground,
+    sky,
+    glow,
+    ...buildPeaks(rand, heat),
+    pebbles(rand, strewn.pebbles, heat),
+    boulders(rand, strewn.boulders, heat),
+  );
   const dispose = () => disposeMeshes(group);
   const update = (value: number) => {
     glow.intensity = glowIntensity(value);

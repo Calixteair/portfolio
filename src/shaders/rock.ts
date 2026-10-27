@@ -29,6 +29,8 @@ export interface RockOptions {
   grain: boolean;
   /** How much the cracks glow with the forge heat (near layers glow most). */
   glow: number;
+  /** Broad lighter and darker patches (the ground: breaks its uniform expanse). */
+  patches?: boolean;
 }
 
 /** Thin cracks glowing faint orange with the heat (SPEC §5.1), fading away from the forge. */
@@ -68,6 +70,13 @@ export function createRockMaterial(
     .mul(0.6)
     .add(0.6);
   let tone = color(options.color).mul(broad).mul(faceRandom().mul(0.35).add(0.78));
+  if (options.patches) {
+    tone = tone.mul(
+      smoothstep(0.3, 0.7, fbm01(wp.xz.mul(0.12)))
+        .mul(0.7)
+        .add(0.6),
+    );
+  }
   let roughness: Node<'float'> = float(0.95);
   if (options.grain) {
     const grain = fbm01(wp.xz.mul(9).add(wp.y.mul(11)));

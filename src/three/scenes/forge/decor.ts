@@ -188,13 +188,13 @@ function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
     const parts = Array.from({ length: layer.count }, () => peakCluster(rand, layer)).flat();
     const material = createRockMaterial(heat, {
       color: layer.color,
-      bands: i === 0,
+      grain: i === 0,
       glow: layer.glow,
     });
     return new Mesh(mergeGeometries(parts), material);
   });
   const ridges = mergeGeometries(RIDGES.map(ridgeGeometry));
-  const far = createRockMaterial(heat, { color: 0x3a3b40, bands: false, glow: 0 });
+  const far = createRockMaterial(heat, { color: 0x3a3b40, grain: false, glow: 0 });
   return [...layers, new Mesh(ridges, far)];
 }
 
@@ -202,7 +202,7 @@ export function createForgeWorld(heat: UniformNode<'float', number>, horizon: Co
   const rand = mulberry32(11);
   const ground = new Mesh(
     groundGeometry(),
-    createRockMaterial(heat, { color: 0x1c1c1f, bands: false, glow: 0.35 }),
+    createRockMaterial(heat, { color: 0x1c1c1f, grain: true, glow: 0.35 }),
   );
   const sky = new Mesh(new SphereGeometry(140, 48, 24), createSkyMaterial(heat, horizon));
   const glow = new PointLight(0xff6a2a, 0.3, 40, 1.25);

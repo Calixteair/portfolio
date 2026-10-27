@@ -1,7 +1,8 @@
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
+  type BufferAttribute,
   type BufferGeometry,
-  ConeGeometry,
+  CylinderGeometry,
   Group,
   Mesh,
   PlaneGeometry,
@@ -9,12 +10,13 @@ import {
   SphereGeometry,
   type Color,
   type UniformNode,
+  Vector3,
 } from 'three/webgpu';
 import { createRockMaterial } from '../../../shaders/rock';
 import { createSkyMaterial } from '../../../shaders/sky';
 import { disposeMeshes } from '../../dispose';
 import { mulberry32 } from '../../random';
-import { fbm2, ridgeProfile, valueNoise2 } from './terrainNoise';
+import { fbm2, ridgeProfile } from './terrainNoise';
 import { glowIntensity } from './uniforms';
 
 /** Ground height: sparks bounce on this plane (M3), the pendant floats above it. */
@@ -68,25 +70,60 @@ const RIDGES = [
 type Rand = () => number;
 const pick = (rand: Rand, [a, b]: Range) => a + rand() * (b - a);
 
-/** Sharp faceted peak: low-sided cone jagged by position-hashed noise (facets stay watertight). */
-function peakGeometry(rand: Rand, radius: number, height: number, lean: number): BufferGeometry {
-  const geometry = new ConeGeometry(radius, height, 4 + Math.floor(rand() * 4), 5);
-  const pos = geometry.getAttribute('position');
-  const seed = rand() * 100;
+/** Bring every vertex beyond the plane (normal n, through point c) back onto it. */
+function cutWithPlane(pos: BufferAttribute, n: Vector3, c: Vector3): void {
+  const p = new Vector3();
   for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const y = pos.getY(i);
-    const z = pos.getZ(i);
-    const f = y / height + 0.5;
-    const n = valueNoise2(x * 3 + seed, z * 3 + y * 2) - 0.5;
-    pos.setXYZ(
-      i,
-      x * (1 + n * 0.5) + lean * f * f * height,
-      y + n * height * 0.08 * (1 - f),
-      z * (1 + n * 0.5),
-    );
+    p.fromBufferAttribute(pos, i);
+    const d = p.sub(c).dot(n);
+    if (d > 0) pos.setXYZ(i, pos.getX(i) - n.x * d, pos.getY(i) - n.y * d, pos.getZ(i) - n.z * d);
   }
-  geometry.translate(0, height / 2 + GROUND_Y - 0.05, 0);
+}
+
+/**
+ * One cut block: a truncated prism of 5-7 sides, its top split along a slanted plane, as
+ * rock breaks along its cleavage. Leaning a little, standing on the ground (y = 0).
+ */
+function block(rand: Rand, radius: number, height: number, spire: boolean): BufferGeometry {
+  const sides = 5 + Math.floor(rand() * 3);
+  // A spire keeps a sharp, chiselled tip; shoulders are blunt blocks.
+  const top = radius * (spire ? 0.04 + rand() * 0.08 : 0.15 + rand() * 0.35);
+  const geometry = new CylinderGeometry(top, radius, height, sides, 1);
+  geometry.translate(0, height / 2, 0);
+  const pos = geometry.getAttribute('position') as BufferAttribute;
+  const slant = new Vector3(rand() - 0.5, 1.4 + rand(), rand() - 0.5).normalize();
+  const cut = spire ? 0.84 + rand() * 0.1 : 0.65 + rand() * 0.25;
+  cutWithPlane(pos, slant, new Vector3(0, height * cut, 0));
+  geometry.rotateZ((rand() - 0.5) * 0.25);
+  geometry.rotateX((rand() - 0.5) * 0.25);
+  geometry.rotateY(rand() * Math.PI * 2);
+  return geometry;
+}
+
+/**
+ * Cut rock massif (SPEC §5.1, "roche taillée"): 3-5 overlapping blocks of varied sizes,
+ * the tallest in the middle, for a broken, stepped silhouette instead of a smooth cone.
+ * Flat-shaded; built once.
+ */
+function peakGeometry(layout: Rand, radius: number, height: number, lean: number): BufferGeometry {
+  // Its own generator: the layout draws exactly 2 numbers, as the previous peaks did,
+  // so the composition of the scene does not move.
+  const rand = mulberry32(Math.floor(layout() * 2 ** 31));
+  layout();
+  const count = 3 + Math.floor(rand() * 3);
+  const parts = Array.from({ length: count }, (_, k) => {
+    const main = k === 0;
+    const h = height * (main ? 1 : 0.35 + rand() * 0.45);
+    const r = radius * (main ? 0.8 : 0.35 + rand() * 0.35);
+    const g = block(rand, r, h, main);
+    const a = rand() * Math.PI * 2;
+    const off = main ? 0 : radius * (0.35 + rand() * 0.45);
+    g.translate(Math.cos(a) * off + lean * height * 0.3, 0, Math.sin(a) * off);
+    return g;
+  });
+  const geometry = mergeGeometries(parts.map((g) => g.toNonIndexed()));
+  for (const g of parts) g.dispose();
+  geometry.translate(0, GROUND_Y - 0.05, 0);
   return geometry;
 }
 

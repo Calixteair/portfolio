@@ -182,3 +182,24 @@ test('a shared link to a body skips the intro and opens it @webgpu', async ({ pa
   await expect(page.locator('#panel-kalidoku')).toBeVisible({ timeout: 15_000 });
   expect(errors).toEqual([]);
 });
+
+test('the system map searches, then travels to the first match @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/');
+  await leaveLoader(page, "Passer l'intro");
+  const map = page.locator('#system-map');
+  await expect(map).toBeVisible({ timeout: 10_000 });
+  // Typing an "m" in the search box searches; it does not close the map.
+  await page.getByRole('searchbox').pressSequentially('m');
+  await expect(map).toBeVisible();
+  await page.getByRole('searchbox').fill('rust');
+  await expect(map.locator('li:not([hidden])')).toHaveText(['kalidoku', 'Rust']);
+  await page.getByRole('searchbox').press('Enter');
+  await expect(page.locator('#panel-kalidoku')).toBeVisible({ timeout: 15_000 });
+  // The panel took the focus: M now folds the map away, and brings it back.
+  await page.keyboard.press('m');
+  await expect(map).toBeHidden();
+  await page.keyboard.press('m');
+  await expect(map).toBeVisible();
+  expect(errors).toEqual([]);
+});

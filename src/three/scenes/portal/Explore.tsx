@@ -9,6 +9,7 @@ import {
   type LookState,
 } from '../../../system/look';
 import { bindLook } from '../../../system/lookInput';
+import { bindMap } from '../../../system/map';
 import type { PortalSystem } from './system';
 import type { LensUniforms } from '../../post/lens';
 import { hideLabel, showLabel, type LabelText } from './label';
@@ -31,6 +32,8 @@ interface Holder {
   binding: LookBinding | null;
   nav: Navigation | null;
   hovered: string | null;
+  /** A body pointed at in the map's list (takes over from the pointer in 3D). */
+  listed: string | null;
 }
 
 /**
@@ -52,12 +55,18 @@ function attachExplore(
     focus: deps.system.bodies.focus,
   });
   const stopNav = nav.start();
+  const stopMap = bindMap({
+    mark: deps.system.bodies.mark,
+    hover: (slug) => void (holder.listed = slug),
+    open: nav.open,
+  });
   const binding = bindLook(setup.canvas, setup.look, () => {
     if (holder.hovered) nav.open(holder.hovered);
   });
   Object.assign(holder, { binding, nav });
   return () => {
     binding.dispose();
+    stopMap();
     stopNav();
     Object.assign(holder, { binding: null, nav: null });
   };
@@ -113,7 +122,8 @@ function hoverFrame(
   const dragging = holder.binding?.isDragging() ?? false;
   const pointer = exploring && !dragging ? holder.binding?.hover.pointer : null;
   const objects = scene.system.bodies.objects;
-  const slug = pointer ? pickBody(pointer, scene.camera, objects.values()) : null;
+  const picked = pointer ? pickBody(pointer, scene.camera, objects.values()) : null;
+  const slug = holder.listed ?? picked;
   holder.hovered = slug;
   scene.system.bodies.hover(slug);
   ui.canvas.style.cursor = slug ? 'pointer' : 'grab';
@@ -140,7 +150,10 @@ interface ExploreProps {
 export default function Explore({ system, eye, texts, label, lens }: ExploreProps) {
   const canvas = useThree((s) => s.gl.domElement);
   const look = useMemo(() => createLook(), []);
-  const input = useMemo<Holder>(() => ({ binding: null, nav: null, hovered: null }), []);
+  const input = useMemo<Holder>(
+    () => ({ binding: null, nav: null, hovered: null, listed: null }),
+    [],
+  );
   const wasFree = useMemo(() => ({ value: true }), []);
   useEffect(
     () => attachExplore(input, { canvas, look, camera: eye.current }, { lens, system }),

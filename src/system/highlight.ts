@@ -27,6 +27,11 @@ export function glowTarget(body: { slug: string; host?: string }, state: Highlig
   return target;
 }
 
+/** During a search, bodies that do not match fade back (1 = faded), so matches stand out. */
+export function dimTarget(body: { slug: string }, state: HighlightState): number {
+  return state.marked !== null && !state.marked.has(body.slug) ? 1 : 0;
+}
+
 /** Ease `current` towards `target`, frame-rate independent (rate per second). */
 export function easeGlow(current: number, target: number, dt: number, rate = 6): number {
   return current + (target - current) * (1 - Math.exp(-dt * rate));

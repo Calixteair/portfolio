@@ -12,6 +12,7 @@ import {
   MeshStandardNodeMaterial,
   SphereGeometry,
   Vector3,
+  type Node,
   type Object3D,
   type UniformNode,
 } from 'three/webgpu';
@@ -20,6 +21,7 @@ import { PALETTE_B } from '../../../shaders/nebula';
 import { createMoonMaterial, createPlanetMaterial, rimGlow } from '../../../shaders/planets';
 import {
   createHighlight,
+  dimTarget,
   easeGlow,
   glowTarget,
   type HighlightState,
@@ -66,6 +68,22 @@ function meshFor(body: Body, highlight: UniformNode<'float', number>): Object3D 
       ? createPlanetMaterial(look.type, look.hue, highlight)
       : createMoonMaterial(look.soft, look.hue, highlight);
   return new Mesh(new SphereGeometry(radius, detail, detail / 2), material);
+}
+
+/** How dark a faded body gets (search non-matches): it stays visible, matches stand out. */
+const FADED = 0.7;
+
+/** Scale a body's colour and emission down by its fade (0 = untouched, 1 = faded). */
+function fadeWith(object: Object3D, fade: UniformNode<'float', number>): void {
+  const keep = float(1).sub(fade.mul(FADED));
+  object.traverse((child) => {
+    const material = (child as Mesh).material as MeshStandardNodeMaterial | undefined;
+    if (!(material instanceof MeshStandardNodeMaterial) || material.userData.faded) return;
+    material.userData.faded = true; // station materials are shared by several meshes
+    if (material.colorNode) material.colorNode = material.colorNode.mul(keep);
+    if (material.emissiveNode)
+      material.emissiveNode = (material.emissiveNode as Node<'vec3'>).mul(keep);
+  });
 }
 
 /** How much an orbit trace takes its body's hue over the palette's blue: a slight shift. */
@@ -134,18 +152,23 @@ export function createBodies(bodies: Body[]): SystemBodies {
   const objects = new Map<string, Object3D>();
   const lookup = new Map(bodies.map((b) => [b.slug, b]));
   const glows = new Map(bodies.map((b) => [b.slug, uniform(0)]));
+  const fades = new Map(bodies.map((b) => [b.slug, uniform(0)]));
   const traced = bodies.filter((b) => b.kind === 'planet' || b.kind === 'station');
   const traceGlow = uniformArray<'float'>(new Array<number>(traced.length).fill(0), 'float');
+  const traceFade = uniformArray<'float'>(new Array<number>(traced.length).fill(0), 'float');
   const orbitMaterial = new LineBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
     vertexColors: true,
   });
-  const lit = traceGlow.element(attribute<'float'>('orbit', 'float').toUint());
-  orbitMaterial.opacityNode = float(0.16).add(lit.mul(0.5));
+  const trace = attribute<'float'>('orbit', 'float').toUint();
+  const lit = traceGlow.element(trace);
+  const faded = float(1).sub(traceFade.element(trace).mul(FADED));
+  orbitMaterial.opacityNode = float(0.16).add(lit.mul(0.5)).mul(faded);
   const hitMaterial = new MeshBasicNodeMaterial({ visible: false });
   for (const body of bodies) {
     const object = meshFor(body, glows.get(body.slug) ?? uniform(0));
+    fadeWith(object, fades.get(body.slug) ?? uniform(0));
     object.add(hitProxy(body, hitMaterial));
     object.name = body.slug;
     object.userData.slug = body.slug;
@@ -161,9 +184,12 @@ export function createBodies(bodies: Body[]): SystemBodies {
     for (const body of bodies) {
       const glow = glows.get(body.slug);
       if (glow) glow.value = easeGlow(glow.value, glowTarget(body, state), dt);
+      const fade = fades.get(body.slug);
+      if (fade) fade.value = easeGlow(fade.value, dimTarget(body, state), dt);
     }
     traced.forEach((body, i) => {
       traceGlow.array[i] = glows.get(body.slug)?.value ?? 0;
+      traceFade.array[i] = fades.get(body.slug)?.value ?? 0;
     });
   };
   const update = (elapsed: number) => {

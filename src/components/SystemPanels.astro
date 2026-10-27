@@ -6,28 +6,66 @@
  * drives the same navigation as the clicks.
  */
 import EntryArticle from './EntryArticle.astro';
-import { loadSections } from '../content/sections';
+import { loadSections, type Entry } from '../content/sections';
+import { normalizeText } from '../system/search';
 
 const sections = await loadSections();
+/** What the map's search looks in, normalised once here (accents, case). */
+const searchText = (e: Entry) =>
+  normalizeText([e.data.title, e.data.summary, ...e.data.tags].join(' '));
 ---
 
 <section id="system-ui" class="system-ui" aria-label="Système planétaire du portfolio" hidden>
-  <nav class="system-nav" aria-label="Aller vers un astre">
-    {sections.groups.map((g) => (
-      <div class="system-nav-group">
-        <h2>{g.title}</h2>
-        <ul>
-          {g.items.map((e) => (
-            <li>
-              <a href={`#${e.id}`} data-body={e.id}>
-                {e.data.title}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
-  </nav>
+  <button
+    type="button"
+    class="map-open"
+    data-map-toggle
+    aria-controls="system-map"
+    aria-expanded="true"
+    hidden
+  >
+    Carte <kbd>M</kbd>
+  </button>
+  <aside id="system-map" class="system-map" aria-labelledby="system-map-title" data-open="true">
+    <header class="map-head">
+      <h2 id="system-map-title">Carte du système</h2>
+      <button type="button" class="map-close" data-map-toggle aria-label="Fermer la carte">
+        ×
+      </button>
+    </header>
+    <label class="map-search">
+      <span class="sr-only">Rechercher un projet, une compétence…</span>
+      <input
+        type="search"
+        data-map-search
+        placeholder="Rechercher : Rust, SOC, autonomie…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </label>
+    <p class="map-empty" data-map-empty hidden>
+      Aucun résultat.
+    </p>
+    <nav class="system-nav" aria-label="Aller vers un astre">
+      {sections.groups.map((g) => (
+        <div class="system-nav-group" data-map-group>
+          <h3>{g.title}</h3>
+          <ul>
+            {g.items.map((e) => (
+              <li data-search={searchText(e)} data-slug={e.id}>
+                <a href={`#${e.id}`} data-body={e.id}>
+                  {e.data.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </nav>
+    <p class="map-hint">
+      <kbd>M</kbd> carte · <kbd>I</kbd> titres · <kbd>Échap</kbd> retour
+    </p>
+  </aside>
   <a class="system-classic" href="/classique/">
     Version classique
   </a>
@@ -49,28 +87,89 @@ const sections = await loadSections();
       sans-serif;
   }
 
-  /* Keyboard list: visually hidden until it receives focus (skip-link pattern). */
-  .system-nav {
+  /* The system map: every body, grouped, with a search (open at first, closable). */
+  .system-map {
     position: absolute;
     left: 1rem;
     top: 1rem;
-    max-height: calc(100% - 2rem);
-    overflow: auto;
-    padding: 0.75rem 1rem;
-    background: rgb(2 4 12 / 0.85);
+    display: flex;
+    flex-direction: column;
+    width: min(18rem, calc(100% - 2rem));
+    max-height: calc(100% - 4.5rem);
+    padding: 0.9rem 1rem 0.75rem;
+    background: rgb(2 4 12 / 0.78);
     border-left: 2px solid #2f6bff;
-    clip-path: inset(50%);
+    backdrop-filter: blur(8px);
     pointer-events: auto;
   }
-  .system-nav:focus-within {
-    clip-path: none;
+  .system-map[data-open='false'] {
+    display: none;
   }
-  .system-nav h2 {
-    margin: 0.5rem 0 0.25rem;
+  .map-open {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    padding: 0.45rem 0.9rem;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--ink);
+    background: rgb(2 4 12 / 0.7);
+    border: 1px solid rgb(180 224 255 / 0.35);
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .map-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .map-head h2 {
+    margin: 0;
     font-size: 0.8rem;
     letter-spacing: 0.15em;
     text-transform: uppercase;
+    color: #b4e0ff;
+  }
+  .map-close {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+  }
+  .map-search input {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0.6rem 0 0.4rem;
+    padding: 0.5rem 0.65rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(180 224 255 / 0.3);
+    border-radius: 0;
+  }
+  .map-search input:focus-visible {
+    outline: 1px solid #2f6bff;
+    border-color: #2f6bff;
+  }
+  .map-empty {
+    margin: 0.4rem 0;
     opacity: 0.7;
+  }
+  .system-nav {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .system-nav h3 {
+    margin: 0.7rem 0 0.2rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.6;
   }
   .system-nav ul {
     margin: 0;
@@ -78,11 +177,37 @@ const sections = await loadSections();
     list-style: none;
   }
   .system-nav a {
+    display: block;
+    padding: 0.2rem 0.4rem;
     color: inherit;
+    text-decoration: none;
+  }
+  .system-nav a:hover,
+  .system-nav a:focus-visible {
+    background: rgb(47 107 255 / 0.22);
+    outline: none;
+  }
+  .map-hint {
+    margin: 0.6rem 0 0;
+    font-size: 0.75rem;
+    opacity: 0.55;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  kbd {
+    font: inherit;
+    font-size: 0.75em;
+    opacity: 0.7;
   }
   .system-classic {
     position: absolute;
-    left: 1.25rem;
+    right: 1.25rem;
     bottom: 1rem;
     font-size: 0.85rem;
     color: var(--ink);

@@ -228,18 +228,39 @@ def brilliant(radius: float) -> bpy.types.Mesh:
     return mesh
 
 
-def diamonds(pits: list[tuple[Vector, float, int]], count: int = 9) -> list[bpy.types.Object]:
-    """Black diamonds set at the bottom of the largest pits, table facing out (mostly front)."""
+def seat(body: bpy.types.Object, x: float, y: float, side: int) -> tuple[Vector, Vector] | None:
+    """
+    Where a diamond can sit at (x, y): cast a ray into the finished plate from outside the
+    face; keep the hit only if it lands on a carved (black) face clearly below the silver
+    surface. Returns the hit point and its normal, else None.
+    """
+    origin = Vector((x, y, side * (HALF + 1.0 * MM)))
+    hit, at, normal, index = body.ray_cast(origin, Vector((0, 0, -side)))
+    if not hit or body.data.polygons[index].material_index != 1:
+        return None
+    if side * at.z > HALF - 0.15 * MM:  # too shallow: it would stick out
+        return None
+    return at, normal
+
+
+def diamonds(body: bpy.types.Object, pits: list[tuple[Vector, float, int]], count: int = 9) -> list[bpy.types.Object]:
+    """Black diamonds seated on the actual floor of the largest cavities (ray cast)."""
     mesh = brilliant(1)
-    front = sorted((p for p in pits if p[2] > 0), key=lambda p: -p[1])[: count - 2]
-    back = sorted((p for p in pits if p[2] < 0), key=lambda p: -p[1])[:2]
     out = []
-    for k, (floor, r, side) in enumerate(front + back):
-        obj = link(f"diamond.{k:02}", mesh)
-        size = min(0.45 * MM, r * 0.75)
+    for floor, r, side in sorted(pits, key=lambda p: (p[2] < 0, -p[1])):
+        if len(out) >= count or (side < 0 and sum(1 for g in out if g.location.z < 0) >= 2):
+            continue
+        found = seat(body, floor.x, floor.y, side)
+        if not found:
+            continue
+        at, normal = found
+        size = min(0.42 * MM, r * 0.7)
+        obj = link(f"diamond.{len(out):02}", mesh)
         obj.scale = (size, size, size)
-        obj.rotation_euler = (0 if side > 0 else math.pi, 0, RNG.uniform(0, 6.28))
-        obj.location = floor + Vector((0, 0, side * size * 0.15))
+        # Table facing out along the cavity floor's normal, sunk to its girdle.
+        obj.rotation_euler = normal.to_track_quat("Z", "Y").to_euler()
+        obj.rotation_euler.rotate_axis("Z", RNG.uniform(0, 6.28))
+        obj.location = at - normal * size * 0.25
         out.append(obj)
     return out
 
@@ -331,7 +352,7 @@ def main() -> None:
     body_materials(body)
     cutter, pits = erosion_volume()
     erode(body, cutter)
-    gems = [] if "--no-gems" in args else diamonds(pits)
+    gems = [] if "--no-gems" in args else diamonds(body, pits)
     if "--preview" in args:
         dress(gems)
         render("front", 0.0, (0.16, 0.16, 0.165))

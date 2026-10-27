@@ -1,15 +1,24 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import type { PerspectiveCamera, Scene } from 'three/webgpu';
+import { QUALITY, type LiveQuality } from '../quality';
 import { markReady, type DiveReadiness } from '../readiness';
 import type { StageView } from '../stage';
 import { useWebGPU } from '../useWebGPU';
-import { warmFrame, createLensPipeline, renderLens, type LensUniforms } from './lens';
+import {
+  createLensPipeline,
+  focusOnPendant,
+  renderLens,
+  warmFrame,
+  type LensUniforms,
+} from './lens';
 
 interface LensEffectsProps {
   uniforms: LensUniforms;
   /** Scene and camera to render instead of R3F's own (wormhole, planetary system). */
   stage: StageView;
+  /** Depth of field only on the high tier. */
+  quality: LiveQuality;
   /** Scenes the dive will show full screen, compiled ahead for this pipeline. */
   warmUp: {
     /** Each with the camera that will show it (null until it exists). */
@@ -38,7 +47,7 @@ function warmNext(
 }
 
 /** Takes over R3F's render loop (positive useFrame priority) to render through the lens pipeline. */
-export default function LensEffects({ uniforms, stage, warmUp }: LensEffectsProps) {
+export default function LensEffects({ uniforms, stage, warmUp, quality }: LensEffectsProps) {
   const { gl, scene, camera } = useWebGPU();
   const lens = useMemo(
     () => createLensPipeline(gl, scene, camera, uniforms),
@@ -48,7 +57,10 @@ export default function LensEffects({ uniforms, stage, warmUp }: LensEffectsProp
   useEffect(() => () => lens.pipeline.dispose(), [lens]);
   const queue = useMemo(() => [...warmUp.views], [warmUp]);
   useFrame(() => {
-    if (!warmNext(queue, lens, warmUp.readiness)) renderLens(lens, stage, { scene, camera });
+    if (warmNext(queue, lens, warmUp.readiness)) return;
+    focusOnPendant(uniforms, camera);
+    const focus = stage.scene === null && QUALITY[quality.tier].dof;
+    renderLens(lens, stage, { scene, camera }, focus);
   }, 1);
   return null;
 }

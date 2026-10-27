@@ -114,6 +114,8 @@ export default function DevControls({ runtime, lens, lights, steel }: DevControl
       haze: uniformSlider(lens.haze, [0, 0.03, 0.0005]),
       zoomBlur: uniformSlider(lens.zoomBlur, [0, 1, 0.01]),
       flash: uniformSlider(lens.flash, [0, 1, 0.01]),
+      dofRange: uniformSlider(lens.dofRange, [0.5, 30, 0.1]),
+      dofBokeh: uniformSlider(lens.dofBokeh, [0, 5, 0.05]),
     }),
     // leva rounds the displayed numbers: this copies the exact live values.
     'Copier les valeurs': button(() => {

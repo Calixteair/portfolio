@@ -106,7 +106,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           onArrived={onArrived}
         />
         <Quality live={world.quality} setDpr={setDpr} />
-        <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} />
+        <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} quality={world.quality} />
         {DevControls && (
           <Suspense fallback={null}>
             <DevControls

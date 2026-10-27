@@ -1,4 +1,5 @@
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
+import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js';
 import {
   dot,
   emissive,
@@ -46,6 +47,13 @@ export function createLensUniforms() {
     /** Wormhole dive (SPEC §5.6): radial zoom blur (0-1) and white flash (0-1). */
     zoomBlur: uniform(0),
     flash: uniform(0),
+    /**
+     * Depth of field (high tier, forge only): focus distance in metres (kept on the
+     * pendant), how far from it things are fully blurred, and the bokeh size.
+     */
+    dofFocus: uniform(3.3),
+    dofRange: uniform(6),
+    dofBokeh: uniform(1.5),
   };
 }
 
@@ -83,23 +91,32 @@ function zoomBlur(color: TextureNode, uv: Node<'vec2'>, strength: Node<'float'>)
   return sum.div(ZOOM_TAPS);
 }
 
+/** Display-space finish: vignette, film grain, dive flash. */
+function filmFinish(display: Node<'vec4'>, u: LensUniforms): Node<'vec4'> {
+  const centred = screenUV.sub(0.5);
+  const vignette = float(1).sub(dot(centred, centred).mul(u.vignette));
+  const noise = hash21(screenUV.mul(vec2(1717, 913)).add(fract(time).mul(37)));
+  const film = display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain));
+  return vec4(mix(film, vec3(1), u.flash.clamp(0, 1)), 1);
+}
+
 /**
  * Scene → heat haze → slight chromatic aberration and dive zoom blur (in HDR) + bloom → AgX
- * tone mapping and sRGB (renderOutput) → vignette, film grain and dive flash in display
- * space, like a real lens and sensor. Depth of field is left to M8, with quality levels.
+ * tone mapping and sRGB (renderOutput) → [depth of field] → vignette, film grain and dive
+ * flash in display space, like a real lens and sensor. Two outputs share the scene pass:
+ * with depth of field (high tier, in the forge) and without, switched per frame.
  */
 export function createLensPipeline(
   renderer: WebGPURenderer,
   scene: Scene,
   camera: Camera,
   u: LensUniforms,
-): { pipeline: RenderPipeline; scenePass: ReturnType<typeof pass> } {
+) {
   const scenePass = pass(scene, camera);
   scenePass.setMRT(mrt({ output, emissive }));
   const color = scenePass.getTextureNode('output');
   const uv = hazeUv(scenePass.getTextureNode('emissive'), u.haze);
-  const centred = screenUV.sub(0.5);
-  const offset = centred.mul(u.aberration);
+  const offset = screenUV.sub(0.5).mul(u.aberration);
   const split = vec4(
     color.sample(uv.add(offset)).r,
     color.sample(uv).g,
@@ -109,21 +126,42 @@ export function createLensPipeline(
   const sharp = mix(split.rgb, zoomBlur(color, uv, u.zoomBlur), u.zoomBlur.clamp(0, 1));
   const glow = bloom(color, u.bloomStrength, u.bloomRadius, u.bloomThreshold);
   const display = renderOutput(vec4(sharp, 1).add(glow));
-  const vignette = float(1).sub(dot(centred, centred).mul(u.vignette));
-  const noise = hash21(screenUV.mul(vec2(1717, 913)).add(fract(time).mul(37)));
+  // The node itself (not its texture), so its blur passes run; @types/three leaves its
+  // output untyped, it is the blurred colour (vec4).
+  const blurred = dof(
+    display,
+    scenePass.getViewZNode(),
+    u.dofFocus,
+    u.dofRange,
+    u.dofBokeh,
+  ) as unknown as Node<'vec4'>;
+  const outputs = { plain: filmFinish(display, u), focused: filmFinish(blurred, u) };
   const pipeline = new RenderPipeline(renderer);
   pipeline.outputColorTransform = false;
-  const film = display.rgb.mul(vignette).add(noise.sub(0.5).mul(u.grain));
-  pipeline.outputNode = vec4(mix(film, vec3(1), u.flash.clamp(0, 1)), 1);
-  return { pipeline, scenePass };
+  pipeline.outputNode = outputs.plain;
+  return { pipeline, scenePass, outputs };
 }
 
-/** Renders the stage's scene and camera, or the defaults (R3F's forge) when it has none. */
+/** Keep the pendant (at the origin) in focus, wherever the camera is (it moves in the dive). */
+export function focusOnPendant(u: LensUniforms, camera: Camera): void {
+  u.dofFocus.value = camera.position.length();
+}
+
+/**
+ * Renders the stage's scene and camera, or the defaults (R3F's forge) when it has none,
+ * with or without depth of field. Switching rebuilds the output shader once per graph.
+ */
 export function renderLens(
   lens: ReturnType<typeof createLensPipeline>,
   stage: { scene: Scene | null; camera: Camera | null },
   fallback: { scene: Scene; camera: Camera },
+  focus = false,
 ): void {
+  const wanted = focus ? lens.outputs.focused : lens.outputs.plain;
+  if (lens.pipeline.outputNode !== wanted) {
+    lens.pipeline.outputNode = wanted;
+    lens.pipeline.needsUpdate = true;
+  }
   lens.scenePass.scene = stage.scene ?? fallback.scene;
   lens.scenePass.camera = stage.camera ?? fallback.camera;
   lens.pipeline.render();

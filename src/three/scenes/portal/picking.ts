@@ -25,16 +25,20 @@ export function pickBody(
 
 const projected = new Vector3();
 
-/** Screen position (CSS px) of an object, or null when behind the camera. */
+/**
+ * Screen position (CSS px) of an object, or null when behind the camera. `depth` is the
+ * normalised device depth (smaller is nearer).
+ */
 export function screenPoint(
   object: Object3D,
   camera: Camera,
   size: { width: number; height: number },
-): { x: number; y: number } | null {
+): { x: number; y: number; depth: number } | null {
   object.getWorldPosition(projected).project(camera);
   if (projected.z > 1) return null;
   return {
     x: ((projected.x + 1) / 2) * size.width,
     y: ((1 - projected.y) / 2) * size.height,
+    depth: projected.z,
   };
 }

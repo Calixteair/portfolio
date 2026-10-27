@@ -11,6 +11,8 @@ import { normalizeText } from '../system/search';
 
 const sections = await loadSections();
 /** What the map's search looks in, normalised once here (accents, case). */
+/** Titles shown over the bodies with the I key: projects and experiences (not the moons). */
+const titled = sections.entries.filter((e) => e.data.category !== 'skill');
 const searchText = (e: Entry) =>
   normalizeText([e.data.title, e.data.summary, ...e.data.tags].join(' '));
 ---
@@ -63,9 +65,20 @@ const searchText = (e: Entry) =>
       ))}
     </nav>
     <p class="map-hint">
-      <kbd>M</kbd> carte · <kbd>I</kbd> titres · <kbd>Échap</kbd> retour
+      <kbd>M</kbd> carte ·
+      <button type="button" class="titles-toggle" data-titles-toggle aria-pressed="false">
+        <kbd>I</kbd> titres
+      </button>
+      · <kbd>Échap</kbd> retour
     </p>
   </aside>
+  <div id="body-titles" class="body-titles" hidden>
+    {titled.map((e) => (
+      <a class="body-title" href={`#${e.id}`} data-body={e.id} data-title-of={e.id}>
+        {e.data.title}
+      </a>
+    ))}
+  </div>
   <a class="system-classic" href="/classique/">
     Version classique
   </a>
@@ -191,6 +204,50 @@ const searchText = (e: Entry) =>
     margin: 0.6rem 0 0;
     font-size: 0.75rem;
     opacity: 0.55;
+  }
+  .titles-toggle {
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+  .titles-toggle[aria-pressed='true'] {
+    color: #b4e0ff;
+  }
+  /* Title cards over the bodies (I): placed every frame by the 3D side (CSSOM). */
+  .body-titles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .body-title {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--ink);
+    text-decoration: none;
+    background: rgb(2 4 12 / 0.7);
+    border-left: 2px solid #2f6bff;
+    pointer-events: auto;
+    will-change: transform;
+    /* Centred above the body's screen point (the transform, set every frame). */
+    translate: -50% calc(-100% - 0.7rem);
+  }
+  .body-title[hidden] {
+    display: none;
+  }
+  .body-title:hover,
+  .body-title:focus-visible {
+    background: rgb(47 107 255 / 0.35);
+    outline: none;
   }
   .sr-only {
     position: absolute;

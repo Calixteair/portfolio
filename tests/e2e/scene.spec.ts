@@ -203,3 +203,19 @@ test('the system map searches, then travels to the first match @webgpu', async (
   await expect(map).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('I shows the titles over the bodies; a title travels to its body @webgpu', async ({
+  page,
+}) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/');
+  await leaveLoader(page, "Passer l'intro");
+  await expect(page.locator('#system-map')).toBeVisible({ timeout: 10_000 });
+  await page.keyboard.press('i');
+  const titles = page.locator('#body-titles');
+  await expect(titles).toBeVisible();
+  await expect(titles.locator('.body-title:not([hidden])').first()).toBeVisible();
+  await titles.locator('[data-title-of="portfolio"]').click();
+  await expect(page.locator('#panel-portfolio')).toBeVisible({ timeout: 15_000 });
+  expect(errors).toEqual([]);
+});

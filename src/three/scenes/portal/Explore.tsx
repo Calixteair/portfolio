@@ -10,9 +10,10 @@ import {
 } from '../../../system/look';
 import { bindLook } from '../../../system/lookInput';
 import { bindMap } from '../../../system/map';
+import { bindTitles, type Titles } from '../../../system/titles';
 import type { PortalSystem } from './system';
 import type { LensUniforms } from '../../post/lens';
-import { hideLabel, showLabel, type LabelText } from './label';
+import { hideLabel, placeTitles, showLabel, type LabelText } from './label';
 import { createNavigation } from './navigation';
 import { pickBody, screenPoint } from './picking';
 import { holdOrbit, type Travel } from './travel';
@@ -34,6 +35,7 @@ interface Holder {
   hovered: string | null;
   /** A body pointed at in the map's list (takes over from the pointer in 3D). */
   listed: string | null;
+  titles: Titles | null;
 }
 
 /**
@@ -60,15 +62,17 @@ function attachExplore(
     hover: (slug) => void (holder.listed = slug),
     open: nav.open,
   });
+  const titles = bindTitles((slug) => void (holder.listed = slug));
   const binding = bindLook(setup.canvas, setup.look, () => {
     if (holder.hovered) nav.open(holder.hovered);
   });
-  Object.assign(holder, { binding, nav });
+  Object.assign(holder, { binding, nav, titles });
   return () => {
     binding.dispose();
+    titles?.dispose();
     stopMap();
     stopNav();
-    Object.assign(holder, { binding: null, nav: null });
+    Object.assign(holder, { binding: null, nav: null, titles: null });
   };
 }
 
@@ -151,7 +155,7 @@ export default function Explore({ system, eye, texts, label, lens }: ExploreProp
   const canvas = useThree((s) => s.gl.domElement);
   const look = useMemo(() => createLook(), []);
   const input = useMemo<Holder>(
-    () => ({ binding: null, nav: null, hovered: null, listed: null }),
+    () => ({ binding: null, nav: null, hovered: null, listed: null, titles: null }),
     [],
   );
   const wasFree = useMemo(() => ({ value: true }), []);
@@ -169,6 +173,18 @@ export default function Explore({ system, eye, texts, label, lens }: ExploreProp
       aspect: state.size.width / state.size.height,
     };
     exploreFrame(frame, system, eye.current, { look, binding, travel: nav.travel, wasFree });
+    if (input.titles?.shown()) {
+      const camera = eye.current;
+      const objects = system.bodies.objects;
+      placeTitles(
+        input.titles.cards,
+        (slug) => {
+          const object = objects.get(slug);
+          return object ? screenPoint(object, camera, state.size) : null;
+        },
+        state.size,
+      );
+    }
     hoverFrame(
       input,
       { system, camera: eye.current, size: state.size },

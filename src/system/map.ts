@@ -71,8 +71,8 @@ function bindSearch(root: HTMLElement, input: HTMLInputElement, events: MapEvent
   };
 }
 
-/** List entries light their body up under the pointer or the keyboard focus. */
-function bindHover(root: HTMLElement, events: MapEvents): () => void {
+/** Entries (list, title cards) light their body up under the pointer or the focus. */
+export function bindHover(root: HTMLElement, events: Pick<MapEvents, 'hover'>): () => void {
   const slugOf = (e: Event) =>
     (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-body]')?.dataset.body ?? null;
   const enter = (e: Event) => events.hover(slugOf(e));

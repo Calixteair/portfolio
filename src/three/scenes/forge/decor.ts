@@ -4,6 +4,9 @@ import {
   BufferGeometry,
   Float32BufferAttribute,
   CylinderGeometry,
+  DodecahedronGeometry,
+  InstancedMesh,
+  Object3D,
   Group,
   Mesh,
   PlaneGeometry,
@@ -240,6 +243,43 @@ function groundGeometry(): BufferGeometry {
   return geometry;
 }
 
+/** One cut pebble shape, every instance a scaled, turned copy of it. */
+function pebbleGeometry(): BufferGeometry {
+  const rand = mulberry32(5);
+  const geometry = new DodecahedronGeometry(1, 0);
+  const pos = geometry.getAttribute('position') as BufferAttribute;
+  // Squashed and cut: a chip of rock, not a ball.
+  geometry.scale(1, 0.6, 0.85);
+  cutWithPlane(pos, new Vector3(0.3, 1, 0.2).normalize(), new Vector3(0, 0.35, 0));
+  for (let i = 0; i < pos.count; i++) pos.setX(i, pos.getX(i) * (0.9 + rand() * 0.2));
+  return geometry;
+}
+
+/**
+ * Pebbles and chips of cut rock strewn on the ground, denser near the pendant (where its
+ * glow lights them), half sunk in the relief. One instanced draw call.
+ */
+function pebbles(rand: Rand, count: number, heat: UniformNode<'float', number>): InstancedMesh {
+  const material = createRockMaterial(heat, { color: 0x2c2c31, grain: true, glow: 0 });
+  const mesh = new InstancedMesh(pebbleGeometry(), material, count);
+  const dummy = new Object3D();
+  for (let i = 0; i < count; i++) {
+    const angle = rand() * Math.PI * 2;
+    const r = 1.3 + 22 * rand() ** 2;
+    const x = Math.sin(angle) * r;
+    const z = -Math.cos(angle) * r;
+    // Between the pendant and the camera, pebbles loom large: keep those small.
+    const near = z > 0 ? 0.45 : 1;
+    const size = (0.025 + rand() * 0.07) * (1 + r * 0.06) * near;
+    dummy.position.set(x, GROUND_Y + groundHeight(x, z) + size * 0.25, z);
+    dummy.rotation.set((rand() - 0.5) * 0.6, rand() * Math.PI * 2, (rand() - 0.5) * 0.6);
+    dummy.scale.setScalar(size);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  return mesh;
+}
+
 export interface ForgeWorld {
   group: Group;
   /** Per-frame: glow intensity follows the heat. */
@@ -263,7 +303,11 @@ function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
   return [...layers, new Mesh(ridges, far)];
 }
 
-export function createForgeWorld(heat: UniformNode<'float', number>, horizon: Color): ForgeWorld {
+export function createForgeWorld(
+  heat: UniformNode<'float', number>,
+  horizon: Color,
+  pebbleCount: number,
+): ForgeWorld {
   const rand = mulberry32(11);
   const ground = new Mesh(
     groundGeometry(),
@@ -273,7 +317,7 @@ export function createForgeWorld(heat: UniformNode<'float', number>, horizon: Co
   const glow = new PointLight(0xff6a2a, 0.3, 40, 1.25);
   glow.position.set(0, GROUND_Y + 0.15, -0.4);
   const group = new Group();
-  group.add(ground, sky, glow, ...buildPeaks(rand, heat));
+  group.add(ground, sky, glow, ...buildPeaks(rand, heat), pebbles(rand, pebbleCount, heat));
   const dispose = () => disposeMeshes(group);
   const update = (value: number) => {
     glow.intensity = glowIntensity(value);

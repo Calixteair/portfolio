@@ -29,6 +29,11 @@ describe('quality tiers', () => {
     expect(dprFor('high', 0, 2)).toBe(1);
   });
 
+  it('strews more pebbles on higher tiers', () => {
+    expect(QUALITY.low.pebbles).toBeLessThan(QUALITY.medium.pebbles);
+    expect(QUALITY.medium.pebbles).toBeLessThan(QUALITY.high.pebbles);
+  });
+
   it('keeps the mobile tier near the SPEC budget (about 8 000 particles)', () => {
     expect(QUALITY.low.sparks + QUALITY.low.swarm).toBeLessThanOrEqual(8192);
   });

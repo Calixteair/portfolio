@@ -12,11 +12,19 @@ export type QualityTier = 'low' | 'medium' | 'high';
  */
 export const QUALITY: Record<
   QualityTier,
-  { dprMax: number; sparks: number; swarm: number; portalScale: number; dof: boolean }
+  {
+    dprMax: number;
+    sparks: number;
+    swarm: number;
+    portalScale: number;
+    dof: boolean;
+    /** Instanced pebbles on the forge ground (one draw call, built once). */
+    pebbles: number;
+  }
 > = {
-  low: { dprMax: 1, sparks: 2048, swarm: 4096, portalScale: 0.35, dof: false },
-  medium: { dprMax: 1.5, sparks: 4096, swarm: 8192, portalScale: 0.5, dof: false },
-  high: { dprMax: 2, sparks: 4096, swarm: 16384, portalScale: 0.5, dof: true },
+  low: { dprMax: 1, sparks: 2048, swarm: 4096, portalScale: 0.35, dof: false, pebbles: 150 },
+  medium: { dprMax: 1.5, sparks: 4096, swarm: 8192, portalScale: 0.5, dof: false, pebbles: 400 },
+  high: { dprMax: 2, sparks: 4096, swarm: 16384, portalScale: 0.5, dof: true, pebbles: 800 },
 };
 
 const ORDER: QualityTier[] = ['low', 'medium', 'high'];

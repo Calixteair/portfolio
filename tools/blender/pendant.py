@@ -67,6 +67,7 @@ def plate() -> bpy.types.Object:
     bevel = obj.modifiers.new("bevel", "BEVEL")
     bevel.width = PLATE["bevel"]
     bevel.segments = 3
+    bevel.profile = 0.5  # round, barely: every edge of the real pendant is softened
     bevel.limit_method = "ANGLE"
     bevel.angle_limit = math.radians(40)  # the hole's 180-point outline stays smooth
     bpy.context.view_layer.objects.active = obj

@@ -34,21 +34,65 @@ export const WIRE_PAD = 0.02;
 /** edgeMask resolution and the distance (scene units) mapped to 1 in the texture. */
 export const FIELD = { width: 160, height: 232, range: 0.2, margin: 0.02 } as const;
 
+/** Corner fillet radius: every edge of the real pendant is barely rounded, none is sharp. */
+const FILLET = 0.3 * (0.62 / 18);
+const FILLET_STEPS = 3;
+
 /**
- * Plate outline, clockwise from the top left: as on the real pendant, only two
- * opposite corners are cut (top right, bottom left), the other two are square.
+ * Replace each corner of a closed polygon with a small arc (fillet of radius `r`), tangent
+ * to both sides: `steps + 1` points per corner.
+ */
+export function roundCorners(points: readonly Point[], r: number, steps: number): Point[] {
+  const out: Point[] = [];
+  points.forEach((p, i) => {
+    const prev = points[(i + points.length - 1) % points.length] as Point;
+    const next = points[(i + 1) % points.length] as Point;
+    const a = normalize2({ x: prev.x - p.x, y: prev.y - p.y });
+    const b = normalize2({ x: next.x - p.x, y: next.y - p.y });
+    const half = Math.acos(Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y))) / 2;
+    const back = r / Math.tan(half); // distance from the corner to the tangent points
+    const bis = normalize2({ x: a.x + b.x, y: a.y + b.y });
+    const centre = { x: p.x + bis.x * (r / Math.sin(half)), y: p.y + bis.y * (r / Math.sin(half)) };
+    const from = { x: p.x + a.x * back, y: p.y + a.y * back };
+    const to = { x: p.x + b.x * back, y: p.y + b.y * back };
+    const start = Math.atan2(from.y - centre.y, from.x - centre.x);
+    let sweep = Math.atan2(to.y - centre.y, to.x - centre.x) - start;
+    if (sweep > Math.PI) sweep -= 2 * Math.PI;
+    if (sweep < -Math.PI) sweep += 2 * Math.PI;
+    for (let k = 0; k <= steps; k++) {
+      const angle = start + (sweep * k) / steps;
+      out.push({ x: centre.x + Math.cos(angle) * r, y: centre.y + Math.sin(angle) * r });
+    }
+  });
+  return out;
+}
+
+const normalize2 = (v: Point): Point => {
+  const l = Math.hypot(v.x, v.y) || 1;
+  return { x: v.x / l, y: v.y / l };
+};
+
+/**
+ * Plate outline, clockwise from the top: an elongated octagon (all four corners cut, as
+ * on the photos), every corner barely rounded.
  */
 export function outerOutline(): Point[] {
   const { hw, hh, chamfer: c } = PLATE;
   const corners: [number, number][] = [
-    [-hw, hh],
+    [-hw + c, hh],
     [hw - c, hh],
     [hw, hh - c],
-    [hw, -hh],
+    [hw, -hh + c],
+    [hw - c, -hh],
     [-hw + c, -hh],
     [-hw, -hh + c],
+    [-hw, hh - c],
   ];
-  return corners.map(([x, y]) => ({ x, y }));
+  return roundCorners(
+    corners.map(([x, y]) => ({ x, y })),
+    FILLET,
+    FILLET_STEPS,
+  );
 }
 
 const HOLE_WAVES: [frequency: number, amplitude: number][] = [

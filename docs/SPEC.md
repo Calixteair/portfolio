@@ -201,7 +201,7 @@ planet:                # optionnel, sinon dérivé de la catégorie
   hue: number          # 0-360, teinte dominante
 ```
 
-Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque aux **cotes du vrai pendentif, 26 × 18 × 4 mm** (cotes du fabricant), **deux coins opposés coupés** (en haut à droite et en bas à gauche, comme sur la photo de face ; _tranché en M9_, l'octogone du prototype était une approximation), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le futur GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
+Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque aux **cotes du vrai pendentif, 26 × 18 × 4 mm** (cotes du fabricant), **octogone allongé** (les quatre coins coupés, comme sur les photos), toutes les arêtes à peine arrondies (congés de 0,3 mm aux coins, biseau arrondi de 0,35 mm), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le futur GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
 
 ## 7. Budgets de performance
 

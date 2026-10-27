@@ -63,8 +63,11 @@ function buildBody(
     depth: PLATE.depth,
     bevelEnabled: true,
     bevelThickness: PLATE.bevel,
-    bevelSize: 0.006,
-    bevelSegments: 4,
+    // Barely rounded edges all round (0.35 mm), as on the real pendant. The offset keeps
+    // the silhouette on the outline (the bevel would otherwise grow the plate by its size).
+    bevelSize: PLATE.bevel,
+    bevelOffset: -PLATE.bevel,
+    bevelSegments: 3,
     curveSegments: 1,
   });
   geometry.translate(0, 0, -PLATE.depth / 2);

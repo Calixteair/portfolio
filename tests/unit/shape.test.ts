@@ -11,6 +11,7 @@ import {
   isInside,
   outerOutline,
   polygonDistance,
+  roundCorners,
   type EdgeFields,
 } from '../../src/three/pendant/shape';
 
@@ -39,13 +40,34 @@ describe('mulberry32', () => {
 });
 
 describe('outlines', () => {
-  it('matches the real pendant: 26 × 18 × 4 mm, two opposite corners cut', () => {
+  it('matches the real pendant: 26 × 18 × 4 mm, an octagon with rounded corners', () => {
     expect(PLATE.hh / PLATE.hw).toBeCloseTo(26 / 18, 3);
     expect((PLATE.depth + 2 * PLATE.bevel) / (2 * PLATE.hw)).toBeCloseTo(4 / 18, 3);
-    expect(outer).toHaveLength(6);
-    // Square top-left and bottom-right corners, cut top-right and bottom-left.
-    expect(outer).toContainEqual({ x: -PLATE.hw, y: PLATE.hh });
-    expect(outer).toContainEqual({ x: PLATE.hw, y: -PLATE.hh });
+    expect(outer).toHaveLength(8 * 4);
+    // Never beyond the plate's bounds, never exactly on a sharp corner.
+    for (const p of outer) {
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(PLATE.hw + 1e-9);
+      expect(Math.abs(p.y)).toBeLessThanOrEqual(PLATE.hh + 1e-9);
+    }
+    expect(isInside({ x: PLATE.hw - 1e-3, y: PLATE.hh - 1e-3 }, outer)).toBe(false);
+  });
+
+  it('rounds a square corner with an arc tangent to both sides', () => {
+    const square = roundCorners(
+      [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 1, y: 1 },
+        { x: 0, y: 1 },
+      ],
+      0.2,
+      2,
+    );
+    expect(square).toHaveLength(12);
+    const first = square[0];
+    expect(first?.x).toBeCloseTo(0);
+    expect(first?.y).toBeCloseTo(0.2);
+    expect(square[1]?.x).toBeCloseTo(0.2 - 0.2 * Math.SQRT1_2);
   });
 
   it('places the whole eroded hole inside the plate, away from the outer edge', () => {

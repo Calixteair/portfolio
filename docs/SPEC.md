@@ -207,11 +207,12 @@ Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **
 | JS initial (gzip)          | < 450 Ko pour l'île 3D (`three/webgpu` ≈ 300 Ko) ; scène portfolio chargée en différé |
 | Assets 3D totaux           | < 8 Mo                                                                                |
 | Images par seconde         | 60 sur un ordinateur récent, ≥ 30 sur un mobile milieu de gamme                       |
-| Particules simulées        | ≈ 65 000 sur un ordinateur récent, ≈ 8 000 sur mobile, ajusté par niveau de qualité   |
+| Particules simulées        | ≈ 20 000 sur un ordinateur récent, ≈ 6 000 sur mobile, ajusté par niveau de qualité   |
 | Premier affichage (loader) | < 1 s                                                                                 |
 | Lighthouse (version HTML)  | ≥ 95 en performance, accessibilité, bonnes pratiques et SEO                           |
 
-- Niveaux de qualité avec `detect-gpu` au premier chargement et `PerformanceMonitor` en continu. On ajuste le DPR, les particules, les effets et la résolution du portail.
+- Niveaux de qualité (`src/three/quality.ts`) : niveau de départ par indices de l'appareil (backend, écran tactile, nombre de cœurs), puis `PerformanceMonitor` en continu. On ajuste le DPR, les particules, la profondeur de champ et la résolution du portail. _Tranché en M8_ : pas de `detect-gpu`, qui télécharge sa base de benchmarks sur un CDN interdit par la CSP ; les écrans tactiles sont plafonnés au niveau moyen (batterie, chauffe).
+- _Tranché en M8_ : les étincelles naissent à débit fixe (quelques centaines par seconde, choix du M3) ; un pool plus grand que les étincelles vivantes ne changerait rien à l'image. D'où un budget plus bas que les 65 000 envisagés : seul l'essaim gagne en densité au niveau haut.
 - Le rendu se met en pause quand l'onglet est caché.
 
 ## 8. Déploiement et sécurité

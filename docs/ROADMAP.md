@@ -66,17 +66,22 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M8 — Performance et production
 
-- [ ] detect-gpu + PerformanceMonitor, budgets de la SPEC §7 respectés
-- [ ] Profondeur de champ légère (reportée de M1), activée selon le niveau de qualité
-- [ ] Budgets de particules par niveau de qualité : 32 768 étincelles en WebGPU aujourd'hui (65 536 tiennent 129 fps sur un GPU haut de gamme), cible SPEC ≈ 65 000
-- [ ] Finition du décor (SPEC §5.1 « rendu final ») : érosion, normal maps, cailloux instanciés, nuages en couches
-- [ ] Champs de bord du pendentif précalculés au build (111 ms au démarrage aujourd'hui)
-- [ ] Pipeline `optimize:assets`, décodeurs auto-hébergés
-- [ ] Déploiement sur le VPS, en-têtes vérifiés (securityheaders.com A+)
+- [x] Niveaux de qualité (bas, moyen, haut) : niveau de départ par indices de l'appareil, puis `PerformanceMonitor` (sans `detect-gpu`, voir SPEC §7) ; tactile plafonné à moyen
+- [x] Profondeur de champ légère dans la forge, au niveau haut
+- [x] Budgets de particules par niveau (étincelles à débit fixe : seul l'essaim change de densité)
+- [x] Champs de bord du pendentif précalculés au build (`npm run bake`, 48 Ko gzip au lieu de 70 à 110 ms de calcul)
+- [x] Pipeline `optimize:assets`, décodeurs auto-hébergés (Basis copié au build, Meshopt embarqué)
+- [x] En-têtes vérifiés : A+ sur securityheaders.com
+- [x] Rendu en pause quand l'onglet est caché (`requestAnimationFrame`), pas de saut au retour (pas de temps bornés)
+
+## M8b — Finition du décor
+
+- [ ] SPEC §5.1 « rendu final » : érosion, normal maps, cailloux instanciés, nuages en couches (allers-retours en captures)
 
 ## M9 — Intégration du modèle final (à la livraison de l'artiste)
 
-- [ ] Remplacer le placeholder par le GLB optimisé, sans toucher au reste
+- [ ] Remplacer le placeholder par le GLB optimisé (`assets/pendant.glb` → `npm run optimize:assets`, nécessite `toktx` de KTX-Software), chargé par `createGltfLoader()`, sans toucher au reste
+- [ ] Vérifier le transcodeur KTX2 sous la CSP (worker `blob:`, WASM) avec une vraie texture
 
 ---
 

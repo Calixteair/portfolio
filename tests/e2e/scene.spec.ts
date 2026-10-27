@@ -215,7 +215,10 @@ test('I shows the titles over the bodies; a title travels to its body @webgpu', 
   const titles = page.locator('#body-titles');
   await expect(titles).toBeVisible();
   await expect(titles.locator('.body-title:not([hidden])').first()).toBeVisible();
-  await titles.locator('[data-title-of="portfolio"]').click();
+  // The cards move every frame (Playwright waits for a still element to click): use the
+  // keyboard, which also checks the cards are reachable without a mouse.
+  await titles.locator('[data-title-of="portfolio"]').focus();
+  await page.keyboard.press('Enter');
   await expect(page.locator('#panel-portfolio')).toBeVisible({ timeout: 15_000 });
   expect(errors).toEqual([]);
 });

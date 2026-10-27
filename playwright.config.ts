@@ -2,17 +2,25 @@ import { defineConfig, devices, type Project } from '@playwright/test';
 
 const PORT = 4322;
 
-// Headless Chromium only has SwiftShader, whose WebGPU drops its device: default
-// specs force the WebGL 2 backend. Specs tagged @webgpu need a real GPU and run
-// headed on a dev machine with E2E_WEBGPU=1.
+// The bundled headless Chromium only has SwiftShader, whose WebGPU drops its device:
+// default specs force the WebGL 2 backend. Specs tagged @webgpu need a real GPU and run
+// on a dev machine with E2E_WEBGPU=1: Chrome's new headless mode drives the GPU through
+// Vulkan, so no window opens (nor steals the focus).
 const webgpuProject: Project = {
   name: 'webgpu',
   grep: /@webgpu/,
   use: {
     ...devices['Desktop Chrome'],
     channel: 'chrome',
-    headless: false,
-    launchOptions: { args: ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'] },
+    headless: true,
+    launchOptions: {
+      args: [
+        '--enable-unsafe-webgpu',
+        '--ignore-gpu-blocklist',
+        '--enable-features=Vulkan',
+        '--use-angle=vulkan',
+      ],
+    },
   },
 };
 

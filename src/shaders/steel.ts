@@ -55,21 +55,23 @@ function brushedRoughness(): Node<'float'> {
 }
 
 /**
- * Satin brushed steel with a black, matte, non-metallic erosion crust around the hole.
- * Anisotropy follows the cap UVs (plate X), which is what makes the steel read as brushed.
+ * Satin brushed sterling silver (.925) with a black, matte, non-metallic erosion crust
+ * around the hole. Anisotropy follows the cap UVs (plate X), which is what makes the metal
+ * read as brushed. Silver reflects brighter and a touch warmer than steel.
  * It glows from the edges with the forge heat and keeps tempering tints where it got hot.
  */
 export function createPlateMaterial(mask: EdgeMaskInfo, heat: PlateHeat): MeshPhysicalNodeMaterial {
   const fields = sampleEdgeMask(mask);
   const crust = crustMask(fields);
   const past = heatField(fields.holeEdge, fields.outerEdge, heat.heatHistory, heat);
-  const steel = vec3(0.706, 0.71, 0.725).mul(temperTint(past));
+  // Sterling silver's reflectance (linear): near white, slightly warm.
+  const silver = vec3(0.95, 0.93, 0.88).mul(temperTint(past));
   const crustColor = vec3(0.006).add(noise01(positionLocal.xy.mul(400)).mul(0.01));
   const material = new MeshPhysicalNodeMaterial({
     anisotropy: STEEL_ANISOTROPY,
     envMapIntensity: 1.1,
   });
-  material.colorNode = mix(steel, crustColor, crust);
+  material.colorNode = mix(silver, crustColor, crust);
   material.metalnessNode = mix(float(1), float(0), crust);
   material.roughnessNode = mix(brushedRoughness(), float(0.5), crust);
   material.specularIntensityNode = mix(float(1), float(0.2), crust);

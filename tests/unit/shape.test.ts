@@ -39,9 +39,13 @@ describe('mulberry32', () => {
 });
 
 describe('outlines', () => {
-  it('keeps the pendant ratio of about 1.45 with chamfered corners', () => {
-    expect(PLATE.hh / PLATE.hw).toBeCloseTo(1.45, 1);
-    expect(outer).toHaveLength(8);
+  it('matches the real pendant: 26 × 18 × 4 mm, two opposite corners cut', () => {
+    expect(PLATE.hh / PLATE.hw).toBeCloseTo(26 / 18, 3);
+    expect((PLATE.depth + 2 * PLATE.bevel) / (2 * PLATE.hw)).toBeCloseTo(4 / 18, 3);
+    expect(outer).toHaveLength(6);
+    // Square top-left and bottom-right corners, cut top-right and bottom-left.
+    expect(outer).toContainEqual({ x: -PLATE.hw, y: PLATE.hh });
+    expect(outer).toContainEqual({ x: PLATE.hw, y: -PLATE.hh });
   });
 
   it('places the whole eroded hole inside the plate, away from the outer edge', () => {

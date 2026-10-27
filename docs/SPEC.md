@@ -22,7 +22,7 @@ Chaque étape annonce la suivante **sans la dévoiler**. On ne montre jamais le 
 | Bord du portail         | `#ff5a14`                                 |
 | Braises                 | `#ff5a1a` (≈ 50 % des particules de fond) |
 
-- Matériaux crédibles : acier brossé satiné, croûte noire granuleuse autour du trou, diamants noirs très brillants (photos dans `docs/references/`).
+- Matériaux crédibles : argent 925 brossé satiné, croûte noire granuleuse autour du trou, diamants noirs très brillants (photos dans `docs/references/`).
 - Post-traitement « caméra » : bloom, tone mapping AgX, légère profondeur de champ (reportée en M8 avec les niveaux de qualité), grain, vignette, aberration chromatique discrète.
 - Mouvements physiques : inertie, ressorts, jamais linéaires.
 
@@ -92,7 +92,7 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 
 ### 5.2 Matériaux
 
-- Acier : matériau physique (`MeshPhysicalNodeMaterial`) avec metalness 1, une **roughness map** brossée et de l'**anisotropie** (validée par le prototype : c'est elle qui donne l'aspect brossé).
+- Argent 925 (_tranché en M9_, c'est le vrai métal du pendentif ; l'acier venait d'une première description) : matériau physique (`MeshPhysicalNodeMaterial`) avec metalness 1, une réflectance presque blanche, légèrement chaude, une **roughness map** brossée et de l'**anisotropie** (validée par le prototype : c'est elle qui donne l'aspect brossé).
 - Croûte d'érosion : noire, non métallique, presque sans reflet. Elle borde le trou et déborde sur la face en éclaboussures.
 - Diamants noirs : diélectrique très brillant, facettes nettes, **sans réfraction** (le diamant noir est quasi opaque). Instanciés, sertis dans la croûte.
 
@@ -201,7 +201,7 @@ planet:                # optionnel, sinon dérivé de la catégorie
   hue: number          # 0-360, teinte dominante
 ```
 
-Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque **à angles coupés** (octogone allongé, ratio ≈ 1,45), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le futur GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
+Placeholder pour le pendentif (en attendant le GLB de l'artiste) : une plaque aux **cotes du vrai pendentif, 26 × 18 × 4 mm** (cotes du fabricant), **deux coins opposés coupés** (en haut à droite et en bas à gauche, comme sur la photo de face ; _tranché en M9_, l'octogone du prototype était une approximation), extrudée avec un biseau, **sans bélière**. Le trou est un rectangle arrondi décalé, déformé par du bruit. Les diamants sont instanciés dans l'érosion. Ces formes sont celles du prototype `docs/explorations/pendant-forge.html`. Il expose la même interface que le futur GLB : `body` (mesh), `diamonds` (InstancedMesh), `edgeMask` (texture).
 
 ## 7. Budgets de performance
 

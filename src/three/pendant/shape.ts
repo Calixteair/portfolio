@@ -9,8 +9,18 @@ export interface Point {
   y: number;
 }
 
-/** Plate: elongated octagon (chamfered rectangle), ratio hh / hw ≈ 1.45, no bail. */
-export const PLATE = { hw: 0.31, hh: 0.45, chamfer: 0.075, depth: 0.05, bevel: 0.008 } as const;
+/**
+ * The real pendant: 26 × 18 × 4 mm, sterling silver (maker's dimensions), no bail.
+ * Scene units: 18 mm wide = 0.62, so 1 mm ≈ 0.0344. Thickness = depth + 2 × bevel = 4 mm.
+ */
+const MM = 0.62 / 18;
+export const PLATE = {
+  hw: 9 * MM,
+  hh: 13 * MM,
+  chamfer: 2.6 * MM,
+  bevel: 0.35 * MM,
+  depth: (4 - 0.7) * MM,
+} as const;
 
 /** Eroded hole: off-centre rounded rectangle. */
 export const HOLE = { cx: 0.015, cy: 0.035, hw: 0.165, hh: 0.245 } as const;
@@ -21,17 +31,19 @@ export const WIRE_PAD = 0.02;
 /** edgeMask resolution and the distance (scene units) mapped to 1 in the texture. */
 export const FIELD = { width: 160, height: 232, range: 0.2, margin: 0.02 } as const;
 
+/**
+ * Plate outline, clockwise from the top left: as on the real pendant, only two
+ * opposite corners are cut (top right, bottom left), the other two are square.
+ */
 export function outerOutline(): Point[] {
   const { hw, hh, chamfer: c } = PLATE;
   const corners: [number, number][] = [
-    [-hw + c, hh],
+    [-hw, hh],
     [hw - c, hh],
     [hw, hh - c],
-    [hw, -hh + c],
-    [hw - c, -hh],
+    [hw, -hh],
     [-hw + c, -hh],
     [-hw, -hh + c],
-    [-hw, hh - c],
   ];
   return corners.map(([x, y]) => ({ x, y }));
 }

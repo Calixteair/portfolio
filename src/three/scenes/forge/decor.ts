@@ -1,7 +1,8 @@
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
   type BufferAttribute,
-  type BufferGeometry,
+  BufferGeometry,
+  Float32BufferAttribute,
   CylinderGeometry,
   Group,
   Mesh,
@@ -24,8 +25,28 @@ export const GROUND_Y = -0.9;
 
 type Range = [number, number];
 
+/**
+ * A cirque (SPEC §5.1, revised): the mountains stand on half-ellipses around the pendant,
+ * open towards the camera, their arms reaching forward on both sides. `a` is the
+ * half-width, `b` the depth radius, `center` how far behind the pendant the ellipse sits;
+ * `span` the angle covered either side of straight behind (radians, > π/2: arms forward).
+ */
+interface Arc {
+  a: number;
+  b: number;
+  center: number;
+  span: number;
+}
+
+/** Point on an arc at `phi` (0 = straight behind the pendant), scaled by `k`. */
+function onArc(arc: Arc, phi: number, k = 1): [number, number] {
+  return [Math.sin(phi) * arc.a * k, -arc.center - Math.cos(phi) * arc.b * k];
+}
+
 interface PeakLayer {
   count: number;
+  /** Null: scattered rocks close by, not on a wall. */
+  arc: Arc | null;
   distance: Range;
   height: Range;
   radius: Range;
@@ -33,10 +54,11 @@ interface PeakLayer {
   color: number;
 }
 
-/** Near → far: rocks and small peaks, mid-distance peaks, large mountains (SPEC §5.1). */
+/** Near → far: scattered rocks, the inner cirque wall, the great mountains (SPEC §5.1). */
 const PEAK_LAYERS: PeakLayer[] = [
   {
     count: 5,
+    arc: null,
     distance: [4.5, 8],
     height: [0.5, 1.2],
     radius: [0.35, 0.8],
@@ -44,27 +66,29 @@ const PEAK_LAYERS: PeakLayer[] = [
     color: 0x4a4b50,
   },
   {
-    count: 9,
-    distance: [11, 18],
-    height: [1.4, 3.2],
+    count: 13,
+    arc: { a: 13, b: 15, center: 5, span: 2.1 },
+    distance: [0.92, 1.08],
+    height: [1.2, 2.6],
     radius: [1, 2.2],
     glow: 0.5,
     color: 0x3a3b40,
   },
   {
-    count: 12,
-    distance: [24, 36],
-    height: [3, 6.5],
+    count: 16,
+    arc: { a: 28, b: 28, center: 10, span: 2.2 },
+    distance: [0.92, 1.1],
+    height: [3, 5.5],
     radius: [2.5, 4.5],
     glow: 0.2,
     color: 0x3a3b40,
   },
 ];
 
-/** Distant chains, readable only as silhouettes in the haze. */
-const RIDGES = [
-  { z: -50, width: 240, height: 8 },
-  { z: -80, width: 340, height: 14 },
+/** Distant chains, readable only as silhouettes in the haze: continuous curved walls. */
+const RIDGES: { arc: Arc; height: number }[] = [
+  { arc: { a: 50, b: 48, center: 14, span: 2.25 }, height: 8 },
+  { arc: { a: 70, b: 66, center: 14, span: 2.3 }, height: 13 },
 ];
 
 type Rand = () => number;
@@ -127,49 +151,90 @@ function peakGeometry(layout: Rand, radius: number, height: number, lean: number
   return geometry;
 }
 
-/** A main peak and two smaller ones around it, placed in front of the camera at `distance`. */
-function peakCluster(rand: Rand, layer: PeakLayer): BufferGeometry[] {
-  const angle = (rand() - 0.5) * 2.6;
-  const distance = pick(rand, layer.distance);
-  const height = pick(rand, layer.height);
+/**
+ * Where a cluster stands: scattered close by, or the i-th of n along its layer's cirque
+ * wall (evenly spread, jittered), taller on the arms so the walls frame the pendant.
+ */
+function clusterSpot(
+  rand: Rand,
+  layer: PeakLayer,
+  i: number,
+): { x: number; z: number; tall: number } {
+  if (!layer.arc) {
+    const angle = (rand() - 0.5) * 2.6;
+    const distance = pick(rand, layer.distance);
+    return { x: Math.sin(angle) * distance, z: -Math.cos(angle) * distance - 1, tall: 1 };
+  }
+  const { span } = layer.arc;
+  const phi = -span + ((i + 0.5 + (rand() - 0.5) * 0.7) / layer.count) * 2 * span;
+  const [x, z] = onArc(layer.arc, phi, pick(rand, layer.distance));
+  return { x, z, tall: 1 + 0.35 * Math.abs(Math.sin(phi)) };
+}
+
+/** A main peak and two smaller ones around it, at its spot (see clusterSpot). */
+function peakCluster(rand: Rand, layer: PeakLayer, i: number): BufferGeometry[] {
+  const spot = clusterSpot(rand, layer, i);
+  const height = pick(rand, layer.height) * spot.tall;
   const radius = pick(rand, layer.radius);
-  const cx = Math.sin(angle) * distance;
-  const cz = -Math.cos(angle) * distance - 1;
+  const cx = spot.x;
+  const cz = spot.z;
+  const base = groundHeight(cx, cz);
   return [0, 1, 2].map((k) => {
     const scale = k === 0 ? 1 : 0.45 + rand() * 0.35;
     const geometry = peakGeometry(rand, radius * scale, height * scale, (rand() - 0.5) * 0.25);
     geometry.rotateY(rand() * 6.28);
     const dx = k === 0 ? 0 : (rand() - 0.5) * radius * 2.2;
     const dz = k === 0 ? 0 : (rand() - 0.5) * radius * 1.5;
-    geometry.translate(cx + dx, 0, cz + dz);
+    geometry.translate(cx + dx, base, cz + dz);
     return geometry;
   });
 }
 
-function ridgeGeometry({ z, width, height }: (typeof RIDGES)[number]): BufferGeometry {
-  const segments = 260;
-  const geometry = new PlaneGeometry(width, 1, segments, 1);
-  const pos = geometry.getAttribute('position');
+/**
+ * A distant chain as a continuous curved wall along its arc: a ribbon whose top follows a
+ * ridged profile (sharp crests), taller on the arms, its foot sunk below the ground.
+ */
+function ridgeGeometry({ arc, height }: (typeof RIDGES)[number], seed: number): BufferGeometry {
+  const segments = 320;
+  const positions: number[] = [];
+  const index: number[] = [];
   for (let i = 0; i <= segments; i++) {
-    pos.setY(i, GROUND_Y + height * ridgeProfile(pos.getX(i), z));
-    pos.setY(i + segments + 1, GROUND_Y - 1);
+    const phi = -arc.span + (i / segments) * 2 * arc.span;
+    const [x, z] = onArc(arc, phi);
+    const top = height * ridgeProfile(phi * arc.a, seed) * (1 + 0.4 * Math.abs(Math.sin(phi)));
+    positions.push(x, GROUND_Y + groundHeight(x, z) + top, z, x, GROUND_Y - 2, z);
+    if (i < segments) index.push(2 * i, 2 * i + 1, 2 * i + 2, 2 * i + 1, 2 * i + 3, 2 * i + 2);
   }
-  geometry.translate(0, 0, z);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setIndex(index);
   return geometry;
 }
 
-/** Almost flat under the pendant, broken rock further out. */
+/** Radius kept flat around the pendant: sparks bounce on the GROUND_Y plane there. */
+const FLAT = 2.4;
+
+/**
+ * Height of the ground above GROUND_Y at (x, z): flat under the pendant, then mounds and
+ * hollows of broken rock, the floor rising towards the cirque walls like a bowl.
+ */
+export function groundHeight(x: number, z: number): number {
+  const r = Math.hypot(x, z);
+  const rough = Math.min(1, Math.max(0, (r - FLAT) / 6));
+  const mounds =
+    fbm2(x * 0.18, z * 0.18) * 2.2 + fbm2(x * 0.9, z * 0.9) * 0.5 + fbm2(x * 4, z * 4) * 0.12;
+  const bowl = Math.hypot(x / 1.1, (z + 6) / 1.2);
+  const rise = Math.min(1, Math.max(0, (bowl - 12) / 35)) ** 1.6 * 2.5;
+  return (mounds - 1.1) * rough * 0.9 + rise;
+}
+
+/** Ground: the cirque floor (see groundHeight). */
 function groundGeometry(): BufferGeometry {
-  // ~0.9 m cells: the relief is 1.5 cm near the pendant and the haze hides detail far out.
-  const geometry = new PlaneGeometry(140, 140, 160, 160);
+  const geometry = new PlaneGeometry(140, 140, 180, 180);
   geometry.rotateX(-Math.PI / 2);
   const pos = geometry.getAttribute('position');
   for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    const amplitude = 0.015 + 0.6 * Math.min(1, Math.max(0, (Math.hypot(x, z) - 2) / 25));
-    const rocks = fbm2(x * 0.9, z * 0.9) + 0.5 * fbm2(x * 4, z * 4);
-    pos.setY(i, GROUND_Y + (rocks - 0.7) * amplitude);
+    pos.setY(i, GROUND_Y + groundHeight(pos.getX(i), pos.getZ(i)));
   }
   // No computeVertexNormals: rock is flat-shaded from screen-space derivatives.
   return geometry;
@@ -185,7 +250,7 @@ export interface ForgeWorld {
 /** One merged mesh per layer: a handful of draw calls for the whole world. */
 function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
   const layers = PEAK_LAYERS.map((layer, i) => {
-    const parts = Array.from({ length: layer.count }, () => peakCluster(rand, layer)).flat();
+    const parts = Array.from({ length: layer.count }, (_, k) => peakCluster(rand, layer, k)).flat();
     const material = createRockMaterial(heat, {
       color: layer.color,
       grain: i === 0,
@@ -193,7 +258,7 @@ function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
     });
     return new Mesh(mergeGeometries(parts), material);
   });
-  const ridges = mergeGeometries(RIDGES.map(ridgeGeometry));
+  const ridges = mergeGeometries(RIDGES.map((r, i) => ridgeGeometry(r, 50 + i * 30)));
   const far = createRockMaterial(heat, { color: 0x3a3b40, grain: false, glow: 0 });
   return [...layers, new Mesh(ridges, far)];
 }

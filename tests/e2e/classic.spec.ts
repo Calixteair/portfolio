@@ -21,4 +21,19 @@ test.describe('classic version', () => {
     await page.getByRole('link', { name: 'Version classique' }).click();
     await expect(page).toHaveURL(/\/classique\/$/);
   });
+
+  test('declares the home page as canonical, with a share image', async ({ page }) => {
+    await page.goto('/classique/');
+    const head = page.locator('head');
+    await expect(head.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://portfolio.calixteair.fr/',
+    );
+    await expect(head.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      'https://portfolio.calixteair.fr/og.jpg',
+    );
+    const image = await page.request.get('/og.jpg');
+    expect(image.headers()['content-type']).toBe('image/jpeg');
+  });
 });

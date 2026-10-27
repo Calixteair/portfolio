@@ -6,6 +6,7 @@ Run headless (no window):
   blender -b --factory-startup -P tools/blender/pendant.py -- [--preview] [--export]
 
 --preview renders the two reference angles to tools/blender/build/preview-*.png;
+--save writes tools/blender/build/pendant.blend, to open in Blender;
 --export writes tools/blender/build/pendant.glb (then: npm run optimize:assets).
 Units are the site's scene units (18 mm = 0.62).
 """
@@ -343,6 +344,12 @@ def main() -> None:
         dress(body, crust_obj, gems)
         render("front", 0.0, (0.16, 0.16, 0.165))
         render("angle", math.radians(32), (0.005, 0.005, 0.005))
+    if "--save" in args:
+        # A scene to open in Blender's window: materials and studio lights as in the previews.
+        if "--preview" not in args:
+            dress(body, crust_obj, gems)
+            studio((0.16, 0.16, 0.165))
+        bpy.ops.wm.save_as_mainfile(filepath=str(BUILD / "pendant.blend"))
     if "--export" in args:
         bpy.ops.export_scene.gltf(filepath=str(BUILD / "pendant.glb"), export_format="GLB",
                                   export_apply=True, export_materials="NONE",

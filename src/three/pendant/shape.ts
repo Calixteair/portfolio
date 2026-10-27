@@ -22,8 +22,11 @@ export const PLATE = {
   depth: (4 - 0.7) * MM,
 } as const;
 
-/** Eroded hole: off-centre rounded rectangle. */
-export const HOLE = { cx: 0.015, cy: 0.035, hw: 0.165, hh: 0.245 } as const;
+/**
+ * Eroded hole: off-centre rounded rectangle, narrow and tall as on the front photo (about
+ * 45 % of the plate's width, 58 % of its height, a little up and right of centre).
+ */
+export const HOLE = { cx: 0.012, cy: 0.03, hw: 0.14, hh: 0.26 } as const;
 
 /** Margin around the plate in the loader SVG viewBox (plate units). */
 export const WIRE_PAD = 0.02;

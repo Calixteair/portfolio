@@ -4,6 +4,8 @@ dist/
 .astro/
 # Baked at build time (npm run bake)
 public/generated/
+# Blender model intermediates (npm run model:*)
+tools/blender/build/
 
 # Env & secrets
 .env

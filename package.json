@@ -13,6 +13,7 @@
     "prebuild": "npm run bake",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "model:outline": "node scripts/export-outline.ts",
     "optimize:assets": "npx --yes @gltf-transform/cli@4.5.1 optimize assets/pendant.glb public/models/pendant.glb --compress meshopt --texture-compress ktx2 --texture-size 1024",
     "typecheck": "astro check",
     "lint": "eslint . && prettier --check .",

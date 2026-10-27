@@ -1,0 +1,182 @@
+---
+/**
+ * One content entry as an article: kind and period, title, summary, body, tags, related
+ * entries and links. Shared by the 3D system's detail panels and the classic page, so the
+ * two never drift apart.
+ */
+import { kindLabel, type Entry, type Sections } from '../content/sections';
+
+interface Props {
+  entry: Entry;
+  sections: Sections;
+  /** Panel: hidden until the island opens it, links drive the 3D navigation. */
+  variant: 'panel' | 'classic';
+}
+
+const { entry: e, sections, variant } = Astro.props;
+const panel = variant === 'panel';
+const Content = sections.bodies.get(e.id);
+const related = sections.related(e);
+const Heading = panel ? 'h2' : 'h3';
+const titleId = panel ? `panel-title-${e.id}` : `title-${e.id}`;
+---
+
+<article
+  id={panel ? `panel-${e.id}` : e.id}
+  class:list={['entry', variant]}
+  data-panel={panel ? e.id : undefined}
+  aria-labelledby={titleId}
+  hidden={panel}
+>
+  <p class="entry-kind">
+    {kindLabel(e)}
+    {e.data.period && <span> · {e.data.period}</span>}
+  </p>
+  <Heading id={titleId} tabindex={panel ? '-1' : undefined}>
+    {e.data.title}
+  </Heading>
+  <p class="entry-summary">{e.data.summary}</p>
+  {Content && (
+    <div class="entry-body">
+      <Content />
+    </div>
+  )}
+  {e.data.tags.length > 0 && (
+    <ul class="entry-tags" aria-label="Technologies">
+      {e.data.tags.map((t) => (
+        <li>{t}</li>
+      ))}
+    </ul>
+  )}
+  {related.length > 0 && (
+    <p class="entry-related">
+      {e.data.category === 'skill' ? 'Visible dans : ' : 'Compétences : '}
+      {related.map((r, i) => (
+        <>
+          {i > 0 && ', '}
+          <a href={`#${r.id}`} data-body={panel ? r.id : undefined}>
+            {r.data.title}
+          </a>
+        </>
+      ))}
+    </p>
+  )}
+  {e.data.links.length > 0 && (
+    <ul class="entry-links">
+      {e.data.links.map((l) => (
+        <li>
+          <a href={l.url} rel="noopener" target="_blank">
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+  {panel && (
+    <button type="button" class="entry-back" data-back>
+      Retour au système <kbd>Échap</kbd>
+    </button>
+  )}
+</article>
+
+<style>
+  .entry h2,
+  .entry h3 {
+    margin: 0.1rem 0 0.4rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    outline: none;
+  }
+  .entry-kind {
+    margin: 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #b4e0ff;
+  }
+  .entry-summary {
+    margin: 0 0 0.75rem;
+    opacity: 0.85;
+  }
+  .entry-body :global(ul) {
+    padding-left: 1.1rem;
+  }
+  .entry-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.75rem 0;
+    padding: 0;
+    list-style: none;
+  }
+  .entry-tags li {
+    padding: 0.1rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid rgb(47 107 255 / 0.5);
+  }
+  .entry a {
+    color: #b4e0ff;
+  }
+  .entry-links {
+    padding-left: 1.1rem;
+  }
+
+  /* In the 3D system: a panel beside the visited body, opened after the travel. */
+  .panel {
+    position: absolute;
+    top: 50%;
+    right: clamp(1rem, 5vw, 4rem);
+    translate: 0 -50%;
+    width: min(28rem, calc(100% - 2rem));
+    max-height: calc(100% - 4rem);
+    overflow: auto;
+    padding: 1.5rem 1.75rem;
+    background: rgb(2 4 12 / 0.8);
+    border-left: 2px solid #2f6bff;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    animation: panel-in 0.5s ease both;
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      translate: 1rem -50%;
+    }
+  }
+  .entry-back {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    font: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid rgb(180 224 255 / 0.4);
+    cursor: pointer;
+  }
+  .entry-back:hover,
+  .entry-back:focus-visible {
+    background: rgb(47 107 255 / 0.2);
+    outline: none;
+  }
+  kbd {
+    margin-left: 0.4rem;
+    font-size: 0.75rem;
+    opacity: 0.6;
+  }
+
+  /* On the classic page: one card per entry, in the document flow. */
+  .classic {
+    padding: 1.25rem 1.5rem;
+    border-left: 2px solid #2f6bff;
+    background: rgb(255 255 255 / 0.03);
+    scroll-margin-top: 1rem;
+  }
+  .classic h3 {
+    font-size: 1.25rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel {
+      animation: none;
+    }
+  }
+</style>

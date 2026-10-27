@@ -67,7 +67,13 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
         </a>
       </li>
     </ul>
+    <p>
+      <a href="/classique/">Lire le portfolio complet (projets, parcours, compétences)</a>
+    </p>
   </section>
+  <a class="classic-link" href="/classique/">
+    Version classique
+  </a>
 </div>
 
 <script>
@@ -289,6 +295,21 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   }
   .classic a {
     color: var(--ember);
+  }
+  /* Always there while the loader shows: the reader can skip the 3D altogether. */
+  .classic-link {
+    position: absolute;
+    right: 1.25rem;
+    bottom: 1rem;
+    font:
+      400 0.85rem/1 system-ui,
+      sans-serif;
+    color: var(--ink);
+    opacity: 0.6;
+  }
+  .classic-link:hover,
+  .classic-link:focus-visible {
+    opacity: 1;
   }
   .reason {
     display: none;

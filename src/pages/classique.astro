@@ -1,0 +1,132 @@
+---
+/**
+ * The classic version (SPEC §3): the whole portfolio as a plain, light, accessible page,
+ * without the 3D island. For devices without WebGPU or WebGL 2, slow connections, screen
+ * readers, and whoever prefers reading. Same articles as the 3D panels (EntryArticle).
+ */
+import Base from '../layouts/Base.astro';
+import EntryArticle from '../components/EntryArticle.astro';
+import { loadSections } from '../content/sections';
+
+const sections = await loadSections();
+const groups = sections.groups.filter((g) => g.items.length > 0);
+---
+
+<Base
+  title="Calixte Reymond, portfolio (version classique)"
+  description="Projets, parcours et compétences de Calixte Reymond, étudiant ingénieur en cybersécurité."
+>
+  <a class="skip" href="#contenu">
+    Aller au contenu
+  </a>
+  <header class="intro">
+    <h1>Calixte Reymond</h1>
+    <p class="tagline">Étudiant ingénieur en cybersécurité, en alternance.</p>
+    <ul class="contact" aria-label="Me trouver">
+      <li>
+        <a href="https://github.com/Calixteair" rel="me noopener">
+          GitHub
+        </a>
+      </li>
+      <li>
+        <a href="https://www.linkedin.com/in/calixte-reymond/" rel="me noopener">
+          LinkedIn
+        </a>
+      </li>
+    </ul>
+    <p>
+      <a class="to-3d" href="/">
+        Voir la version 3D
+      </a>
+    </p>
+    <nav aria-label="Sections">
+      <ul>
+        {groups.map((g) => (
+          <li>
+            <a href={`#${g.id}`}>{g.title}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </header>
+
+  <main id="contenu">
+    {groups.map((g) => (
+      <section id={g.id} aria-labelledby={`${g.id}-title`}>
+        <h2 id={`${g.id}-title`}>{g.title}</h2>
+        <div class="entries">
+          {g.items.map((e) => (
+            <EntryArticle entry={e} sections={sections} variant="classic" />
+          ))}
+        </div>
+      </section>
+    ))}
+  </main>
+</Base>
+
+<style>
+  :global(body) {
+    font:
+      400 1rem/1.6 system-ui,
+      sans-serif;
+  }
+  .skip {
+    position: absolute;
+    left: 1rem;
+    top: -3rem;
+    padding: 0.5rem 1rem;
+    background: #2f6bff;
+    color: #fff;
+  }
+  .skip:focus {
+    top: 1rem;
+  }
+  .intro,
+  main {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  .intro {
+    padding-top: 3rem;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1.1;
+  }
+  .tagline {
+    margin: 0.5rem 0 1rem;
+    opacity: 0.85;
+  }
+  .contact,
+  nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  nav {
+    margin: 1.5rem 0 0;
+    padding: 0.75rem 0;
+    border-block: 1px solid rgb(180 224 255 / 0.2);
+  }
+  a {
+    color: #b4e0ff;
+  }
+  section {
+    margin: 3rem 0;
+  }
+  h2 {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #b4e0ff;
+  }
+  .entries {
+    display: grid;
+    gap: 1.25rem;
+  }
+</style>

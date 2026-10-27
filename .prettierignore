@@ -3,3 +3,4 @@ dist/
 package-lock.json
 docs/explorations/
 docs/references/
+public/generated/

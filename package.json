@@ -7,12 +7,13 @@
     "node": ">=24.16.0"
   },
   "scripts": {
-    "bake": "node scripts/bake-edges.ts",
+    "bake": "node scripts/bake-edges.ts && node scripts/copy-decoders.ts",
     "predev": "npm run bake",
     "dev": "astro dev",
     "prebuild": "npm run bake",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "optimize:assets": "npx --yes @gltf-transform/cli@4.5.1 optimize assets/pendant.glb public/models/pendant.glb --compress meshopt --texture-compress ktx2 --texture-size 1024",
     "typecheck": "astro check",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write . && eslint --fix .",

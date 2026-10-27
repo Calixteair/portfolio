@@ -1,12 +1,19 @@
 import type { gsap as Gsap } from 'gsap';
-import { Vector3, type Object3D, type PerspectiveCamera } from 'three/webgpu';
+import { Matrix4, Quaternion, Vector3, type Object3D, type PerspectiveCamera } from 'three/webgpu';
+import {
+  aroundStar,
+  arrivalHandle,
+  bezier,
+  bezierTangent,
+  easeFlight,
+  normalize,
+  orbitEntry,
+  startFlight,
+  type V3,
+} from '../../../system/flightPath';
 import type { LensUniforms } from '../../post/lens';
 
 type Timeline = ReturnType<typeof Gsap.timeline>;
-
-/** Rocket travel beats, in seconds (SPEC §5.7: about 2.5 s). */
-const BEATS = { ignition: 0.45, cruise: 1.5, brake: 0.6 } as const;
-const TOTAL = BEATS.ignition + BEATS.cruise + BEATS.brake;
 
 export type TravelPhase = 'free' | 'outbound' | 'orbit' | 'inbound';
 
@@ -65,63 +72,96 @@ interface Leg {
   reducedMotion: boolean;
 }
 
+/** Where a flight goes, re-evaluated every frame (the destination body moves). */
+interface Destination {
+  /** End point, out param. */
+  point: (out: Vector3) => Vector3;
+  /** Direction of motion when arriving (the orbit's tangent, or towards the star). */
+  arrival: (out: Vector3) => Vector3;
+  /** The orientation to end with (aiming at the body, or at the star). */
+  aim: (camera: PerspectiveCamera) => void;
+  /** Share of the flight (eased) over which the view turns to `aim`: [start, end]. */
+  aimSpan: readonly [number, number];
+}
+
+const v3 = (v: Vector3): V3 => [v.x, v.y, v.z];
+const qStart = new Quaternion();
+const qMotion = new Quaternion();
+const qAim = new Quaternion();
+const qBank = new Quaternion();
+const motionMatrix = new Matrix4();
+const ahead = new Vector3();
+const later = new Vector3();
+const sight = new Vector3();
+const right = new Vector3();
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/** Bank into turns: roll by the sideways change of heading (none when flying straight). */
+function bankAngle(heading: Vector3, next: Vector3): number {
+  right.crossVectors(heading, UP).normalize();
+  return Math.max(-0.35, Math.min(0.35, -next.sub(heading).dot(right) * 6));
+}
+
+/** How far ahead on the route the pilot looks (share of the flight). */
+const LOOK_AHEAD = 0.18;
+
 /**
- * Ignition, cruise, braking: from wherever the camera is (home or another orbit) to a
- * destination that may move (a body in orbit), aiming more and more at the target.
+ * The shuttle: along the Bézier route (src/system/flightPath.ts), looking at a point a
+ * little further along it (the view follows the route, not the raw velocity, which
+ * points at the empty sky during the swing) and banking into the turns, then turning to
+ * the destination. No zoom: the FOV stays put, only a faint streak at full speed.
  */
-function flight(
-  tl: Timeline,
-  leg: Leg,
-  dest: (out: Vector3) => Vector3,
-  aim: (t: number) => number,
-) {
-  const { camera, travel, lens } = leg;
-  const from = camera.position.clone();
+function flight(tl: Timeline, leg: Leg, dest: Destination, heading: Vector3) {
+  const { camera, lens } = leg;
+  const end = dest.point(new Vector3());
+  const start = startFlight(v3(camera.position), v3(heading), v3(end));
+  qStart.copy(camera.quaternion);
   const state = { t: 0 };
-  const point = new Vector3();
+  const arrival = new Vector3();
   const update = () => {
-    camera.position.lerpVectors(from, dest(point), state.t);
-    aimAtTarget(camera, travel, aim(state.t));
+    const t = easeFlight(state.t);
+    const to = v3(dest.point(end));
+    const p2 = arrivalHandle(start, to, v3(dest.arrival(arrival)));
+    const [p1, q2] = aroundStar(start.p0, start.p1, p2, to);
+    camera.position.set(...bezier(start.p0, p1, q2, to, t));
+    ahead.set(...normalize(bezierTangent(start.p0, p1, q2, to, t)));
+    later.set(...normalize(bezierTangent(start.p0, p1, q2, to, Math.min(1, t + 0.02))));
+    sight.set(...bezier(start.p0, p1, q2, to, Math.min(1, t + LOOK_AHEAD)));
+    if (sight.distanceToSquared(camera.position) < 1e-4) sight.copy(camera.position).add(ahead);
+    motionMatrix.lookAt(camera.position, sight, UP);
+    qMotion.setFromRotationMatrix(motionMatrix);
+    const turn = 1 - smooth(dest.aimSpan[0], dest.aimSpan[1], t);
+    qBank.setFromAxisAngle(ahead, bankAngle(ahead, later) * turn);
+    qMotion.premultiply(qBank);
+    dest.aim(camera);
+    qAim.copy(camera.quaternion);
+    camera.quaternion.slerpQuaternions(qStart, qMotion, smooth(0, 0.25, t));
+    camera.quaternion.slerp(qAim, smooth(dest.aimSpan[0], dest.aimSpan[1], t));
   };
-  const fov = (value: number, duration: number, at: number) =>
-    tl.to(
-      camera,
-      { fov: value, duration, ease: 'power2.out', onUpdate: () => camera.updateProjectionMatrix() },
-      at,
-    );
-  tl.to(state, { t: 1, duration: TOTAL, ease: 'power2.inOut', onUpdate: update }, 0);
-  // Ignition narrows the FOV; the cruise streaks (zoom blur); braking eases back.
-  fov(38, BEATS.ignition, 0);
+  tl.to(state, { t: 1, duration: start.duration, ease: 'none', onUpdate: update }, 0);
+  tl.to(lens.zoomBlur, { value: 0.12, duration: start.duration * 0.5, ease: 'sine.in' }, 0);
   tl.to(
     lens.zoomBlur,
-    { value: 0.55, duration: BEATS.cruise * 0.5, ease: 'power2.in' },
-    BEATS.ignition,
+    { value: 0, duration: start.duration * 0.5, ease: 'sine.out' },
+    start.duration * 0.5,
   );
-  tl.to(
-    lens.zoomBlur,
-    { value: 0, duration: BEATS.cruise * 0.5 + BEATS.brake, ease: 'power2.out' },
-    BEATS.ignition + BEATS.cruise * 0.5,
-  );
-  fov(50, BEATS.brake + BEATS.cruise * 0.5, BEATS.ignition + BEATS.cruise * 0.5);
 }
 
 /** prefers-reduced-motion: no flight, a short fade through white to the destination. */
-function fade(tl: Timeline, leg: Leg, dest: (out: Vector3) => Vector3, aim: (t: number) => number) {
+function fade(tl: Timeline, leg: Leg, dest: Destination) {
   const point = new Vector3();
   tl.to(leg.lens.flash, { value: 1, duration: 0.3, ease: 'power1.in' });
   tl.call(() => {
-    leg.camera.position.copy(dest(point));
-    aimAtTarget(leg.camera, leg.travel, aim(1));
+    leg.camera.position.copy(dest.point(point));
+    dest.aim(leg.camera);
   });
   tl.to(leg.lens.flash, { value: 0, duration: 0.4, ease: 'power1.out' });
 }
 
-function play(
-  leg: Leg,
-  dest: (out: Vector3) => Vector3,
-  aim: (t: number) => number,
-  done: () => void,
-) {
+function play(leg: Leg, dest: Destination, heading: Vector3, done: () => void) {
   return new Promise<void>((resolve) => {
     const tl = leg.gsap.timeline({
       onComplete: () => {
@@ -129,40 +169,78 @@ function play(
         resolve();
       },
     });
-    (leg.reducedMotion ? fade : flight)(tl, leg, dest, aim);
+    if (leg.reducedMotion) fade(tl, leg, dest);
+    else flight(tl, leg, dest, heading);
   });
+}
+
+const center = new Vector3();
+const radial = new Vector3();
+
+/**
+ * The current motion, where the shuttle leaves along: around the orbit (its tangent,
+ * slightly outwards) when leaving a body, else straight ahead.
+ */
+function currentHeading(leg: Leg, out: Vector3): Vector3 {
+  const { travel, camera } = leg;
+  if (travel.phase !== 'orbit' || !travel.target) return camera.getWorldDirection(out);
+  travel.target.getWorldPosition(center);
+  radial.subVectors(camera.position, center).setY(0).normalize();
+  return out.set(radial.z, 0, -radial.x).addScaledVector(radial, 0.35).normalize();
+}
+
+/** The orbit angle (see orbitPoint) of the tangential entry point when arriving from `from`. */
+function entryAngle(travel: Travel, home: Vector3, from: Vector3): number {
+  if (!travel.target) return 0;
+  travel.target.getWorldPosition(center);
+  const [ex, , ez] = orbitEntry(v3(center), v3(from));
+  radial.subVectors(home, center).setY(0).normalize();
+  return Math.atan2(radial.z * ex - radial.x * ez, radial.x * ex + radial.z * ez);
 }
 
 /** Fly into orbit around `target`, `distance` away (from home or another orbit). */
 export function flyTo(leg: Leg, target: Object3D, distance: number): Promise<void> {
-  const { travel } = leg;
+  const { travel, camera, home } = leg;
+  const heading = currentHeading(leg, new Vector3());
   travel.target = target;
   travel.distance = distance;
-  travel.orbitAngle = 0;
+  travel.orbitAngle = entryAngle(travel, home, camera.position);
   travel.phase = 'outbound';
-  return play(
-    leg,
-    (out) => orbitPoint(travel, leg.home, out),
-    () => 1,
-    () => {
-      travel.phase = 'orbit';
+  const dest: Destination = {
+    point: (out) => orbitPoint(travel, home, out),
+    // The orbit's tangent at the entry point (direction of increasing angle).
+    arrival: (out) => {
+      orbitPoint(travel, home, out);
+      target.getWorldPosition(center);
+      radial.subVectors(out, center).setY(0).normalize();
+      return out.set(radial.z, 0, -radial.x);
     },
-  );
+    aim: (cam) => aimAtTarget(cam, travel, 1),
+    aimSpan: [0.6, 1],
+  };
+  return play(leg, dest, heading, () => {
+    travel.phase = 'orbit';
+  });
 }
 
-/** Fly back to the arrival point; resolves once home. */
+/** Fly back to the arrival point; resolves once home, facing the star. */
 export function flyHome(leg: Leg): Promise<void> {
-  const { travel } = leg;
+  const { travel, home } = leg;
+  const heading = currentHeading(leg, new Vector3());
   travel.phase = 'inbound';
-  return play(
-    leg,
-    (out) => out.copy(leg.home),
-    (t) => 1 - t,
-    () => {
-      travel.phase = 'free';
-      travel.target = null;
-    },
-  );
+  const dest: Destination = {
+    point: (out) => out.copy(home),
+    // Backing out to the overview, the system kept in view (arriving head-on, the route
+    // would overshoot through the ring and stare at empty space).
+    arrival: (out) => out.copy(home).normalize(),
+    aim: (cam) => cam.lookAt(0, 0, 0),
+    // Facing the system again early: going back, the view is the point.
+    aimSpan: [0.05, 0.4],
+  };
+  return play(leg, dest, heading, () => {
+    travel.phase = 'free';
+    travel.target = null;
+  });
 }
 
 /** While in orbit: drift slowly around the body, keep it framed. */

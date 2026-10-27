@@ -2,7 +2,7 @@ import type { gsap as Gsap } from 'gsap';
 
 type Timeline = ReturnType<typeof Gsap.timeline>;
 import { Vector3, type PerspectiveCamera } from 'three/webgpu';
-import { arrive, enterPortal } from '../../../journey/machine';
+import { arrive, enterPortal, skipIntro } from '../../../journey/machine';
 import type { ForgeRuntime } from '../../../journey/runtime';
 import type { Pendant } from '../../pendant/placeholder';
 import { REST_ANGLE, type SpinState } from '../../pendant/spin';
@@ -226,46 +226,58 @@ function mirrorState(state: string): void {
   document.documentElement.dataset.state = state;
 }
 
+/** What the dive moves, for this visitor's cameras. */
+function castFor(setup: DiveSetup, camera: PerspectiveCamera, eye: PerspectiveCamera): DiveCast {
+  return {
+    forgeCamera: camera,
+    spin: setup.runtime.spin,
+    portalCentre: holeCentre(setup.pendant),
+    lens: setup.lens,
+    tunnel: setup.tunnel,
+    stage: setup.stage,
+    view: setup.view,
+    arrival: eye,
+    land: () => {
+      // From here the portal camera is the visitor's: the portal stops re-posing it.
+      setup.frozen.value = true;
+      setup.view.phase = 'done';
+      // Same lens as the tunnel camera, which the mouth was showing the system through.
+      poseArrival(eye, camera.aspect, ARRIVAL.from, setup.tunnel.camera.fov);
+      showStage(setup.stage, setup.system.scene, eye);
+    },
+  };
+}
+
 /**
- * Starts the dive once, from the open portal, when GSAP and the portal camera are ready.
+ * Starts the dive once, from the open portal, when GSAP and the portal camera are ready;
+ * or skips the intro (a short fade straight to the system) from anywhere in the forge.
  * Kept outside React: it mutates the scene and the journey.
  */
 export function createDiveController(setup: DiveSetup, camera: PerspectiveCamera) {
   let gsap: typeof Gsap | null = null;
   let started = false;
-  const start = () => {
+  /** Both ways in need the other side compiled, GSAP and the portal camera. */
+  const launch = (skip: boolean): boolean => {
     const eye = setup.portalCamera.current;
     const { system, tunnel, lens } = setup.readiness;
-    const ready = system && tunnel && lens && setup.portalOpen.value >= 1;
-    if (!ready || !gsap || !eye || started || !enterPortal(setup.runtime.journey)) return;
+    const ready = system && tunnel && lens && (skip || setup.portalOpen.value >= 1);
+    if (!ready || !gsap || !eye || started) return false;
+    const journey = setup.runtime.journey;
+    if (!(skip ? skipIntro(journey) : enterPortal(journey))) return false;
     started = true;
     mirrorState('wormhole');
-    const cast: DiveCast = {
-      forgeCamera: camera,
-      spin: setup.runtime.spin,
-      portalCentre: holeCentre(setup.pendant),
-      lens: setup.lens,
-      tunnel: setup.tunnel,
-      stage: setup.stage,
-      view: setup.view,
-      arrival: eye,
-      land: () => {
-        // From here the portal camera is the visitor's: the portal stops re-posing it.
-        setup.frozen.value = true;
-        setup.view.phase = 'done';
-        // Same lens as the tunnel camera, which the mouth was showing the system through.
-        poseArrival(eye, camera.aspect, ARRIVAL.from, setup.tunnel.camera.fov);
-        showStage(setup.stage, setup.system.scene, eye);
-      },
-    };
-    void (reducedMotion() ? playFade : playDive)(gsap, cast).then(() => {
-      arrive(setup.runtime.journey);
+    const play = skip || reducedMotion() ? playFade : playDive;
+    void play(gsap, castFor(setup, camera, eye)).then(() => {
+      arrive(journey);
       mirrorState('portfolio');
       setup.onArrived();
     });
+    return true;
   };
   return {
-    start,
+    start: () => void launch(false),
+    /** Returns whether the skip started (false until everything is ready). */
+    skip: () => launch(true),
     setGsap: (g: typeof Gsap) => {
       gsap = g;
     },

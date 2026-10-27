@@ -15,6 +15,8 @@ export interface LoaderController {
   fail: () => void;
   /** Called on every phase change (ready, entered, unsupported, timeout). */
   onPhase: (listener: (phase: LoaderPhase) => void) => void;
+  /** Entered through "Passer l'intro" rather than "Entrer". */
+  skipped: () => boolean;
   dispose: () => void;
 }
 
@@ -34,9 +36,19 @@ function paint(el: HTMLElement, state: LoaderState): void {
  * every frame until "Entrer" or a failure (a timeout keeps loading in the background).
  */
 export function createLoaderController(el: HTMLElement | null): LoaderController {
-  if (!el) return { reach: () => {}, fail: () => {}, onPhase: () => {}, dispose: () => {} };
+  if (!el) {
+    return {
+      reach: () => {},
+      fail: () => {},
+      onPhase: () => {},
+      skipped: () => false,
+      dispose: () => {},
+    };
+  }
   const state = createLoader(readCssProgress(el));
   const button = el.querySelector<HTMLButtonElement>('#loader-enter');
+  const skip = el.querySelector<HTMLButtonElement>('#loader-skip');
+  let skipped = false;
   const listeners: ((phase: LoaderPhase) => void)[] = [];
   el.dataset.driven = '';
   let raf = 0;
@@ -46,6 +58,7 @@ export function createLoaderController(el: HTMLElement | null): LoaderController
     el.dataset.phase = phase;
     if (phase === 'ready' && button) {
       button.disabled = false;
+      if (skip) skip.disabled = false;
       button.focus({ preventScroll: true });
     }
     for (const listener of listeners) listener(phase);
@@ -62,9 +75,14 @@ export function createLoaderController(el: HTMLElement | null): LoaderController
     enter(state);
     if (state.phase === 'entered') setPhase('entered');
   };
+  const onSkip = () => {
+    skipped = true;
+    onEnter();
+  };
 
   raf = requestAnimationFrame(frame);
   button?.addEventListener('click', onEnter);
+  skip?.addEventListener('click', onSkip);
   return {
     reach: (stage) => reach(state, stage),
     fail: () => {
@@ -72,9 +90,11 @@ export function createLoaderController(el: HTMLElement | null): LoaderController
       if (state.phase === 'unsupported') setPhase('unsupported');
     },
     onPhase: (listener) => listeners.push(listener),
+    skipped: () => skipped,
     dispose: () => {
       cancelAnimationFrame(raf);
       button?.removeEventListener('click', onEnter);
+      skip?.removeEventListener('click', onSkip);
     },
   };
 }

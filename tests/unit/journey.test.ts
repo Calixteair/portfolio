@@ -4,6 +4,7 @@ import {
   arrive,
   createJourney,
   enterPortal,
+  skipIntro,
   stepJourney,
   strike,
   type JourneyState,
@@ -92,5 +93,15 @@ describe('journey state machine', () => {
     expect(s.phase).toBe('wormhole');
     arrive(s);
     expect(s.phase).toBe('portfolio');
+  });
+
+  it('skips the intro from the forge, once', () => {
+    const s = createJourney();
+    strike(s);
+    expect(skipIntro(s)).toBe(true);
+    expect(s.phase).toBe('wormhole');
+    arrive(s);
+    expect(s.phase).toBe('portfolio');
+    expect(skipIntro(s)).toBe(false);
   });
 });

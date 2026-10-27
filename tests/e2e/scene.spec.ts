@@ -153,3 +153,31 @@ test.describe('without JavaScript', () => {
     await expect(page.locator('#panel-title-ratp')).toHaveText('RATP : alternance cybersécurité');
   });
 });
+
+/** Loader → a button → wait until the loader is gone (same patience as enterScene). */
+async function leaveLoader(page: Page, name: string) {
+  test.setTimeout(180_000);
+  const button = page.getByRole('button', { name });
+  await expect(button).toBeVisible({ timeout: 120_000 });
+  await button.click();
+  await expect(page.locator('#loader')).toBeHidden({ timeout: 30_000 });
+}
+
+test('"Passer l\'intro" goes straight to the planetary system @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/');
+  await leaveLoader(page, "Passer l'intro");
+  await expect(page.locator('html')).toHaveAttribute('data-state', 'portfolio', {
+    timeout: 10_000,
+  });
+  await expect(page.locator('#system-ui')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a shared link to a body skips the intro and opens it @webgpu', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.goto('/#kalidoku');
+  await leaveLoader(page, 'Entrer');
+  await expect(page.locator('#panel-kalidoku')).toBeVisible({ timeout: 15_000 });
+  expect(errors).toEqual([]);
+});

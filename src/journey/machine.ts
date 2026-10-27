@@ -83,6 +83,16 @@ export function enterPortal(state: JourneyState): boolean {
   return true;
 }
 
+/**
+ * "Passer l'intro" (SPEC §2), or a shared link to a body: straight from the forge to the
+ * planetary system, through a short fade instead of the dive. False once past the forge.
+ */
+export function skipIntro(state: JourneyState): boolean {
+  if (BEYOND_FORGE.has(state.phase)) return false;
+  state.phase = 'wormhole';
+  return true;
+}
+
 /** End of the dive: the visitor is in the planetary system (SPEC §5.7). */
 export function arrive(state: JourneyState): void {
   if (state.phase === 'wormhole') state.phase = 'portfolio';

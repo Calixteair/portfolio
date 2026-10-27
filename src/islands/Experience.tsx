@@ -31,6 +31,8 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
   const world = useWorld(entries);
   const { lens, lights, pendant, runtime, stage, system, tunnel } = world;
   const entered = loader.phase === 'entered';
+  // A shared link to a body (#slug): no intro, the visitor came for that body.
+  const linked = useMemo(() => entries.some((e) => `#${e.slug}` === location.hash), [entries]);
   const startRendering = useCallback(() => setFrameloop('always'), []);
   // Past the wormhole, the forge is never seen again: unmounting it releases its GPU
   // resources (SPEC §5.6, CLAUDE.md: dispose left scenes).
@@ -96,6 +98,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           portalOpen={world.forge.portal}
           loadAnimation={entered}
           bind={world.bindDive}
+          skip={entered && (loader.skipped || linked)}
           onArrived={onArrived}
         />
         <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} />

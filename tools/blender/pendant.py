@@ -19,7 +19,7 @@ from pathlib import Path
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Vector, noise
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
@@ -119,102 +119,88 @@ def on_metal(p: Vector, margin: float) -> bool:
     return True
 
 
-def grain(bm: bmesh.types.BMesh, at: Vector, size: float, flat: Vector | None) -> None:
-    """One lumpy black grain: a jittered icosphere, flattened against the surface."""
-    geom = bmesh.ops.create_icosphere(bm, subdivisions=1, radius=size)
-    verts = geom["verts"]
-    for v in verts:
-        v.co *= 0.7 + 0.6 * RNG.random()
-    if flat is not None:
-        # Squash along the surface normal: a crust, not marbles.
-        squash = Matrix.Scale(0.45, 3, flat)
-        for v in verts:
-            v.co = squash @ v.co
-    for v in verts:
-        v.co += at
+# --- Erosion: carved into the volume -----------------------------------------------------
 
 
-# Band width around the hole (mm): smooth waves with integer frequencies (the loop closes)
-# plus rare spikes, for a torn, irregular edge like the photo's.
-BAND_WAVES = [(f, RNG.uniform(0.15, 0.4) / f**0.5, RNG.uniform(0, 6.28)) for f in (3, 5, 9, 17, 31)]
-SPIKES = [(RNG.random(), RNG.uniform(0.6, 1.6), RNG.uniform(0.006, 0.02)) for _ in range(14)]
+def blob(bm: bmesh.types.BMesh, at: Vector, r: float) -> None:
+    """One irregular bite: an icosphere roughened by noise (a pit, not a ball)."""
+    geom = bmesh.ops.create_icosphere(bm, subdivisions=2, radius=r)
+    seed = Vector((RNG.uniform(0, 100), RNG.uniform(0, 100), RNG.uniform(0, 100)))
+    for v in geom["verts"]:
+        bump = noise.noise(v.co * (2.2 / r) + seed)
+        v.co = v.co * (1 + 0.35 * bump) + at
 
 
-def band_width(t: float) -> float:
-    w = 0.9 + sum(a * math.sin(2 * math.pi * f * t + ph) for f, a, ph in BAND_WAVES)
-    for at, height, width in SPIKES:
-        d = min(abs(t - at), 1 - abs(t - at))
-        w += height * max(0.0, 1 - d / width)
-    return max(0.35, w) * MM
-
-
-SAMPLES = 540
-
-
-def band(bm: bmesh.types.BMesh, side: int) -> None:
-    """The crust's solid black skin on a face: a ring around the hole, its outer edge torn."""
-    inner, outer = [], []
-    z = side * (HALF + 0.02 * MM)
-    for k in range(SAMPLES):
-        t = k / SAMPLES
-        p, n = hole_point(t)
-        w = band_width(t)
-        while w > 0.3 * MM and not on_metal(p + n * w, 0.5 * MM):
-            w *= 0.85
-        inner.append(bm.verts.new((*(p - n * 0.05 * MM).xy, z)))
-        outer.append(bm.verts.new((*(p + n * w).xy, z)))
-    for k in range(SAMPLES):
-        j = (k + 1) % SAMPLES
-        face = (inner[k], outer[k], outer[j], inner[j])
-        bm.faces.new(face if side > 0 else face[::-1])
-
-
-def wall(bm: bmesh.types.BMesh) -> None:
-    """The crust lining the hole's walls, from face to face."""
-    rows = 6
-    grid = []
-    for k in range(SAMPLES):
-        p, n = hole_point(k / SAMPLES)
-        q = p - n * 0.03 * MM
-        grid.append([bm.verts.new((q.x, q.y, -HALF + 2 * HALF * r / (rows - 1))) for r in range(rows)])
-    for k in range(SAMPLES):
-        j = (k + 1) % SAMPLES
-        for r in range(rows - 1):
-            bm.faces.new((grid[k][r], grid[j][r], grid[j][r + 1], grid[k][r + 1]))
-
-
-def crust() -> bpy.types.Object:
+def erosion_volume() -> tuple[bpy.types.Object, list[tuple[Vector, float, int]]]:
     """
-    Black granular erosion, as on the photos: a solid black skin lining the hole's walls and
-    a ring on both faces with a torn edge, fine grains (0.12-0.4 mm) clustered along that
-    edge and on the walls for relief, and a few islands beyond. Everything stays on the metal.
+    The metal the erosion ate: bites chipping the hole's rim on both faces, pits on the
+    faces thinning out away from the hole (a few islands further), small nicks in the
+    walls. Bites stay shallow at mid-thickness, so the hole's outline (the site's portal,
+    sparks and edge fields) still holds. Returns the volume and the pits (for diamonds).
     """
     bm = bmesh.new()
-    wall(bm)
-    for _ in range(2200):
+    pits: list[tuple[Vector, float, int]] = []
+    for _ in range(520):  # the rim, chipped on both faces
         p, n = hole_point(RNG.random())
-        at = p - n * 0.05 * MM + Vector((0, 0, RNG.uniform(-HALF, HALF)))
-        grain(bm, at, RNG.uniform(0.15, 0.4) * MM, n)
-    for side in (1, -1):
-        band(bm, side)
+        side = RNG.choice((1, -1))
+        r = RNG.uniform(0.4, 1.1) * MM
+        z = side * (HALF - RNG.uniform(-0.15, 0.45) * MM)
+        blob(bm, p + n * RNG.uniform(-0.2, 0.7) * MM + Vector((0, 0, z)), r)
+    for side in (1, -1):  # pits on each face, fewer and smaller away from the hole
         placed = 0
-        while placed < 1600:
-            t = RNG.random()
-            p, n = hole_point(t)
-            reach = band_width(t) * RNG.uniform(0.3, 1.15)
-            if RNG.random() < 0.06:
-                reach += RNG.uniform(0.6, 2.2) * MM  # an island further out
+        while placed < 380:
+            p, n = hole_point(RNG.random())
+            reach = RNG.expovariate(1 / (1.0 * MM))
+            if RNG.random() < 0.07:
+                reach += RNG.uniform(1.0, 3.0) * MM  # an island further out
             at = p + n * reach
-            if not on_metal(at, 0.5 * MM):
+            if not on_metal(at, 0.7 * MM):
                 continue
-            at.z = side * (HALF + 0.03 * MM)
-            grain(bm, at, RNG.uniform(0.12, 0.32) * MM, Vector((0, 0, 1)))
+            r = RNG.uniform(0.15, 0.6) * MM * max(0.45, 1 - reach / (4 * MM))
+            depth = r * RNG.uniform(0.35, 0.8)
+            at.z = side * (HALF + r - depth)
+            blob(bm, at, r)
+            pits.append((Vector((at.x, at.y, side * (HALF - depth))), r, side))
             placed += 1
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    mesh = bpy.data.meshes.new("crust")
+    for _ in range(650):  # nicks all over the walls: no smooth original wall left
+        p, n = hole_point(RNG.random())
+        blob(bm, p + n * RNG.uniform(0, 0.25) * MM + Vector((0, 0, RNG.uniform(-0.9, 0.9) * HALF)),
+             RNG.uniform(0.2, 0.45) * MM)
+    mesh = bpy.data.meshes.new("erosion")
     bm.to_mesh(mesh)
     bm.free()
-    return link("crust", mesh)
+    cutter = link("erosion", mesh)
+    # One clean, closed volume out of hundreds of overlapping bites (0.08 mm voxels).
+    remesh = cutter.modifiers.new("union", "REMESH")
+    remesh.mode = "VOXEL"
+    remesh.voxel_size = 0.08 * MM
+    apply(cutter, "union")
+    return cutter, pits
+
+
+def apply(obj: bpy.types.Object, modifier: str) -> None:
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=modifier)
+
+
+def erode(body: bpy.types.Object, cutter: bpy.types.Object) -> None:
+    """Carve the erosion out of the plate; every carved face gets the crust material (1)."""
+    boolean = body.modifiers.new("erode", "BOOLEAN")
+    boolean.operation = "DIFFERENCE"
+    boolean.solver = "MANIFOLD"
+    boolean.object = cutter
+    apply(body, "erode")
+    bpy.data.objects.remove(cutter)
+    for poly in body.data.polygons:
+        poly.material_index = 1 if carved(poly) else 0
+
+
+def carved(poly) -> bool:
+    """A face not on the plate's original caps nor its outer rim was cut by the erosion."""
+    c = poly.center
+    on_cap = abs(poly.normal.z) > 0.98 and abs(abs(c.z) - HALF) < 0.02 * MM
+    near_rim = not on_metal(Vector((c.x, c.y, 0)), 1.0 * PLATE["bevel"])
+    return not on_cap and not near_rim
 
 
 # --- Diamonds ------------------------------------------------------------------------
@@ -242,19 +228,18 @@ def brilliant(radius: float) -> bpy.types.Mesh:
     return mesh
 
 
-def diamonds(count: int = 26) -> list[bpy.types.Object]:
-    """Small black diamonds set in the crust, table facing out, mostly on the front fringe."""
-    out = []
+def diamonds(pits: list[tuple[Vector, float, int]], count: int = 9) -> list[bpy.types.Object]:
+    """Black diamonds set at the bottom of the largest pits, table facing out (mostly front)."""
     mesh = brilliant(1)
-    for k in range(count):
-        p, n = hole_point(RNG.random())
-        side = 1 if RNG.random() < 0.75 else -1
-        r = RNG.uniform(0.35, 0.6) * MM
-        at = p + n * RNG.uniform(0.3, 1.2) * MM + Vector((0, 0, side * HALF))
+    front = sorted((p for p in pits if p[2] > 0), key=lambda p: -p[1])[: count - 2]
+    back = sorted((p for p in pits if p[2] < 0), key=lambda p: -p[1])[:2]
+    out = []
+    for k, (floor, r, side) in enumerate(front + back):
         obj = link(f"diamond.{k:02}", mesh)
-        obj.scale = (r, r, r)
-        obj.rotation_euler = (0 if side > 0 else math.pi, RNG.uniform(-0.3, 0.3), RNG.uniform(0, 6.28))
-        obj.location = at
+        size = min(0.45 * MM, r * 0.75)
+        obj.scale = (size, size, size)
+        obj.rotation_euler = (0 if side > 0 else math.pi, 0, RNG.uniform(0, 6.28))
+        obj.location = floor + Vector((0, 0, side * size * 0.15))
         out.append(obj)
     return out
 
@@ -274,11 +259,15 @@ def material(name: str, base, metallic: float, roughness: float, aniso: float = 
     return mat
 
 
-def dress(body, crust_obj, gems) -> None:
+def body_materials(body) -> None:
+    """Slot 0: silver; slot 1: the black crust lining the eroded cavities."""
     body.data.materials.append(material("silver", (0.95, 0.93, 0.88), 1, 0.32, 0.6))
-    crust = material("crust", (0.004, 0.004, 0.0045), 0, 0.6)
-    crust.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.2
-    crust_obj.data.materials.append(crust)
+    crust = material("crust", (0.004, 0.004, 0.0045), 0, 0.85)
+    crust.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.15
+    body.data.materials.append(crust)
+
+
+def dress(gems) -> None:
     gem = material("black-diamond", (0.01, 0.01, 0.012), 0, 0.03)
     for g in gems:
         g.data.materials.append(gem) if not g.data.materials else None
@@ -339,16 +328,18 @@ def main() -> None:
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     reset()
     body = plate()
-    crust_obj = crust()
-    gems = [] if "--no-gems" in args else diamonds()
+    body_materials(body)
+    cutter, pits = erosion_volume()
+    erode(body, cutter)
+    gems = [] if "--no-gems" in args else diamonds(pits)
     if "--preview" in args:
-        dress(body, crust_obj, gems)
+        dress(gems)
         render("front", 0.0, (0.16, 0.16, 0.165))
         render("angle", math.radians(32), (0.005, 0.005, 0.005))
     if "--save" in args:
         # A scene to open in Blender's window: materials and studio lights as in the previews.
         if "--preview" not in args:
-            dress(body, crust_obj, gems)
+            dress(gems)
             studio((0.16, 0.16, 0.165))
         bpy.ops.wm.save_as_mainfile(filepath=str(BUILD / "pendant.blend"))
     if "--export" in args:
@@ -356,7 +347,7 @@ def main() -> None:
                                   export_apply=True, export_materials="NONE",
                                   # Keep the site's axes (Y up, plate facing +Z) as they are.
                                   export_yup=False)
-    print("pendant: done", len(body.data.polygons), "plate faces,", len(crust_obj.data.polygons), "crust faces")
+    print("pendant: done", len(body.data.polygons), "faces")
 
 
 main()

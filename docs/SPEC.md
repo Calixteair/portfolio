@@ -88,6 +88,7 @@ loading → ready("Entrer") → idle → heating → overheated → portalOpen �
 - Composition : le pendentif reste la vedette ; le décor ne doit jamais lui voler la lumière.
 - Collisions : les formes proches sont décrites par des **SDF analytiques** (cônes, boîtes chanfreinées), avec le même code que pour le sol (§5.4).
 - Rendu final (au-delà du prototype `docs/explorations/pendant-forge.html`) : terrain sculpté avec érosion et normal maps, textures de roche, cailloux instanciés, nuages en couches avec parallaxe. Les plans lointains peuvent être une image peinte ou une HDRI dédiée, pour les performances.
+- _Tranché en M8b_ : **roche taillée** (pas béton coulé), tout procédural. Chaque pic est un massif de 3 à 5 blocs coupés en biais ; chaque face a sa nuance. Les montagnes forment un **cirque** en fer à cheval ouvert vers la caméra, ses bras encadrant le pendentif ; le sol, plat sous le pendentif (rebonds des étincelles), se creuse puis remonte vers les murs. Cailloux instanciés (150 à 800 selon le niveau), trois couches de nuages.
 
 ### 5.2 Matériaux
 

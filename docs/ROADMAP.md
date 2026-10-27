@@ -76,7 +76,9 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 
 ## M8b — Finition du décor
 
-- [ ] SPEC §5.1 « rendu final » : érosion, normal maps, cailloux instanciés, nuages en couches (allers-retours en captures)
+- [x] Massifs de roche taillée (blocs coupés en biais), matière « roche taillée » (une nuance par face, grain, fissures fines)
+- [x] Montagnes en cirque (fer à cheval) autour du pendentif, sol en cuvette accidenté
+- [x] Cailloux instanciés selon le niveau de qualité, nuages en trois couches avec parallaxe
 
 ## M9 — Intégration du modèle final (à la livraison de l'artiste)
 

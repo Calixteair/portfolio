@@ -129,18 +129,18 @@ export function fieldTexelToPlate(i: number, j: number, fields: Omit<EdgeFields,
   };
 }
 
-export function bakeEdgeFields(hole: readonly Point[], outer: readonly Point[]): EdgeFields {
+/** Where the fields lie in plate space and their resolution (everything but the data). */
+export function fieldLayout(): Omit<EdgeFields, 'data'> {
   const { width, height, range, margin } = FIELD;
   const min = { x: -PLATE.hw - margin, y: -PLATE.hh - margin };
   const size = { x: 2 * (PLATE.hw + margin), y: 2 * (PLATE.hh + margin) };
-  const fields: EdgeFields = {
-    data: new Uint8Array(width * height * 4),
-    width,
-    height,
-    min,
-    size,
-    range,
-  };
+  return { width, height, min, size, range };
+}
+
+export function bakeEdgeFields(hole: readonly Point[], outer: readonly Point[]): EdgeFields {
+  const layout = fieldLayout();
+  const { width, height, range } = layout;
+  const fields: EdgeFields = { ...layout, data: new Uint8Array(width * height * 4) };
   const quantize = (d: number) => Math.round(Math.min(1, d / range) * 255);
   for (let j = 0; j < height; j++) {
     for (let i = 0; i < width; i++) {

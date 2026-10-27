@@ -12,7 +12,7 @@ ARG BUILD_SHA=dev
 ENV PUBLIC_BUILD_SHA=$BUILD_SHA
 RUN npm run build \
  && find dist -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.svg' \
-      -o -name '*.json' -o -name '*.wasm' -o -name '*.glb' \) -exec gzip -9 -k {} +
+      -o -name '*.json' -o -name '*.wasm' -o -name '*.glb' -o -name '*.bin' \) -exec gzip -9 -k {} +
 
 # --- Runtime: unprivileged nginx (uid 101, port 8080) ---
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03 AS runtime

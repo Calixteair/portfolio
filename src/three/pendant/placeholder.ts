@@ -16,16 +16,9 @@ import {
 import type { PlateHeat } from '../../shaders/heat';
 import { createDiamondMaterial, createPlateMaterial, type EdgeMaskInfo } from '../../shaders/steel';
 import { disposeMeshes } from '../dispose';
-import { mulberry32 } from '../random';
-import {
-  HOLE,
-  PLATE,
-  bakeEdgeFields,
-  holeOutline,
-  outerOutline,
-  type EdgeFields,
-  type Point,
-} from './shape';
+import { loadEdgeBytes } from './edgeFile';
+import { PENDANT_SEED, pendantOutlines } from './outlines';
+import { HOLE, PLATE, bakeEdgeFields, fieldLayout, type Point } from './shape';
 
 /** Same interface as the artist's GLB will expose (SPEC §6). */
 export interface Pendant {
@@ -35,18 +28,27 @@ export interface Pendant {
   edgeMask: EdgeMaskInfo;
   /** Plate-space outlines, for spark emitters and collisions (M3). */
   outline: { outer: Point[]; hole: Point[] };
+  /** Resolves once the edge mask holds its data (fetched, or computed as a fallback). */
+  ready: Promise<void>;
   dispose: () => void;
 }
 
 const DIAMOND_COUNT = 70;
 const toVectors = (points: readonly Point[]) => points.map((p) => new Vector2(p.x, p.y));
 
-function edgeMaskTexture(fields: EdgeFields): EdgeMaskInfo {
-  const tex = new DataTexture(fields.data, fields.width, fields.height, RGBAFormat);
+/** The edge mask, empty until its data arrives (the shaders compile without it). */
+function edgeMaskTexture(): EdgeMaskInfo & { fill: (data: Uint8Array) => void } {
+  const layout = fieldLayout();
+  const data = new Uint8Array(layout.width * layout.height * 4);
+  const tex = new DataTexture(data, layout.width, layout.height, RGBAFormat);
   tex.magFilter = LinearFilter;
   tex.minFilter = LinearFilter;
   tex.needsUpdate = true;
-  return { texture: tex, min: fields.min, size: fields.size, range: fields.range };
+  const fill = (bytes: Uint8Array) => {
+    data.set(bytes);
+    tex.needsUpdate = true;
+  };
+  return { texture: tex, min: layout.min, size: layout.size, range: layout.range, fill };
 }
 
 function buildBody(
@@ -102,11 +104,10 @@ function buildDiamonds(hole: Point[], rand: () => number): InstancedMesh {
 }
 
 /** Procedural stand-in for the final GLB: chamfered steel plate, eroded hole, black diamonds. */
-export function createPendant(heat: PlateHeat, seed = 7): Pendant {
-  const rand = mulberry32(seed);
-  const outer = outerOutline();
-  const hole = holeOutline(rand);
-  const edgeMask = edgeMaskTexture(bakeEdgeFields(hole, outer));
+export function createPendant(heat: PlateHeat, seed = PENDANT_SEED): Pendant {
+  const { outer, hole, rand } = pendantOutlines(seed);
+  const edgeMask = edgeMaskTexture();
+  const ready = loadEdgeBytes(seed, () => bakeEdgeFields(hole, outer).data).then(edgeMask.fill);
   const body = buildBody(outer, hole, edgeMask, heat);
   const diamonds = buildDiamonds(hole, rand);
   const group = new Group();
@@ -115,5 +116,5 @@ export function createPendant(heat: PlateHeat, seed = 7): Pendant {
     disposeMeshes(group);
     edgeMask.texture.dispose();
   };
-  return { group, body, diamonds, edgeMask, outline: { outer, hole }, dispose };
+  return { group, body, diamonds, edgeMask, outline: { outer, hole }, ready, dispose };
 }

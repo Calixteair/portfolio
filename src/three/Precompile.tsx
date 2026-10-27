@@ -7,6 +7,8 @@ import { useWebGPU } from './useWebGPU';
 const WARMUP_FRAMES = 2;
 
 interface PrecompileProps {
+  /** Data the scene needs before "Entrer" (the pendant's edge fields). */
+  ready: Promise<void>;
   onStage: (stage: Stage) => void;
   /** Starts the render loop, which stays stopped while the shaders compile. */
   onCompiled: () => void;
@@ -18,7 +20,7 @@ interface PrecompileProps {
  * asynchronously (SPEC §4: before hiding the loader) instead of stalling on the first frame,
  * then renders a few hidden frames before reporting the scene ready.
  */
-export default function Precompile({ onStage, onCompiled, onError }: PrecompileProps) {
+export default function Precompile({ ready, onStage, onCompiled, onError }: PrecompileProps) {
   const { gl, scene, camera } = useWebGPU();
   const frames = useRef(-1);
 
@@ -27,7 +29,7 @@ export default function Precompile({ onStage, onCompiled, onError }: PrecompileP
     onStage('scene');
     // No downloaded asset yet (procedural placeholder): drei's useProgress joins with the GLB.
     onStage('assets');
-    gl.compileAsync(scene, camera)
+    Promise.all([gl.compileAsync(scene, camera), ready])
       .then(() => {
         if (!alive) return;
         frames.current = 0;
@@ -37,7 +39,7 @@ export default function Precompile({ onStage, onCompiled, onError }: PrecompileP
     return () => {
       alive = false;
     };
-  }, [gl, scene, camera, onStage, onCompiled, onError]);
+  }, [gl, scene, camera, ready, onStage, onCompiled, onError]);
 
   useFrame(() => {
     if (frames.current < 0 || frames.current >= WARMUP_FRAMES) return;

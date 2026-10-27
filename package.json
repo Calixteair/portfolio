@@ -7,7 +7,10 @@
     "node": ">=24.16.0"
   },
   "scripts": {
+    "bake": "node scripts/bake-edges.ts",
+    "predev": "npm run bake",
     "dev": "astro dev",
+    "prebuild": "npm run bake",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "typecheck": "astro check",

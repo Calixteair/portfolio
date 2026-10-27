@@ -117,7 +117,12 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
             />
           </Suspense>
         )}
-        <Precompile onStage={reach} onCompiled={startRendering} onError={fail} />
+        <Precompile
+          ready={pendant.ready}
+          onStage={reach}
+          onCompiled={startRendering}
+          onError={fail}
+        />
       </Canvas>
       <BodyLabel ref={labelRef} />
       {import.meta.env.DEV && backend && <BackendBadge backend={backend} />}

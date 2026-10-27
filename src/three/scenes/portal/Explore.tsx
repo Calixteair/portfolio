@@ -97,7 +97,7 @@ function exploreFrame(
   }
 }
 
-/** Hover: pick the body under the pointer, label it, show a pointer cursor. */
+/** Hover: pick the body under the pointer, light it up, label it, show a pointer cursor. */
 function hoverFrame(
   holder: Holder,
   scene: {
@@ -115,6 +115,7 @@ function hoverFrame(
   const objects = scene.system.bodies.objects;
   const slug = pointer ? pickBody(pointer, scene.camera, objects.values()) : null;
   holder.hovered = slug;
+  scene.system.bodies.hover(slug);
   ui.canvas.style.cursor = slug ? 'pointer' : 'grab';
   const object = slug ? objects.get(slug) : undefined;
   const text = slug ? ui.texts.get(slug) : undefined;

@@ -91,25 +91,39 @@ const SURFACES: Record<PlanetType, (p: Node<'vec3'>, hue: number) => Surface> = 
   ocean,
 };
 
+/**
+ * Rim glow (Fresnel): bright where the surface turns away from the eye, a halo that keeps
+ * the body's shape readable. `highlight` (0-1) drives it: hover, search, visited planet.
+ */
+export function rimGlow(highlight: Node<'float'>, tint: Node<'vec3'>): Node<'vec3'> {
+  const rim = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.5);
+  // Plus a faint overall lift: a distant body is a few pixels, its rim alone barely shows.
+  return tint.mul(rim.add(0.12).mul(highlight));
+}
+
 /** Procedural planet (SPEC §5.7): its look comes from the content (type, hue). */
-export function createPlanetMaterial(type: PlanetType, hue: number): MeshStandardNodeMaterial {
+export function createPlanetMaterial(
+  type: PlanetType,
+  hue: number,
+  highlight: UniformNode<'float', number>,
+): MeshStandardNodeMaterial {
   const surface = SURFACES[type](normalize(positionLocal), hue);
   const material = new MeshStandardNodeMaterial({ metalness: 0 });
   material.colorNode = surface.color;
   material.roughnessNode = surface.roughness;
-  if (surface.emissive) material.emissiveNode = surface.emissive;
+  const glow = rimGlow(highlight, hsl(hue, 0.8, 0.65).mul(2));
+  material.emissiveNode = surface.emissive ? surface.emissive.add(glow) : glow;
   return material;
 }
 
 /**
  * Moons: technical skills grey-blue rock, soft skills a warm, faintly glowing stone.
- * `highlight` (0-1) adds a soft rim glow, raised while visiting their planet: a hint that
- * they can be clicked.
+ * `highlight` (0-1) adds a rim glow (see rimGlow).
  */
 export function createMoonMaterial(
   soft: boolean,
   hue: number,
-  highlight?: UniformNode<'float', number>,
+  highlight: UniformNode<'float', number>,
 ): MeshStandardNodeMaterial {
   const p = normalize(positionLocal);
   const n = fbm(p.mul(4), 4);
@@ -118,12 +132,8 @@ export function createMoonMaterial(
     ? mix(hsl(30, 0.5, 0.25), hsl(38, 0.6, 0.55), n)
     : mix(hsl(hue, 0.12, 0.2), hsl(hue, 0.15, 0.5), n);
   const base = soft ? hsl(32, 0.8, 0.3).mul(n.mul(0.25)) : vec3(0);
-  if (!highlight) {
-    if (soft) material.emissiveNode = base;
-    return material;
-  }
-  const rim = pow(float(1).sub(abs(dot(normalView, positionViewDirection))), 2.5);
-  const glow = (soft ? hsl(35, 0.9, 0.6) : hsl(210, 0.9, 0.7)).mul(rim.mul(highlight).mul(0.8));
-  material.emissiveNode = base.add(glow);
+  material.emissiveNode = base.add(
+    rimGlow(highlight, soft ? hsl(35, 0.9, 0.6) : hsl(210, 0.9, 0.7)),
+  );
   return material;
 }

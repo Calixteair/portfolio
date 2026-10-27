@@ -15,18 +15,25 @@ import {
   type Object3D,
   type UniformNode,
 } from 'three/webgpu';
-import { color, float, uniform } from 'three/tsl';
+import { attribute, color, float, uniform, uniformArray } from 'three/tsl';
 import { PALETTE_B } from '../../../shaders/nebula';
-import { createMoonMaterial, createPlanetMaterial } from '../../../shaders/planets';
+import { createMoonMaterial, createPlanetMaterial, rimGlow } from '../../../shaders/planets';
+import {
+  createHighlight,
+  easeGlow,
+  glowTarget,
+  type HighlightState,
+} from '../../../system/highlight';
 import { mulberry32 } from '../../random';
 import { positionAt, type Body } from '../../../system/layout';
 
 /** Brutalist orbital station: stacked slabs around a spine, a few emissive windows. */
-function station(body: Body): Group {
+function station(body: Body, highlight: UniformNode<'float', number>): Group {
   const group = new Group();
   const rand = mulberry32(Math.floor(body.phase * 1e6));
   const concrete = new MeshStandardNodeMaterial({ roughness: 0.95, metalness: 0.1 });
   concrete.colorNode = color(0x3a3d44);
+  concrete.emissiveNode = rimGlow(highlight, color(PALETTE_B.filament).mul(1.4));
   const windows = new MeshStandardNodeMaterial({ roughness: 0.5 });
   windows.colorNode = color(0x101318);
   windows.emissiveNode = color(body.look.soft ? PALETTE_B.ember : PALETTE_B.core).mul(float(1.6));
@@ -46,16 +53,17 @@ function station(body: Body): Group {
   return group;
 }
 
-function meshFor(body: Body, highlight?: UniformNode<'float', number>): Object3D {
+function meshFor(body: Body, highlight: UniformNode<'float', number>): Object3D {
   const { kind, radius, look } = body;
-  if (kind === 'station') return station(body);
+  if (kind === 'station') return station(body, highlight);
   if (kind === 'asteroid') {
-    return new Mesh(new DodecahedronGeometry(radius, 1), createMoonMaterial(look.soft, look.hue));
+    const material = createMoonMaterial(look.soft, look.hue, highlight);
+    return new Mesh(new DodecahedronGeometry(radius, 1), material);
   }
   const detail = kind === 'planet' ? 64 : 24;
   const material =
     kind === 'planet'
-      ? createPlanetMaterial(look.type, look.hue)
+      ? createPlanetMaterial(look.type, look.hue, highlight)
       : createMoonMaterial(look.soft, look.hue, highlight);
   return new Mesh(new SphereGeometry(radius, detail, detail / 2), material);
 }
@@ -66,9 +74,10 @@ const ORBIT_TINT = 0.6;
 /**
  * Faint orbit trace for planets and stations: makes the system readable at a glance. Each
  * is tinted towards its body's hue, so neighbouring orbits tell apart. The colour is a
- * vertex attribute: all traces share one material, hence one shader.
+ * vertex attribute: all traces share one material, hence one shader. They brighten with
+ * their body's highlight (hover, search).
  */
-function orbitLine(body: Body, material: LineBasicNodeMaterial): Line {
+function orbitLine(body: Body, index: number, material: LineBasicNodeMaterial): Line {
   const points = Array.from({ length: 161 }, (_, i) => {
     const probe = { ...body, phase: (i / 160) * Math.PI * 2, speed: 0, host: undefined };
     return new Vector3(...positionAt(probe, 0, new Map()));
@@ -81,6 +90,11 @@ function orbitLine(body: Body, material: LineBasicNodeMaterial): Line {
   for (let i = 0; i < points.length; i++) tint.toArray(colors, i * 3);
   const geometry = new BufferGeometry().setFromPoints(points);
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
+  // Which body the trace belongs to, to light it up with its body (one shared material).
+  geometry.setAttribute(
+    'orbit',
+    new BufferAttribute(new Float32Array(points.length).fill(index), 1),
+  );
   return new Line(geometry, material);
 }
 
@@ -108,6 +122,10 @@ export interface SystemBodies {
   reach: Map<string, number>;
   /** Visiting this body (or none): its moons glow faintly, easing in and out. */
   focus: (slug: string | null) => void;
+  /** The body under the pointer (or none): it glows, its orbit trace too. */
+  hover: (slug: string | null) => void;
+  /** Search matches (null: no search): they glow. */
+  mark: (slugs: ReadonlySet<string> | null) => void;
   update: (elapsed: number) => void;
 }
 
@@ -115,35 +133,38 @@ export function createBodies(bodies: Body[]): SystemBodies {
   const group = new Group();
   const objects = new Map<string, Object3D>();
   const lookup = new Map(bodies.map((b) => [b.slug, b]));
+  const glows = new Map(bodies.map((b) => [b.slug, uniform(0)]));
+  const traced = bodies.filter((b) => b.kind === 'planet' || b.kind === 'station');
+  const traceGlow = uniformArray<'float'>(new Array<number>(traced.length).fill(0), 'float');
   const orbitMaterial = new LineBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
     vertexColors: true,
   });
-  orbitMaterial.opacityNode = float(0.16);
+  const lit = traceGlow.element(attribute<'float'>('orbit', 'float').toUint());
+  orbitMaterial.opacityNode = float(0.16).add(lit.mul(0.5));
   const hitMaterial = new MeshBasicNodeMaterial({ visible: false });
-  const glows = new Map<string, UniformNode<'float', number>>();
   for (const body of bodies) {
-    const glow = body.kind === 'moon' ? uniform(0) : undefined;
-    if (glow) glows.set(body.slug, glow);
-    const object = meshFor(body, glow);
+    const object = meshFor(body, glows.get(body.slug) ?? uniform(0));
     object.add(hitProxy(body, hitMaterial));
     object.name = body.slug;
     object.userData.slug = body.slug;
     objects.set(body.slug, object);
     group.add(object);
-    if (body.kind === 'planet' || body.kind === 'station')
-      group.add(orbitLine(body, orbitMaterial));
   }
-  let focused: string | null = null;
+  traced.forEach((body, i) => group.add(orbitLine(body, i, orbitMaterial)));
+  const state: HighlightState = createHighlight();
   let last = 0;
   const easeGlows = (elapsed: number) => {
-    const k = 1 - Math.exp(-(elapsed - last) * 3);
+    const dt = elapsed - last;
     last = elapsed;
     for (const body of bodies) {
       const glow = glows.get(body.slug);
-      if (glow) glow.value += ((body.host === focused ? 1 : 0) - glow.value) * k;
+      if (glow) glow.value = easeGlow(glow.value, glowTarget(body, state), dt);
     }
+    traced.forEach((body, i) => {
+      traceGlow.array[i] = glows.get(body.slug)?.value ?? 0;
+    });
   };
   const update = (elapsed: number) => {
     easeGlows(elapsed);
@@ -155,8 +176,13 @@ export function createBodies(bodies: Body[]): SystemBodies {
   };
   update(0);
   const reach = new Map(bodies.map((b) => [b.slug, reachOf(b, bodies)]));
-  const focus = (slug: string | null) => {
-    focused = slug;
+  return {
+    group,
+    objects,
+    reach,
+    focus: (slug) => void (state.focused = slug),
+    hover: (slug) => void (state.hovered = slug),
+    mark: (slugs) => void (state.marked = slugs),
+    update,
   };
-  return { group, objects, reach, focus, update };
 }

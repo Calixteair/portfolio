@@ -72,6 +72,10 @@ const searchText = (e: Entry) =>
       · <kbd>Échap</kbd> retour
     </p>
   </aside>
+  <!-- Touch screens have no I key: the title cards get their own button. -->
+  <button type="button" class="titles-open" data-titles-toggle aria-pressed="false">
+    Titres
+  </button>
   <div id="body-titles" class="body-titles" hidden>
     {titled.map((e) => (
       <a class="body-title" href={`#${e.id}`} data-body={e.id} data-title-of={e.id}>
@@ -262,8 +266,33 @@ const searchText = (e: Entry) =>
     font-size: 0.75em;
     opacity: 0.7;
   }
-  /* Touch: entries and buttons big enough for a finger (44 px). */
+  .titles-open {
+    display: none;
+  }
+  /* Touch: no keyboard hints, entries and buttons big enough for a finger (44 px). */
   @media (pointer: coarse) {
+    kbd,
+    .map-hint {
+      display: none;
+    }
+    .titles-open {
+      position: absolute;
+      top: max(1rem, env(safe-area-inset-top));
+      right: max(1rem, env(safe-area-inset-right));
+      display: block;
+      min-height: 2.75rem;
+      padding: 0 1.1rem;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgb(2 4 12 / 0.7);
+      border: 1px solid rgb(180 224 255 / 0.35);
+      pointer-events: auto;
+    }
+    .titles-open[aria-pressed='true'] {
+      color: #b4e0ff;
+      border-color: #2f6bff;
+    }
     .system-nav a {
       padding-block: 0.6rem;
     }

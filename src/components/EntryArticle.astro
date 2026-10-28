@@ -194,6 +194,11 @@ const titleId = panel ? `panel-title-${e.id}` : `title-${e.id}`;
     font-size: 0.75rem;
     opacity: 0.6;
   }
+  @media (pointer: coarse) {
+    kbd {
+      display: none;
+    }
+  }
 
   /* On the classic page: one card per entry, in the document flow. */
   .classic {

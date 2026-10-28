@@ -129,13 +129,14 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
     }
   }
 
-  /* Placed where the 3D pendant will appear (fov 32°, camera 3.3 m away): the island
+  /* Placed where the 3D pendant will appear (fov 32°, camera 3.3 m away; narrower than
+     4:5 the view widens, see three/framing.ts: 49vh × aspect / 0.8 = 61.25vw): the island
      refines it with the real projection, for a seamless handoff. */
   .wire {
     position: absolute;
     left: var(--wire-x, 50%);
     top: var(--wire-y, 51%);
-    height: var(--wire-h, 49vh);
+    height: var(--wire-h, min(49vh, 61.25vw));
     translate: -50% -50%;
     overflow: visible;
   }
@@ -234,7 +235,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   .enter {
     position: absolute;
     left: 50%;
-    top: calc(var(--wire-y, 51%) + var(--wire-h, 49vh) / 2 + 4vh);
+    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49vh, 61.25vw)) / 2 + 4vh);
     translate: -50% 0;
     padding: 0.7em 2.2em;
     font:
@@ -261,7 +262,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   .skip-intro {
     position: absolute;
     left: 50%;
-    top: calc(var(--wire-y, 51%) + var(--wire-h, 49vh) / 2 + 4vh + 3.4rem);
+    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49vh, 61.25vw)) / 2 + 4vh + 3.4rem);
     translate: -50% 0;
     padding: 0.4em 1em;
     font:

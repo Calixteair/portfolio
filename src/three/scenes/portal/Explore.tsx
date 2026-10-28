@@ -18,6 +18,7 @@ import { createNavigation } from './navigation';
 import { pickBody, screenPoint } from './picking';
 import { holdOrbit, type Travel } from './travel';
 import { ARRIVAL, arrivalPoint } from './window';
+import { fitCamera } from '../../framing';
 
 const MAX_FRAME_DT = 0.05;
 
@@ -104,10 +105,7 @@ function exploreFrame(
     const [x, y, z] = viewDirection(look, BASE);
     camera.lookAt(camera.position.x + x, camera.position.y + y, camera.position.z + z);
   }
-  if (Math.abs(camera.aspect - frame.aspect) > 1e-3) {
-    camera.aspect = frame.aspect;
-    camera.updateProjectionMatrix();
-  }
+  if (Math.abs(camera.aspect - frame.aspect) > 1e-3) fitCamera(camera, frame.aspect);
 }
 
 /** Hover: pick the body under the pointer, light it up, label it, show a pointer cursor. */

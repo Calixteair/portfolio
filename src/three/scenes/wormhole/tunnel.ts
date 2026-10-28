@@ -35,6 +35,7 @@ import {
 import { PALETTE_B, rgb } from '../../../shaders/nebula';
 import { hash21 } from '../../../shaders/noise';
 import { disposeMeshes } from '../../dispose';
+import { fitCamera } from '../../framing';
 
 /** A gentle S-curve, ~60 m long: enough bend to feel the turns, never a dead end in view. */
 const PATH = new CatmullRomCurve3([
@@ -135,8 +136,7 @@ export function createTunnel(): Tunnel {
   fly(0, 0);
   const resize = (aspect: number) => {
     if (Math.abs(camera.aspect - aspect) < 1e-3) return;
-    camera.aspect = aspect;
-    camera.updateProjectionMatrix();
+    fitCamera(camera, aspect);
   };
   const dispose = () => {
     disposeMeshes(scene);

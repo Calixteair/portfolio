@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { WebGPURenderer } from 'three/webgpu';
 import { useLoader } from '../loader/useLoader';
 import '../three/extend';
+import Framing from '../three/Framing';
 import Precompile from '../three/Precompile';
 import Quality from '../three/Quality';
 import LensEffects from '../three/post/LensEffects';
@@ -106,6 +107,7 @@ export default function Experience({ entries }: { entries: SystemEntry[] }) {
           onArrived={onArrived}
         />
         <Quality live={world.quality} setDpr={setDpr} />
+        <Framing />
         <LensEffects uniforms={lens} stage={stage} warmUp={world.warmUp} quality={world.quality} />
         {DevControls && (
           <Suspense fallback={null}>

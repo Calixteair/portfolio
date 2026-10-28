@@ -21,6 +21,7 @@ import type { Point } from '../../pendant/shape';
 import { QUALITY, type LiveQuality } from '../../quality';
 import { REST_ANGLE } from '../../pendant/spin';
 import type { PortalSystem } from './system';
+import { fitCamera } from '../../framing';
 
 /**
  * The arrival axis: the visitor exits the wormhole through the ring (SPEC §5.6) along this
@@ -150,8 +151,7 @@ export function poseArrival(
   arrivalPoint(distance, camera.position);
   camera.lookAt(0, 0, 0);
   camera.fov = fov;
-  camera.aspect = aspect;
-  camera.updateProjectionMatrix();
+  fitCamera(camera, aspect);
   camera.updateMatrixWorld();
 }
 

@@ -21,3 +21,19 @@ export function fitCamera(camera: PerspectiveCamera, aspect: number): void {
   camera.zoom = fitZoom(aspect);
   camera.updateProjectionMatrix();
 }
+
+/** Where a body's panel opens (EntryArticle.astro, same 4:5 breakpoint in CSS). */
+export type PanelSide = 'right' | 'bottom';
+
+export function panelSide(aspect: number): PanelSide {
+  return aspect <= MIN_ASPECT ? 'bottom' : 'right';
+}
+
+/**
+ * The bottom drawer covers at most the lower half of the screen: the body is framed at the
+ * centre of the upper half (NDC y = 0.5).
+ */
+export const DRAWER_RISE = 0.5;
+
+/** Orbit distance factor above a drawer: the body has half the screen's height to fit in. */
+export const DRAWER_BACKOFF = 1.6;

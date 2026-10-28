@@ -143,6 +143,38 @@ const titleId = panel ? `panel-title-${e.id}` : `title-${e.id}`;
       translate: 1rem -50%;
     }
   }
+  /* Portrait (narrower than 4:5, three/framing.ts): a drawer over the lower half, the
+     visited body framed in the upper half. */
+  @media (max-aspect-ratio: 4/5) {
+    .panel {
+      inset: auto 0 0;
+      translate: none;
+      width: auto;
+      max-height: 50%;
+      padding: 1.1rem 1.25rem calc(1.1rem + env(safe-area-inset-bottom));
+      border-top: 2px solid #2f6bff;
+      border-left: 0;
+      animation-name: drawer-in;
+    }
+    .entry h2 {
+      font-size: 1.3rem;
+    }
+  }
+  @keyframes drawer-in {
+    from {
+      opacity: 0;
+      translate: 0 1.5rem;
+    }
+  }
+  /* A phone on its side: beside the body still, over half the width at most. */
+  @media (max-height: 520px) and (min-aspect-ratio: 4/5) {
+    .panel {
+      right: max(0.75rem, env(safe-area-inset-right));
+      width: min(28rem, 50%);
+      max-height: calc(100% - 1.5rem);
+      padding: 1rem 1.25rem;
+    }
+  }
   .entry-back {
     margin-top: 1rem;
     padding: 0.5rem 1rem;

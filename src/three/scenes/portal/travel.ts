@@ -1,5 +1,12 @@
 import type { gsap as Gsap } from 'gsap';
-import { Matrix4, Quaternion, Vector3, type Object3D, type PerspectiveCamera } from 'three/webgpu';
+import {
+  MathUtils,
+  Matrix4,
+  Quaternion,
+  Vector3,
+  type Object3D,
+  type PerspectiveCamera,
+} from 'three/webgpu';
 import {
   aroundStar,
   arrivalHandle,
@@ -11,6 +18,7 @@ import {
   startFlight,
   type V3,
 } from '../../../system/flightPath';
+import { DRAWER_BACKOFF, DRAWER_RISE, panelSide } from '../../framing';
 import type { LensUniforms } from '../../post/lens';
 
 type Timeline = ReturnType<typeof Gsap.timeline>;
@@ -36,7 +44,7 @@ const toCamera = new Vector3();
 
 /**
  * Where the camera sits in orbit: on the side facing the arrival point, a little above,
- * at `distance`; the body is then framed left of centre, leaving room for the panel.
+ * at `distance`; `aimAtTarget` then frames the body clear of its panel.
  */
 export function orbitPoint(travel: Travel, home: Vector3, out: Vector3): Vector3 {
   const target = travel.target;
@@ -55,10 +63,20 @@ const LIFT = new Vector3(0, 0.25, 0);
 const look = new Vector3();
 const side = new Vector3();
 
-/** Aim at the target, offset so the body sits left of centre (panel on the right). */
+/**
+ * Aim at the target, offset so the body clears its panel: left of centre (panel on the
+ * right), or high on a portrait screen (drawer at the bottom).
+ */
 export function aimAtTarget(camera: PerspectiveCamera, travel: Travel, amount: number): void {
   if (!travel.target) return;
   travel.target.getWorldPosition(look);
+  if (panelSide(camera.aspect) === 'bottom') {
+    // Lower the sight so the body rises to DRAWER_RISE of the half screen height.
+    const halfHeight = Math.tan(MathUtils.degToRad(camera.fov / 2)) / camera.zoom;
+    const drop = camera.position.distanceTo(look) * halfHeight * DRAWER_RISE * amount;
+    camera.lookAt(look.addScaledVector(UP, -drop));
+    return;
+  }
   side.subVectors(look, camera.position).cross(UP).normalize();
   camera.lookAt(look.addScaledVector(side, travel.distance * 0.35 * amount));
 }
@@ -203,7 +221,7 @@ export function flyTo(leg: Leg, target: Object3D, distance: number): Promise<voi
   const { travel, camera, home } = leg;
   const heading = currentHeading(leg, new Vector3());
   travel.target = target;
-  travel.distance = distance;
+  travel.distance = panelSide(camera.aspect) === 'bottom' ? distance * DRAWER_BACKOFF : distance;
   travel.orbitAngle = entryAngle(travel, home, camera.position);
   travel.phase = 'outbound';
   const dest: Destination = {

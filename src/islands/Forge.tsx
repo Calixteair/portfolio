@@ -1,6 +1,6 @@
 import ForgeDirector from '../three/scenes/forge/ForgeDirector';
 import ForgeLighting from '../three/scenes/forge/ForgeLighting';
-import ForgeWorld from '../three/scenes/forge/ForgeWorld';
+import ForgeWorld, { useForgeWorld } from '../three/scenes/forge/ForgeWorld';
 import Pendant from '../three/scenes/forge/Pendant';
 import Sparks from '../three/scenes/forge/Sparks';
 import Swarm from '../three/scenes/forge/Swarm';
@@ -16,10 +16,11 @@ interface ForgeProps {
 /** Everything on the forge side of the portal; unmounted (and disposed) once past it. */
 export default function Forge({ world, entered }: ForgeProps) {
   const { forge, lights, pendant, runtime, system } = world;
+  const decor = useForgeWorld(forge);
   return (
     <>
       <ForgeLighting lights={lights} uniforms={forge} />
-      <ForgeWorld uniforms={forge} />
+      <ForgeWorld world={decor} uniforms={forge} />
       <ForgeDirector runtime={runtime} uniforms={forge} active={entered} />
       <Pendant
         pendant={pendant}
@@ -28,7 +29,7 @@ export default function Forge({ world, entered }: ForgeProps) {
         interactive={entered}
         onStrike={world.onStrike}
       />
-      <Sparks pendant={pendant} forge={forge} spin={runtime.spin} />
+      <Sparks pendant={pendant} forge={forge} spin={runtime.spin} colliders={decor.colliders} />
       <Swarm pendant={pendant} forge={forge} />
       <Portal
         pendant={pendant}

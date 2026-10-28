@@ -28,7 +28,8 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 - [x] Fil incandescent en SVG/CSS (contour exact du pendentif), progression lissée par étapes réelles
 - [x] Précompilation des shaders (`compileAsync`), bouton « Entrer », raccord avec le pendentif projeté à l'écran
 - [x] Cas cache chaud, sans WebGPU ni WebGL, timeout, sans JavaScript : version classique minimale (complétée en M7)
-- [ ] Audio débloqué par « Entrer » et bouton « Passer l'intro » : reportés (son en question ouverte, SPEC §10 ; portfolio en M6)
+- [x] Bouton « Passer l'intro » (livré en M7, saute au système planétaire)
+- [ ] Audio débloqué par « Entrer » : reporté (son en question ouverte, SPEC §10)
 
 ## M3 — Chauffe et étincelles
 
@@ -37,7 +38,7 @@ Coche les critères au fur et à mesure : ce fichier sert aussi de mémoire de l
 - [x] Étincelles en compute shader : gravité, traînée, collisions SDF avec le pendentif en rotation (vitesse de surface transmise) et le sol
 - [x] Particules de protomolécule qui sortent du trou (essaim, sans gravité, rampent sur la surface)
 - [x] Repli WebGL 2 (même simulation, moitié moins de particules), distorsion de chaleur (masque d'émission en MRT), tremblement en surchauffe
-- [ ] Collisions avec les rochers du décor : reportées (les étincelles retombent avant les rochers les plus proches, à 4,5 m)
+- [x] Collisions avec le décor : sol réel (facettes du maillage) et rochers à portée (cônes tronqués SDF), vérifiées par relecture GPU sur les deux backends
 
 ## M4 — Portail
 

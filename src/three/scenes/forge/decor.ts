@@ -20,10 +20,18 @@ import { createRockMaterial } from '../../../shaders/rock';
 import { createSkyMaterial } from '../../../shaders/sky';
 import { disposeMeshes } from '../../dispose';
 import { mulberry32 } from '../../random';
+import {
+  type Cone,
+  GROUND_MESH,
+  type SparkColliders,
+  fitCone,
+  groundField,
+  reachableRocks,
+} from './colliders';
 import { fbm2, ridgeProfile } from './terrainNoise';
 import { glowIntensity } from './uniforms';
 
-/** Ground height: sparks bounce on this plane (M3), the pendant floats above it. */
+/** Ground level under the pendant, which floats above it. */
 export const GROUND_Y = -0.9;
 
 type Range = [number, number];
@@ -215,7 +223,7 @@ function ridgeGeometry({ arc, height }: (typeof RIDGES)[number], seed: number): 
   return geometry;
 }
 
-/** Radius kept flat around the pendant: sparks bounce on the GROUND_Y plane there. */
+/** Radius kept flat around the pendant, where most sparks bounce. */
 const FLAT = 2.4;
 
 /**
@@ -233,8 +241,9 @@ export function groundHeight(x: number, z: number): number {
 }
 
 /** Ground: the cirque floor (see groundHeight). */
-function groundGeometry(): BufferGeometry {
-  const geometry = new PlaneGeometry(140, 140, 180, 180);
+export function groundGeometry(): BufferGeometry {
+  const { size, segments } = GROUND_MESH;
+  const geometry = new PlaneGeometry(size, size, segments, segments);
   geometry.rotateX(-Math.PI / 2);
   const pos = geometry.getAttribute('position');
   for (let i = 0; i < pos.count; i++) {
@@ -287,9 +296,11 @@ function pebbles(rand: Rand, count: number, heat: UniformNode<'float', number>):
  * Boulders: cut blocks (25-70 cm) between the pebbles and the peaks, so the ground is
  * not bare between them. Kept off the line between the camera and the pendant.
  */
-function boulders(rand: Rand, count: number, heat: UniformNode<'float', number>): InstancedMesh {
+function boulders(rand: Rand, count: number, heat: UniformNode<'float', number>) {
   const material = createRockMaterial(heat, { color: 0x34353a, grain: true, glow: 0.6 });
-  const mesh = new InstancedMesh(block(mulberry32(9), 1, 1, false), material, count);
+  const shape = block(mulberry32(9), 1, 1, false);
+  const mesh = new InstancedMesh(shape, material, count);
+  const cones: Cone[] = [];
   const dummy = new Object3D();
   for (let i = 0; i < count; i++) {
     const angle = (rand() - 0.5) * Math.PI * 1.25; // ±112°: never in front of the pendant
@@ -303,21 +314,29 @@ function boulders(rand: Rand, count: number, heat: UniformNode<'float', number>)
     dummy.scale.set(w, h, w * (0.8 + rand() * 0.4));
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
+    cones.push(fitCone(shape, dummy.matrix));
   }
-  return mesh;
+  return { mesh, cones };
 }
 
 export interface ForgeWorld {
   group: Group;
+  /** What the sparks bounce on (see colliders.ts). */
+  colliders: SparkColliders;
   /** Per-frame: glow intensity follows the heat. */
   update: (heat: number) => void;
   dispose: () => void;
 }
 
-/** One merged mesh per layer: a handful of draw calls for the whole world. */
-function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
+/**
+ * One merged mesh per layer: a handful of draw calls for the whole world. Every massif's
+ * cone is kept: reachableRocks picks the ones the sparks can get to.
+ */
+function buildPeaks(rand: Rand, heat: UniformNode<'float', number>) {
+  const cones: Cone[] = [];
   const layers = PEAK_LAYERS.map((layer, i) => {
     const parts = Array.from({ length: layer.count }, (_, k) => peakCluster(rand, layer, k)).flat();
+    cones.push(...parts.map((g) => fitCone(g)));
     const material = createRockMaterial(heat, {
       color: layer.color,
       grain: i === 0,
@@ -327,7 +346,7 @@ function buildPeaks(rand: Rand, heat: UniformNode<'float', number>): Mesh[] {
   });
   const ridges = mergeGeometries(RIDGES.map((r, i) => ridgeGeometry(r, 50 + i * 30)));
   const far = createRockMaterial(heat, { color: 0x3a3b40, grain: false, glow: 0 });
-  return [...layers, new Mesh(ridges, far)];
+  return { meshes: [...layers, new Mesh(ridges, far)], cones };
 }
 
 export function createForgeWorld(
@@ -343,18 +362,19 @@ export function createForgeWorld(
   const sky = new Mesh(new SphereGeometry(140, 48, 24), createSkyMaterial(heat, horizon));
   const glow = new PointLight(0xff6a2a, 0.3, 40, 1.25);
   glow.position.set(0, GROUND_Y + 0.15, -0.4);
+  // Built in this order: each draws from `rand`, and the composition depends on it.
+  const peaks = buildPeaks(rand, heat);
+  const strewnPebbles = pebbles(rand, strewn.pebbles, heat);
+  const strewnBoulders = boulders(rand, strewn.boulders, heat);
   const group = new Group();
-  group.add(
-    ground,
-    sky,
-    glow,
-    ...buildPeaks(rand, heat),
-    pebbles(rand, strewn.pebbles, heat),
-    boulders(rand, strewn.boulders, heat),
-  );
+  group.add(ground, sky, glow, ...peaks.meshes, strewnPebbles, strewnBoulders.mesh);
+  const colliders = {
+    ground: groundField(ground.geometry),
+    rocks: reachableRocks([...peaks.cones, ...strewnBoulders.cones]),
+  };
   const dispose = () => disposeMeshes(group);
   const update = (value: number) => {
     glow.intensity = glowIntensity(value);
   };
-  return { group, update, dispose };
+  return { group, colliders, update, dispose };
 }

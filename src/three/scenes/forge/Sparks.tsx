@@ -10,18 +10,17 @@ import { mulberry32 } from '../../random';
 import { startTier } from '../../quality';
 import { useWebGPU } from '../../useWebGPU';
 import { particleBudget } from './budget';
-import { GROUND_Y } from './decor';
+import type { SparkColliders } from './colliders';
 import type { ForgeUniforms } from './uniforms';
 
-function buildSparks(pendant: Pendant, count: number) {
+function buildSparks(pendant: Pendant, colliders: SparkColliders, count: number) {
   const rand = mulberry32(23);
   const emitters = {
     hole: sampleEdge(pendant.outline.hole, 512, rand, true),
     outer: sampleEdge(pendant.outline.outer, 256, rand),
   };
   const uniforms = createSparkUniforms();
-  uniforms.groundY.value = GROUND_Y;
-  const sim = createSparkSimulation(count, emitters, pendant.edgeMask, uniforms);
+  const sim = createSparkSimulation(count, emitters, pendant.edgeMask, colliders, uniforms);
   const geometry = new PlaneGeometry(1, 1);
   const material = createSparkMaterial(sim.body, sim.motion);
   const mesh = new InstancedMesh(geometry, material, count);
@@ -39,13 +38,15 @@ interface SparksProps {
   pendant: Pendant;
   forge: ForgeUniforms;
   spin: SpinState;
+  /** The ground and rocks they bounce on. */
+  colliders: SparkColliders;
 }
 
-export default function Sparks({ pendant, forge, spin }: SparksProps) {
+export default function Sparks({ pendant, forge, spin, colliders }: SparksProps) {
   const { gl } = useWebGPU();
   const sparks = useMemo(
-    () => buildSparks(pendant, particleBudget(startTier(gl).tier).sparks),
-    [pendant, gl],
+    () => buildSparks(pendant, colliders, particleBudget(startTier(gl).tier).sparks),
+    [pendant, colliders, gl],
   );
 
   useEffect(() => {

@@ -1,12 +1,4 @@
-import {
-  DataTexture,
-  FloatType,
-  NearestFilter,
-  RGBAFormat,
-  SpriteNodeMaterial,
-  type Node,
-  type WebGPURenderer,
-} from 'three/webgpu';
+import { type DataTexture, SpriteNodeMaterial, type Node, type WebGPURenderer } from 'three/webgpu';
 import {
   Fn,
   If,
@@ -37,6 +29,7 @@ import {
   vec4,
 } from 'three/tsl';
 import { HOLE, PLATE } from '../three/pendant/shape';
+import { floatTexture } from './dataTexture';
 import { plateNormal, plateSdf } from './plateSdf';
 import type { EdgeMaskInfo } from './steel';
 
@@ -62,11 +55,7 @@ function random(seed: Node<'uint'>, salt = 0): Node<'float'> {
 
 /** Hole-edge emitters (x, y, nx, ny) in a float texture, one row. */
 function crustEmitters(hole: Float32Array): DataTexture {
-  const tex = new DataTexture(hole, hole.length / 4, 1, RGBAFormat, FloatType);
-  tex.magFilter = NearestFilter;
-  tex.minFilter = NearestFilter;
-  tex.needsUpdate = true;
-  return tex;
+  return floatTexture(hole, hole.length / 4, 1);
 }
 
 export function createSwarmUniforms() {

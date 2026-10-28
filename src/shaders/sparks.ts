@@ -1,7 +1,6 @@
 import {
   Fn,
   If,
-  dot,
   exp,
   float,
   floor,
@@ -19,18 +18,13 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import {
-  DataTexture,
-  FloatType,
-  Matrix4,
-  NearestFilter,
-  RGBAFormat,
-  Vector3,
-  type Node,
-  type WebGPURenderer,
-} from 'three/webgpu';
+import { type DataTexture, Matrix4, Vector3, type Node, type WebGPURenderer } from 'three/webgpu';
 import { PLATE } from '../three/pendant/shape';
+import type { SparkColliders } from '../three/scenes/forge/colliders';
+import { contact } from './contact';
+import { floatTexture } from './dataTexture';
 import { plateNormal, plateSdf } from './plateSdf';
+import { createSceneryCollision } from './scenery';
 import type { EdgeMaskInfo } from './steel';
 
 /** Physics of molten-metal sparks (scene units ≈ metres, the pendant is ~0.9 tall). */
@@ -39,14 +33,13 @@ export const SPARK_PHYSICS = {
   /** Air drag rate (1/s). */
   drag: 0.6,
   lifetime: [0.9, 1.9] as const,
-  /** Bounce on the ground: kept vertical speed, kept horizontal speed (slide). */
+  /** Bounce on the ground and rocks: shares of the normal and tangential speeds kept. */
   restitution: 0.32,
-  friction: 0.55,
+  slide: 0.55,
   /** Share of sparks born on the outer edge (the rest from the hole, SPEC §5.4). */
   outerShare: 0.25,
-  /** Bounce on the pendant: kept normal speed, lost tangential speed. */
-  pendantRestitution: 0.4,
-  pendantFriction: 0.25,
+  /** Bounce on the pendant: shares of the normal and tangential speeds kept. */
+  pendant: { restitution: 0.4, slide: 0.75 },
   /** Sparks are born and pushed this far off the surface (avoids instant re-collision). */
   skin: 0.003,
   /** Beyond this distance from the pendant's centre, no collision test (broad phase). */
@@ -65,11 +58,7 @@ function emitterTexture({ hole, outer }: SparkEmitters): DataTexture {
   const data = new Float32Array(width * 2 * 4);
   data.set(hole, 0);
   data.set(outer, width * 4);
-  const tex = new DataTexture(data, width, 2, RGBAFormat, FloatType);
-  tex.magFilter = NearestFilter;
-  tex.minFilter = NearestFilter;
-  tex.needsUpdate = true;
-  return tex;
+  return floatTexture(data, width, 2);
 }
 
 /**
@@ -92,7 +81,6 @@ export function createSparkUniforms() {
     /** Pendant centre (world) and spin around the vertical axis (rad/s). */
     center: uniform(new Vector3()),
     spin: uniform(0),
-    groundY: uniform(0),
   };
 }
 
@@ -133,6 +121,7 @@ export function createSparkSimulation(
   count: number,
   emitters: SparkEmitters,
   mask: EdgeMaskInfo,
+  colliders: SparkColliders,
   u: SparkUniforms,
 ) {
   const body = instancedArray(count, 'vec4'); // xyz position (world), w age
@@ -140,6 +129,7 @@ export function createSparkSimulation(
   const emitterTex = emitterTexture(emitters);
   const holeCount = emitters.hole.length / 4;
   const outerCount = emitters.outer.length / 4;
+  const scenery = createSceneryCollision(colliders, SPARK_PHYSICS);
 
   const init = Fn(() => {
     body.element(instanceIndex).assign(vec4(0, -100, 0, 1e3));
@@ -165,24 +155,23 @@ export function createSparkSimulation(
       });
     }).Else(() => {
       integrate(b, m, u);
-      collide(b, m, u, mask);
+      scenery.collide(b, m);
+      collidePendant(b, m, u, mask);
     });
   })().compute(count);
 
-  return { body, motion, init, update, dispose: () => emitterTex.dispose() };
+  const dispose = () => {
+    emitterTex.dispose();
+    scenery.dispose();
+  };
+  return { body, motion, init, update, dispose };
 }
 
-/** Gravity, air drag, ground bounce and slide. */
+/** Gravity and air drag. */
 function integrate(b: Node<'vec4'>, m: Node<'vec4'>, u: SparkUniforms) {
   m.y.addAssign(u.dt.mul(SPARK_PHYSICS.gravity));
   m.xyz.mulAssign(exp(u.dt.mul(-SPARK_PHYSICS.drag)));
   b.xyz.addAssign(m.xyz.mul(u.dt));
-  If(b.y.lessThan(u.groundY), () => {
-    b.y.assign(u.groundY);
-    m.y.assign(m.y.abs().mul(SPARK_PHYSICS.restitution));
-    m.x.mulAssign(SPARK_PHYSICS.friction);
-    m.z.mulAssign(SPARK_PHYSICS.friction);
-  });
 }
 
 /** Velocity of the pendant's surface at a world point: ω × r, ω = (0, spin, 0). */
@@ -194,24 +183,15 @@ function surfaceVelocity(point: Node<'vec3'>, u: SparkUniforms): Node<'vec3'> {
 /**
  * Bounce off the spinning pendant (SPEC §5.4): exact SDF tested in pendant space, the
  * spark pushed back to the surface, its velocity reflected relative to the moving surface
- * (restitution, friction), so the rotation is transmitted to it.
+ * (restitution, slide), so the rotation is transmitted to it.
  */
-function collide(b: Node<'vec4'>, m: Node<'vec4'>, u: SparkUniforms, mask: EdgeMaskInfo) {
+function collidePendant(b: Node<'vec4'>, m: Node<'vec4'>, u: SparkUniforms, mask: EdgeMaskInfo) {
   If(length(b.xyz.sub(u.center)).lessThan(SPARK_PHYSICS.reach), () => {
     const local = u.modelInverse.mul(vec4(b.xyz, 1)).xyz;
-    const d = plateSdf(local, mask);
-    If(d.lessThan(SPARK_PHYSICS.skin), () => {
-      const n = normalize(u.model.mul(vec4(plateNormal(local, mask), 0)).xyz);
-      b.xyz.addAssign(n.mul(float(SPARK_PHYSICS.skin).sub(d)));
-      const surface = surfaceVelocity(b.xyz, u);
-      const relative = m.xyz.sub(surface);
-      const vn = dot(relative, n);
-      If(vn.lessThan(0), () => {
-        const normal = n.mul(vn);
-        const tangent = relative.sub(normal).mul(1 - SPARK_PHYSICS.pendantFriction);
-        m.xyz.assign(tangent.sub(normal.mul(SPARK_PHYSICS.pendantRestitution)).add(surface));
-      });
-    });
+    const normal = () => normalize(u.model.mul(vec4(plateNormal(local, mask), 0)).xyz);
+    const surface = (p: Node<'vec4'>) => surfaceVelocity(p.xyz, u);
+    const k = { ...SPARK_PHYSICS.pendant, skin: SPARK_PHYSICS.skin };
+    contact(b, m, plateSdf(local, mask), normal, surface, k);
   });
 }
 

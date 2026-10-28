@@ -115,7 +115,7 @@ Toutes les particules sont simulées par un **compute shader WebGPU** (TSL), dan
 - **Collisions** avec rebond (restitution et frottement) :
   - **pendentif** : champ de distance signé (SDF) exact, obtenu à partir du contour 2D et de l'épaisseur. La particule est testée dans le repère du pendentif, et la vitesse de surface due à la rotation lui est transmise (le pendentif qui tourne projette les étincelles) ;
   - **sol** : plan, sur lequel les étincelles rebondissent, glissent, refroidissent et s'éteignent ;
-  - **éléments de décor** : SDF analytiques (boîtes, cylindres) ou SDF 3D précalculée au build pour une forme complexe. _M3_ : non implémenté, les étincelles retombent avant les rochers les plus proches (4,5 m) ; à ajouter si on en voit les atteindre.
+  - **éléments de décor** : SDF analytiques (boîtes, cylindres) ou SDF 3D précalculée au build pour une forme complexe. _Tranché en M3_ : mesuré, à pleine rotation 16 % des étincelles dépassent 2,4 m et une sur mille atteint 5 m. Le **sol** n'est plus un plan : les étincelles rebondissent sur les facettes mêmes du maillage dessiné (ses sommets dans un rayon de 7 m, lus dans une petite texture, avec le même découpage en triangles), et la normale de chaque facette. Les **rochers** à portée (32 au plus, les plus proches) sont des cônes tronqués verticaux ajustés sur leur géométrie, en SDF analytique. Même code sur le repli WebGL 2.
 
 **Particules de protomolécule**
 

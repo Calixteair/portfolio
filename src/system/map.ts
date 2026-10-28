@@ -2,8 +2,8 @@ import { matchesQuery } from './search';
 
 /**
  * The system map (SystemPanels.astro): every body grouped, a search that filters the list
- * and lights the matches up in 3D, open at first (closed on small screens), toggled with
- * its button or the M key. DOM only: the 3D side gets callbacks.
+ * and lights the matches up in 3D, open at first (closed on small screens, and folded
+ * away by a travel on cramped ones), toggled with its button or the M key. DOM only: the 3D side gets callbacks.
  */
 export interface MapEvents {
   /** Search matches, or null when the search is empty. */
@@ -13,7 +13,10 @@ export interface MapEvents {
   open: (slug: string) => void;
 }
 
-const SMALL_SCREEN = '(max-width: 640px)';
+/** Closed at first: a phone, upright or on its side. */
+const SMALL_SCREEN = '(max-width: 640px), (max-height: 520px)';
+/** Too tight for the map beside a panel (or above the portrait drawer). */
+const CRAMPED = '(max-width: 1100px), (max-height: 520px), (max-aspect-ratio: 4/5)';
 
 function setOpen(root: HTMLElement, open: boolean): void {
   root.dataset.open = String(open);
@@ -87,6 +90,12 @@ export function bindHover(root: HTMLElement, events: Pick<MapEvents, 'hover'>): 
     root.removeEventListener('focusin', enter);
     root.removeEventListener('focusout', leave);
   };
+}
+
+/** A travel starts: on a cramped screen, the map makes way for the body and its panel. */
+export function foldMap(): void {
+  const root = document.getElementById('system-map');
+  if (root && matchMedia(CRAMPED).matches) setOpen(root, false);
 }
 
 export function bindMap(events: MapEvents): () => void {

@@ -1,5 +1,6 @@
 import type { gsap as Gsap } from 'gsap';
 import type { Object3D, PerspectiveCamera, Vector3 } from 'three/webgpu';
+import { foldMap } from '../../../system/map';
 import { bindPanels, hidePanels, revealSystemUi, showPanel } from '../../../system/panels';
 import type { LensUniforms } from '../../post/lens';
 import { createTravel, flyHome, flyTo, type Travel, type TravelLeg } from './travel';
@@ -44,6 +45,7 @@ export function createNavigation(setup: NavigationSetup) {
     if (!object || !l || busy || travel.target === object) return;
     busy = true;
     hidePanels();
+    foldMap();
     setup.focus(null);
     await flyTo(l, object, setup.reach.get(slug) ?? 3);
     busy = false;

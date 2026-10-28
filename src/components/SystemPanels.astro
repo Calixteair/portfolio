@@ -107,8 +107,8 @@ const searchText = (e: Entry) =>
   /* The system map: every body, grouped, with a search (open at first, closable). */
   .system-map {
     position: absolute;
-    left: 1rem;
-    top: 1rem;
+    left: max(1rem, env(safe-area-inset-left));
+    top: max(1rem, env(safe-area-inset-top));
     display: flex;
     flex-direction: column;
     width: min(18rem, calc(100% - 2rem));
@@ -124,8 +124,8 @@ const searchText = (e: Entry) =>
   }
   .map-open {
     position: absolute;
-    left: 1rem;
-    top: 1rem;
+    left: max(1rem, env(safe-area-inset-left));
+    top: max(1rem, env(safe-area-inset-top));
     padding: 0.45rem 0.9rem;
     font: inherit;
     font-size: 0.85rem;
@@ -307,8 +307,8 @@ const searchText = (e: Entry) =>
   }
   .system-classic {
     position: absolute;
-    right: 1.25rem;
-    bottom: 1rem;
+    right: max(1.25rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
     font-size: 0.85rem;
     color: var(--ink);
     opacity: 0.6;

@@ -136,7 +136,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
     position: absolute;
     left: var(--wire-x, 50%);
     top: var(--wire-y, 51%);
-    height: var(--wire-h, min(49vh, 61.25vw));
+    height: var(--wire-h, min(49dvh, 61.25vw));
     translate: -50% -50%;
     overflow: visible;
   }
@@ -235,7 +235,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   .enter {
     position: absolute;
     left: 50%;
-    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49vh, 61.25vw)) / 2 + 4vh);
+    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49dvh, 61.25vw)) / 2 + 4dvh);
     translate: -50% 0;
     padding: 0.7em 2.2em;
     font:
@@ -262,7 +262,7 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   .skip-intro {
     position: absolute;
     left: 50%;
-    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49vh, 61.25vw)) / 2 + 4vh + 3.4rem);
+    top: calc(var(--wire-y, 51%) + var(--wire-h, min(49dvh, 61.25vw)) / 2 + 4dvh + 3.4rem);
     translate: -50% 0;
     padding: 0.4em 1em;
     font:
@@ -331,8 +331,8 @@ const viewBox = [-PLATE.hw - pad, -PLATE.hh - pad, 2 * (PLATE.hw + pad), 2 * (PL
   /* Always there while the loader shows: the reader can skip the 3D altogether. */
   .classic-link {
     position: absolute;
-    right: 1.25rem;
-    bottom: 1rem;
+    right: max(1.25rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
     font:
       400 0.85rem/1 system-ui,
       sans-serif;

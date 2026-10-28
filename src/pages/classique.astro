@@ -86,7 +86,8 @@ const groups = sections.groups.filter((g) => g.items.length > 0);
   main {
     max-width: 48rem;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 max(1rem, env(safe-area-inset-right)) env(safe-area-inset-bottom)
+      max(1rem, env(safe-area-inset-left));
   }
   .intro {
     padding-top: 3rem;

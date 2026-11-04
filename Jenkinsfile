@@ -19,7 +19,8 @@ standardPipeline(
      command: "${pnpm} && pnpm install --frozen-lockfile && pnpm run lint && pnpm test && pnpm run build && pnpm run size"],
     // Navigateurs de l'image Playwright (version de @playwright/test), sur les node_modules déjà installés
     [image: 'mcr.microsoft.com/playwright:v1.64.1-noble', args: '-e HOME=/tmp -e CI=1',
-     command: './node_modules/.bin/playwright test'],
+     // Un navigateur à la fois : SwiftShader compile les shaders sur le processeur partagé du VPS
+     command: './node_modules/.bin/playwright test --workers=1'],
   ],
   registry: [url: 'registry.calixteair.fr/portfolio', bao: 'cicd/harbor/portfolio'],
   images: [[name: 'portfolio', tagPrefix: 'web']],

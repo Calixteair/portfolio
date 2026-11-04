@@ -41,7 +41,7 @@ export default defineConfig({
   webServer: {
     // --ignore-lock: Astro 7 auto-backgrounds when it detects an AI agent, which
     // would make Playwright think the server exited. Keep it in the foreground.
-    command: `npx astro preview --port ${PORT} --ignore-lock`,
+    command: `./node_modules/.bin/astro preview --port ${PORT} --ignore-lock`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
   },

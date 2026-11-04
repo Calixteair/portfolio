@@ -1,9 +1,10 @@
 # Production stack on the VPS: /home/calixteair/docker/apps/portfolio/compose.yaml
-# Deployed by CI: ssh ci-portfolio -> ci-deploy-self.sh -> bao-deploy.sh portfolio
-# (no-secrets marker: pull + up -d). :prod only ever points to a scanned, signed image.
+# Deployed by stack-sync on a signed release tag vX.Y.Z (Jenkins: ssh ci-portfolio vX.Y.Z ->
+# ci-deploy-self.sh -> stack-sync.sh): the VPS checks the signature, pins web-latest to vX.Y.Z-web
+# (immutable in Harbor) and installs this file. No secrets (bao-deploy no-secrets marker).
 services:
   portfolio:
-    image: ghcr.io/calixteair/portfolio:prod
+    image: registry.calixteair.fr/portfolio/portfolio:web-latest
     container_name: portfolio
     restart: unless-stopped
     read_only: true

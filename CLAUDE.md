@@ -32,8 +32,8 @@ Ambiance : forge infernale côté pendentif, puis l'autre côté inspiré de _Th
 
 ## Commandes (à créer au jalon M0)
 
-- `npm run dev` / `npm run build` / `npm run preview`
-- `npm run optimize:assets` : gltf-transform (Meshopt + KTX2)
+- `pnpm dev` / `pnpm build` / `pnpm preview` (pnpm, jamais npm)
+- `pnpm optimize:assets` : gltf-transform (Meshopt + KTX2)
 - `docker compose up -d --build`
 
 ## Règles 3D (non négociables)

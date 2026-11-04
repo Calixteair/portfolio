@@ -6,16 +6,17 @@
   "engines": {
     "node": ">=24.16.0"
   },
+  "packageManager": "pnpm@9.14.2",
   "scripts": {
     "bake": "node scripts/bake-edges.ts && node scripts/copy-decoders.ts",
     "predev": "npm run bake",
     "dev": "astro dev",
-    "prebuild": "npm run bake",
+    "prebuild": "pnpm run bake",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "model:outline": "node scripts/export-outline.ts",
     "model:build": "npm run model:outline && blender -b --factory-startup -P tools/blender/pendant.py -- --export && npm run optimize:assets",
-    "optimize:assets": "npx --yes @gltf-transform/cli@4.5.1 optimize tools/blender/build/pendant.glb public/models/pendant.glb --compress meshopt --simplify false --join false --flatten false --instance false --palette false --texture-compress false",
+    "optimize:assets": "pnpm dlx @gltf-transform/cli@4.5.1 optimize tools/blender/build/pendant.glb public/models/pendant.glb --compress meshopt --simplify false --join false --flatten false --instance false --palette false --texture-compress false",
     "typecheck": "astro check",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write . && eslint --fix .",

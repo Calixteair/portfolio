@@ -18,10 +18,11 @@ function trackPageErrors(page: Page): string[] {
  */
 async function enterScene(page: Page) {
   // SwiftShader compiles the forge's render and compute shaders on the CPU: the wait below
-  // takes ~35 s locally, more on CI, far beyond the default 30 s test budget.
-  test.setTimeout(180_000);
+  // takes ~35 s locally, far beyond the default 30 s test budget. On the CI (Jenkins on the shared
+  // VPS CPU, next to other builds) the first compilation went past 3 minutes: wider budget there.
+  test.setTimeout(process.env.CI ? 420_000 : 180_000);
   const enter = page.getByRole('button', { name: 'Entrer' });
-  await expect(enter).toBeVisible({ timeout: 120_000 });
+  await expect(enter).toBeVisible({ timeout: process.env.CI ? 360_000 : 120_000 });
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');
   await enter.click();
   // 1.6 s fade, but under SwiftShader each frame can take seconds (CI): be patient.

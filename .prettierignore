@@ -1,6 +1,6 @@
 dist/
 .astro/
-package-lock.json
+pnpm-lock.yaml
 docs/explorations/
 docs/references/
 public/generated/

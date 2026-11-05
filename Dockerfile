@@ -3,14 +3,16 @@ FROM node:24.22.0-alpine3.24@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8
 WORKDIR /app
 
 # Dependencies first: this layer stays cached while only sources change.
-COPY package.json package-lock.json .npmrc ./
-RUN npm ci --no-audit
+# pnpm (version de packageManager dans package.json) via corepack
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN corepack enable && pnpm install --frozen-lockfile
 
 COPY . .
-# Commit SHA rendered in a <meta>: the deploy smoke test checks the new version is live.
-ARG BUILD_SHA=dev
-ENV PUBLIC_BUILD_SHA=$BUILD_SHA
-RUN npm run build \
+# Commit SHA rendered in a <meta> (x-build): shows which version is live. GIT_REVISION is passed
+# by the Jenkins build (jenkins-lib buildImage).
+ARG GIT_REVISION=dev
+ENV PUBLIC_BUILD_SHA=$GIT_REVISION
+RUN pnpm run build \
  && find dist -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.svg' \
       -o -name '*.json' -o -name '*.wasm' -o -name '*.glb' -o -name '*.bin' \) -exec gzip -9 -k {} +
 

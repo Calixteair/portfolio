@@ -4,7 +4,7 @@ name: codeql
 on:
   pull_request:
   push:
-    branches: [newgen]
+    branches: [main]
   schedule:
     - cron: '17 4 * * 1' # weekly: new queries catch old code
 
